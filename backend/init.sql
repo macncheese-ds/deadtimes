@@ -1,6 +1,16 @@
 CREATE DATABASE IF NOT EXISTS deadtimes;
 USE deadtimes;
 
+-- Users table for authentication (simulating gaffet scan)
+CREATE TABLE IF NOT EXISTS users(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  num_empleado INT UNIQUE NOT NULL,
+  nombre VARCHAR(100) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  rol ENUM('empleado','tecnico','admin') DEFAULT 'empleado'
+);
+
+-- Deadtimes table for checklist-style tickets
 CREATE TABLE IF NOT EXISTS deadtimes(
   id INT AUTO_INCREMENT PRIMARY KEY,
   hr DATETIME,
@@ -11,7 +21,7 @@ CREATE TABLE IF NOT EXISTS deadtimes(
   turno VARCHAR(250),
   linea ENUM('1','2','3','4'),
   nombre VARCHAR(100),
-  num_empleado INT,
+  num_empleado INT UNIQUE,
   equipo VARCHAR(250),
   mod1 BOOLEAN,
   mod2 BOOLEAN,

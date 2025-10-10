@@ -15,18 +15,25 @@ Quick start (backend):
 
 	  mysql -u root -p < backend/init.sql
 
-3. Start the backend API:
+3. Seed some users for demo (run after DB setup):
+
+	   curl -X POST http://localhost:8700/api/auth/register -H "Content-Type: application/json" -d '{"num_empleado": 12345, "nombre": "Juan Perez", "password": "pass123", "rol": "empleado"}'
+	   curl -X POST http://localhost:8700/api/auth/register -H "Content-Type: application/json" -d '{"num_empleado": 67890, "nombre": "Ana Gomez", "password": "pass456", "rol": "tecnico"}'
+
+4. Start the backend API:
 
 	cd deadtimes/backend; npm start
 
 Backend API (examples):
 
+- POST http://localhost:8700/api/auth/login -> { "num_empleado": 12345, "password": "pass123" } -> returns token
 - GET http://localhost:8700/api/deadtimes?status=open  -> list open tickets
 - GET http://localhost:8700/api/deadtimes?status=closed -> list closed tickets
 - GET http://localhost:8700/api/deadtimes/:id -> get ticket
 - POST http://localhost:8700/api/deadtimes -> create ticket (body: descr, linea, nombre, num_empleado, ...)
-- POST http://localhost:8700/api/deadtimes/:id/start -> record assignment (body: { tecnico })
-- POST http://localhost:8700/api/deadtimes/:id/finish -> finalize (body: { causa, solucion, rate, piezas, e_ser })
+- POST http://localhost:8700/api/deadtimes/:id/start -> assign (requires auth, body: { tecnico })
+- POST http://localhost:8700/api/deadtimes/:id/finish -> finalize (requires auth, body: { causa, solucion, rate, piezas, e_ser })
+- PUT http://localhost:8700/api/deadtimes/:id -> update ticket
 
 Quick start (frontend):
 
@@ -34,10 +41,13 @@ Quick start (frontend):
 
 	cd deadtimes\frontend; npm install; npm run dev
 
-2. Open the browser at the port Vite reports (default 5174) and the app will call the backend at http://localhost:8700/api.
+2. Open the browser at the port Vite reports (default 5174) and login with seeded user credentials.
 
 Notes and next steps:
 
 - The backend expects a MySQL server and the `deadtimes` database created from `backend/init.sql`.
-- The frontend is a minimal demo (create/list/start/finish). You can extend it to match the two-screen workflow from your spec.
-- Consider adding authentication (GAFFET scan integration) and validation on both client and server for production use.
+- Authentication simulates gaffet scan: login with num_empleado and password.
+- Frontend has two screens: Home (list/create tickets) and HandleTicket (assign/finish).
+- Turno is auto-calculated in frontend based on current hour.
+- Deadtime = rate / piezas if piezas > 0.
+- Add more dropdown options, validations, and UI polish as needed.

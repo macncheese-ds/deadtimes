@@ -3,6 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const deadtimes = require('./routes/deadtimes');
+const auth = require('./routes/auth');
+const { authenticateToken } = require('./middleware/auth');
 
 dotenv.config();
 const app = express();
@@ -10,7 +12,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+app.use('/api/auth', auth);
 app.use('/api/deadtimes', deadtimes);
+
+// Protect start and finish with auth
+app.use('/api/deadtimes/:id/start', authenticateToken);
+app.use('/api/deadtimes/:id/finish', authenticateToken);
 
 const PORT = process.env.PORT || 8700;
 app.listen(PORT, '0.0.0.0', () => console.log(`Deadtimes API on ${PORT}`));
