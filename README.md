@@ -1,4 +1,4 @@
-Deadtimes - minimal ticket API
+# Deadtimes - minimal ticket API
 
 This folder contains a small Express backend and a minimal React frontend for managing "deadtimes" tickets (open/close flow). It mirrors the structure used in the `checklist` project (MySQL backend, Vite + React frontend).
 
@@ -41,6 +41,3 @@ Notes and next steps:
 - The backend expects a MySQL server and the `deadtimes` database created from `backend/init.sql`.
 - The frontend is a minimal demo (create/list/start/finish). You can extend it to match the two-screen workflow from your spec.
 - Consider adding authentication (GAFFET scan integration) and validation on both client and server for production use.
-
-# deadtimes
-fuckass app
