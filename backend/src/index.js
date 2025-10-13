@@ -8,7 +8,12 @@ const auth = require('./routes/auth');
 dotenv.config();
 const app = express();
 
-app.use(cors());
+// Configuración de CORS más específica para trabajar con Nginx
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 
 app.use('/api/auth', auth);

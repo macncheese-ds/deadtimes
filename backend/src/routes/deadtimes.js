@@ -25,7 +25,19 @@ router.get('/:id', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     if (rows.length === 0) return res.status(404).json({ error: 'not found' });
-    res.json(rows[0]);
+    const row = rows[0];
+    // compute minutos if hc present
+    let minutos = null;
+    if (row.hr && row.hc) {
+      const diffMs = new Date(row.hc).getTime() - new Date(row.hr).getTime();
+      minutos = Math.max(0, Math.round(diffMs / 60000));
+    }
+    // normalize numeric fields
+    row.rate = row.rate !== null ? Number(row.rate) : null;
+    row.piezas = row.piezas !== null ? Number(row.piezas) : null;
+    row.deadtime = row.deadtime !== null ? Number(row.deadtime) : null;
+    if (minutos !== null) row.minutos = minutos;
+    res.json(row);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -59,10 +71,23 @@ router.post('/', async (req, res) => {
 
   try {
     const hr = new Date();
+    // Normalize modelo + lado into single modelo field if lado provided
+    // frontend now may send 'lado' separately (TOP/BOT)
+    const lado = body.lado || '';
+    const storedModelo = modelo ? (lado ? `${modelo} ${lado}` : modelo) : '';
+
+    // The frontend swapped meanings (pf = sección afectada (Equipo/Linea), pa = condición de paro (Intermitente/Total)).
+    // DB schema expects pf ENUM('Total','Intermitente') and pa ENUM('Equipo','Linea').
+    // So map accordingly: dbPf <- pa, dbPa <- pf
+  const dbPf = pa && pa.length ? pa : null; // DB expects 'Total'|'Intermitente' for pf
+  const dbPa = pf && pf.length ? pf : null; // DB expects 'Equipo'|'Linea' for pa
+
+  // Store priority directly (frontend now only selects the option, no extra free text for 'ceda prioridad')
+  const storedPriority = priority || null;
     const [result] = await db.query(
       `INSERT INTO deadtimes (hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12, pf, pa, clasificacion, clas_others, priority)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, ...modValues, pf, pa, clasificacion, clas_others, priority]
+      [hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo, ...modValues, dbPf, dbPa, clasificacion, clas_others, storedPriority]
     );
 
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [result.insertId]);
@@ -125,13 +150,42 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Finish ticket: record hc, compute rate/piezas logic can be provided by client
+// Finish ticket: record hc, compute piezas (from minutos) and deadtime server-side to avoid client-side truncation issues
 router.post('/:id/finish', async (req, res) => {
   const id = req.params.id;
-  const { causa, solucion, rate, piezas, e_ser } = req.body;
+  // accept either 'piezas' (legacy) or 'minutos' (new) from client
+  const { causa, solucion, rate, piezas, minutos, e_ser } = req.body;
   try {
     const hc = new Date();
-    await db.query('UPDATE deadtimes SET hc = ?, causa = ?, solucion = ?, rate = ?, piezas = ?, e_ser = ? WHERE id = ?', [hc, causa, solucion, rate, piezas, e_ser, id]);
+
+    // fetch the original hr to compute elapsed minutes
+    const [origRows] = await db.query('SELECT hr FROM deadtimes WHERE id = ?', [id]);
+    const hr = origRows && origRows[0] ? origRows[0].hr : null;
+
+    const rateNum = Number(rate) || 0;
+    let piezasCalc = 0;
+    let minutosCalc = 0;
+
+    if (hr) {
+      const diffMs = new Date(hc).getTime() - new Date(hr).getTime();
+      minutosCalc = Math.max(0, Math.round(diffMs / 60000)); // minutes
+      // piezas = (rate / 60) * minutos
+      piezasCalc = Math.round((rateNum / 60) * minutosCalc);
+    } else {
+      // fallback: use provided piezas or minutos if client sent them (legacy)
+      if (typeof minutos !== 'undefined' && minutos !== null && minutos !== '') {
+        const minutosNum = Number(minutos) || 0;
+        minutosCalc = minutosNum;
+        piezasCalc = Math.round((rateNum / 60) * minutosNum);
+      } else {
+        piezasCalc = Number(piezas) || 0;
+      }
+    }
+
+    // deadtime = rate / piezas  (store as integer, 0 if piezasCalc === 0)
+    const deadtimeCalc = piezasCalc > 0 ? Math.round(rateNum / piezasCalc) : 0;
+
+    await db.query('UPDATE deadtimes SET hc = ?, causa = ?, solucion = ?, rate = ?, piezas = ?, deadtime = ?, e_ser = ? WHERE id = ?', [hc, causa, solucion, rateNum, piezasCalc, deadtimeCalc, e_ser || null, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
