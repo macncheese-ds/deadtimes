@@ -5,13 +5,39 @@ export default function Home({ user }) {
   const [tickets, setTickets] = useState([])
   const [status, setStatus] = useState('open')
   const [showNew, setShowNew] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     descr: '', modelo: '', linea: '1', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', priority: '', lado: 'TOP'
   })
 
-  useEffect(() => { load() }, [status])
+  // Auto-refresh cada 30 segundos
+  useEffect(() => {
+    load()
+    const interval = setInterval(() => {
+      load()
+    }, 30000) // 30 segundos
+    
+    return () => clearInterval(interval)
+  }, [status])
 
-  function load() { listTickets(status).then(setTickets).catch(console.error) }
+  // Recargar cuando la ventana recibe foco (usuario vuelve de otra pestaña)
+  useEffect(() => {
+    const handleFocus = () => load()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [status])
+
+  async function load() {
+    setLoading(true)
+    try {
+      const data = await listTickets(status)
+      setTickets(data)
+    } catch (error) {
+      console.error('Error cargando tickets:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   function submit(e) {
     e.preventDefault()
@@ -38,6 +64,13 @@ export default function Home({ user }) {
           <button className={`px-4 py-2 rounded text-sm sm:text-base ${status === 'open' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`} onClick={() => setStatus('open')}>Abiertos</button>
           <button className={`px-4 py-2 rounded text-sm sm:text-base ${status === 'closed' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`} onClick={() => setStatus('closed')}>Cerrados</button>
           <button className="px-4 py-2 bg-green-500 text-white rounded text-sm sm:text-base" onClick={() => setShowNew(true)}>+ Nuevo Ticket</button>
+          <button 
+            className="px-4 py-2 bg-gray-500 text-white rounded text-sm sm:text-base flex items-center justify-center gap-2" 
+            onClick={() => load()}
+            disabled={loading}
+          >
+            {loading ? '⟳' : '↻'} Refrescar
+          </button>
         </div>
 
         {showNew && (
@@ -138,7 +171,10 @@ export default function Home({ user }) {
         )}
 
         <div className="bg-white rounded shadow-md p-3 sm:p-4 md:p-6 mx-2">
-          <h2 className="text-lg sm:text-xl font-semibold mb-3 md:mb-4">Tickets {status === 'open' ? 'Abiertos' : 'Cerrados'}</h2>
+          <div className="flex justify-between items-center mb-3 md:mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold">Tickets {status === 'open' ? 'Abiertos' : 'Cerrados'}</h2>
+            {loading && <span className="text-sm text-gray-500">Actualizando...</span>}
+          </div>
           <ul className="space-y-2">
             {tickets.map(t => (
               <li key={t.id} className="border p-3 sm:p-4 rounded flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4">

@@ -7,9 +7,11 @@ router.get('/', async (req, res) => {
   const status = req.query.status || 'open';
   try {
     if (status === 'closed') {
-      const [rows] = await db.query('SELECT * FROM deadtimes WHERE hc IS NOT NULL ORDER BY hc DESC');
+      // Tickets cerrados: ordenar por fecha de cierre (más recientes primero)
+      const [rows] = await db.query('SELECT * FROM deadtimes WHERE hc IS NOT NULL ORDER BY hc DESC LIMIT 100');
       return res.json(rows);
     } else {
+      // Tickets abiertos: ordenar por fecha de reporte (más recientes primero)
       const [rows] = await db.query('SELECT * FROM deadtimes WHERE hc IS NULL ORDER BY hr DESC');
       return res.json(rows);
     }

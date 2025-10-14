@@ -23,10 +23,18 @@ export default function HandleTicket({ user }) {
     updateTicket(id, form).then(() => { setEditMode(false); load() })
   }
 
-  function handleFinish() {
+  async function handleFinish() {
     // Now the backend will compute minutos (hc - hr) and derive piezas and deadtime.
     const rateNum = Number(form.rate) || 0
-    finishTicket(id, { causa: form.causa, solucion: form.solucion, rate: rateNum, e_ser: form.e_ser }).then(() => window.location.href = '/')
+    try {
+      await finishTicket(id, { causa: form.causa, solucion: form.solucion, rate: rateNum, e_ser: form.e_ser })
+      // Pequeña pausa para asegurar que el backend procesó el cierre
+      await new Promise(resolve => setTimeout(resolve, 300))
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error al finalizar ticket:', error)
+      alert('Error al finalizar el ticket. Intenta de nuevo.')
+    }
   }
 
   if (!ticket) return <div className="min-h-screen flex items-center justify-center">Cargando...</div>
