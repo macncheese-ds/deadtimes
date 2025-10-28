@@ -109,8 +109,17 @@ export default function Home({ user }) {
 
               <select className="border p-2 rounded text-sm sm:text-base w-full" value={form.equipo} onChange={e => setForm({...form, equipo: e.target.value})}>
                 <option value="">Seleccionar Equipo</option>
-                <option value="Equipo 1">Equipo 1</option>
-                <option value="Equipo 2">Equipo 2</option>
+                <option value="Top loading">Top loading</option>
+                <option value="Bottom loading">Bottom loading</option>
+                <option value="Top laser marking">Top laser marking</option>
+                <option value="Bottom solder paste printing">Bottom solder paste printing</option>
+                <option value="Bottom solder paste inspection (SPI)">Bottom solder paste inspection (SPI)</option>
+                <option value="Montadora">Montadora</option>
+                <option value="Bottom automatical optical inspection (Pre AOI)">Bottom automatical optical inspection (Pre AOI)</option>
+                <option value="Bottom reflow soldering">Bottom reflow soldering</option>
+                <option value="Top automatical optical inspection (Post AOI)">Top automatical optical inspection (Post AOI)</option>
+                <option value="Bottom/top sideviewer">Bottom/top sideviewer</option>
+                <option value="Bottom/top unloading">Bottom/top unloading</option>
               </select>
 
               <select className="border p-2 rounded text-sm sm:text-base w-full" value={form.descr} onChange={e => setForm({...form, descr: e.target.value})}>
