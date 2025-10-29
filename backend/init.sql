@@ -1,14 +1,72 @@
 CREATE DATABASE IF NOT EXISTS deadtimes;
 USE deadtimes;
 
--- Users table for authentication (simulating gaffet scan)
-CREATE TABLE IF NOT EXISTS users(
+-- Tabla de líneas
+CREATE TABLE IF NOT EXISTS lineas(
   id INT AUTO_INCREMENT PRIMARY KEY,
-  num_empleado INT UNIQUE NOT NULL,
-  nombre VARCHAR(100) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  rol ENUM('empleado','tecnico','admin') DEFAULT 'empleado'
+  linea VARCHAR(200)
 );
+
+-- Insertar líneas predeterminadas si no existen
+INSERT IGNORE INTO lineas (linea) VALUES 
+  ('1'),
+  ('2'),
+  ('3'),
+  ('4');
+
+-- Tabla de descripciones
+CREATE TABLE IF NOT EXISTS descripciones(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  descripcion VARCHAR(200)
+);
+
+-- Insertar descripciones predeterminadas si no existen
+INSERT IGNORE INTO descripciones (descripcion) VALUES 
+  ('Falla eléctrica'),
+  ('Mantenimiento');
+
+-- Tabla de equipos (ahora en la misma base de datos)
+CREATE TABLE IF NOT EXISTS equipos(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  equipo VARCHAR(200)
+);
+
+-- Insertar equipos predeterminados si no existen
+INSERT IGNORE INTO equipos (equipo) VALUES 
+  ('Top loading'),
+  ('Bottom loading'),
+  ('Top laser marking'),
+  ('Bottom solder paste printing'),
+  ('Bottom solder paste inspection (SPI)'),
+  ('Montadora'),
+  ('Bottom automatical optical inspection (Pre AOI)'),
+  ('Bottom reflow soldering'),
+  ('Top automatical optical inspection (Post AOI)'),
+  ('Bottom/top sideviewer'),
+  ('Bottom/top unloading');
+
+-- Tabla de modelos
+CREATE TABLE IF NOT EXISTS modelos(
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  modelo VARCHAR(200)
+);
+
+-- Insertar modelos predeterminados si no existen
+INSERT IGNORE INTO modelos (modelo) VALUES 
+  ('MGH100 RCU'),
+  ('MGH100 BL7'),
+  ('IDB PLOCK'),
+  ('IDB MAIN'),
+  ('IDB IPTS'),
+  ('POWER PACK'),
+  ('MGH MOCI'),
+  ('MGH100 ESC'),
+  ('FCM 30W'),
+  ('MRR35'),
+  ('IAMM'),
+  ('IAMM2'),
+  ('IAMMD'),
+  ('FRHC');
 
 -- Deadtimes table for checklist-style tickets
 CREATE TABLE IF NOT EXISTS deadtimes(
@@ -19,9 +77,9 @@ CREATE TABLE IF NOT EXISTS deadtimes(
   descr VARCHAR(250),
   modelo VARCHAR(250),
   turno VARCHAR(250),
-  linea ENUM('1','2','3','4'),
+  linea VARCHAR(200),
   nombre VARCHAR(100),
-  num_empleado INT UNIQUE,
+  num_empleado VARCHAR(200),
   equipo VARCHAR(250),
   mod1 BOOLEAN,
   mod2 BOOLEAN,
@@ -41,11 +99,13 @@ CREATE TABLE IF NOT EXISTS deadtimes(
   clas_others VARCHAR(250),
   priority VARCHAR(250),
   tecnico VARCHAR(250),
+  num_empleado1 VARCHAR(200),
   causa VARCHAR(250),
   solucion TEXT,
   rate INT,
   deadtime INT,
   piezas INT,
   e_ser ENUM ('Excelente','Bueno','Regular','Malo','Muy Malo'),
+  done BOOLEAN DEFAULT 0,
   fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
 );
