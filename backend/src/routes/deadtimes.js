@@ -70,6 +70,207 @@ router.get('/stats/equipos', async (req, res) => {
   }
 });
 
+// Estadísticas por línea con filtros de fecha
+router.get('/stats/linea', async (req, res) => {
+  try {
+    const { linea, startDate, endDate, days = 30 } = req.query;
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    // Tickets totales, abiertos, cerrados por línea
+    const query = `
+      SELECT 
+        linea,
+        COUNT(*) as total_tickets,
+        SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) as cerrados,
+        SUM(CASE WHEN done = 0 THEN 1 ELSE 0 END) as abiertos,
+        AVG(CASE WHEN done = 1 AND hc IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, hr, hc) END) as promedio_minutos,
+        SUM(CASE WHEN done = 1 THEN piezas ELSE 0 END) as total_piezas_perdidas
+      FROM deadtimes 
+      WHERE ${dateCondition} ${lineaCondition}
+      GROUP BY linea
+      ORDER BY linea
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Estadísticas por equipo con filtros
+router.get('/stats/equipos-detalle', async (req, res) => {
+  try {
+    const { linea, startDate, endDate, days = 30 } = req.query;
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    const query = `
+      SELECT 
+        equipo,
+        linea,
+        COUNT(*) as total_fallas,
+        AVG(CASE WHEN done = 1 AND hc IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, hr, hc) END) as promedio_minutos,
+        SUM(CASE WHEN done = 1 THEN piezas ELSE 0 END) as total_piezas_perdidas
+      FROM deadtimes 
+      WHERE ${dateCondition} ${lineaCondition}
+      GROUP BY equipo, linea
+      ORDER BY total_fallas DESC
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Estadísticas de tickets por día para gráfica de tendencia
+router.get('/stats/tendencia', async (req, res) => {
+  try {
+    const { linea, startDate, endDate, days = 30 } = req.query;
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    const query = `
+      SELECT 
+        DATE(hr) as fecha,
+        linea,
+        COUNT(*) as total_tickets,
+        SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) as cerrados,
+        AVG(CASE WHEN done = 1 AND hc IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, hr, hc) END) as promedio_minutos,
+        SUM(CASE WHEN done = 1 THEN piezas ELSE 0 END) as piezas_perdidas
+      FROM deadtimes 
+      WHERE ${dateCondition} ${lineaCondition}
+      GROUP BY DATE(hr), linea
+      ORDER BY fecha DESC, linea
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Estadísticas por clasificación
+router.get('/stats/clasificacion', async (req, res) => {
+  try {
+    const { linea, startDate, endDate, days = 30 } = req.query;
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    const query = `
+      SELECT 
+        COALESCE(clasificacion, 'No especificado') as clasificacion,
+        linea,
+        COUNT(*) as total_tickets,
+        AVG(CASE WHEN done = 1 AND hc IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, hr, hc) END) as promedio_minutos
+      FROM deadtimes 
+      WHERE ${dateCondition} ${lineaCondition}
+      GROUP BY clasificacion, linea
+      ORDER BY total_tickets DESC
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Totales generales
+router.get('/stats/totales', async (req, res) => {
+  try {
+    const { linea, startDate, endDate, days = 30 } = req.query;
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    const query = `
+      SELECT 
+        COUNT(*) as total_tickets,
+        SUM(CASE WHEN done = 1 THEN 1 ELSE 0 END) as cerrados,
+        SUM(CASE WHEN done = 0 THEN 1 ELSE 0 END) as abiertos,
+        AVG(CASE WHEN done = 1 AND hc IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, hr, hc) END) as promedio_minutos_global,
+        SUM(CASE WHEN done = 1 THEN piezas ELSE 0 END) as total_piezas_perdidas,
+        SUM(CASE WHEN done = 1 THEN deadtime ELSE 0 END) as total_deadtime
+      FROM deadtimes 
+      WHERE ${dateCondition} ${lineaCondition}
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows[0] || {});
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get equipos list
 router.get('/equipos', async (req, res) => {
   try {

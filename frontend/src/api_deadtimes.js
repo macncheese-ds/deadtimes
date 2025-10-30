@@ -30,6 +30,32 @@ export const getModelos = () => api.get('/deadtimes/modelos').then(r => r.data);
 export const getStatsAtencion = () => api.get('/deadtimes/stats/atencion').then(r => r.data);
 export const getStatsEquipos = () => api.get('/deadtimes/stats/equipos').then(r => r.data);
 
+// Nuevas funciones para analytics
+export const getStatsLinea = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/linea?${query}`).then(r => r.data);
+};
+
+export const getStatsEquiposDetalle = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/equipos-detalle?${query}`).then(r => r.data);
+};
+
+export const getStatsTendencia = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/tendencia?${query}`).then(r => r.data);
+};
+
+export const getStatsClasificacion = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/clasificacion?${query}`).then(r => r.data);
+};
+
+export const getStatsTotales = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/totales?${query}`).then(r => r.data);
+};
+
 // Auth functions with credentials system
 export const login = async (employee_input, password) => {
   const { data } = await api.post('/auth/login', { employee_input, password });
