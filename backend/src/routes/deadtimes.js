@@ -13,16 +13,25 @@ router.get('/lineas', async (req, res) => {
   }
 });
 
-// Get descripciones list
-router.get('/descripciones', async (req, res) => {
+// Handler to get descripciones list (optionally filtered by equipo)
+const getDescripcionHandler = async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM descripciones ORDER BY descripcion');
+    const { equipo } = req.query;
+    if (equipo) {
+      const [rows] = await db.query('SELECT * FROM descripcion WHERE equipo = ? ORDER BY descripcion', [equipo]);
+      return res.json(rows);
+    }
+    const [rows] = await db.query('SELECT * FROM descripcion ORDER BY descripcion');
     res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
-});
+};
+
+// Get descripciones (singular) and alias `descripciones` for backwards compatibility
+router.get('/descripcion', getDescripcionHandler);
+router.get('/descripciones', getDescripcionHandler);
 
 // Get estadísticas para dashboard
 router.get('/stats/atencion', async (req, res) => {

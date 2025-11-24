@@ -24,7 +24,14 @@ export const startTicket = (id, tecnico, num_empleado1) => api.post(`/deadtimes/
 export const finishTicket = (id, payload) => api.post(`/deadtimes/${id}/finish`, payload).then(r => r.data);
 export const updateTicket = (id, payload) => api.put(`/deadtimes/${id}`, payload).then(r => r.data);
 export const getLineas = () => api.get('/deadtimes/lineas').then(r => r.data);
-export const getDescripciones = () => api.get('/deadtimes/descripciones').then(r => r.data);
+export const getDescripciones = (equipo) => {
+  const timestamp = new Date().getTime();
+  const params = new URLSearchParams();
+  if (equipo) params.append('equipo', equipo);
+  params.append('_t', timestamp);
+  const q = params.toString();
+  return api.get(`/deadtimes/descripcion${q ? '?' + q : ''}`).then(r => r.data);
+};
 export const getEquipos = () => api.get('/deadtimes/equipos').then(r => r.data);
 export const getModelos = () => api.get('/deadtimes/modelos').then(r => r.data);
 export const getStatsAtencion = () => api.get('/deadtimes/stats/atencion').then(r => r.data);

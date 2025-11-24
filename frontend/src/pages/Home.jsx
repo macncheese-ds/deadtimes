@@ -34,6 +34,7 @@ export default function Home() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [lineas, setLineas] = useState([])
   const [descripciones, setDescripciones] = useState([])
+  const [descripcionesLoading, setDescripcionesLoading] = useState(false)
   const [equipos, setEquipos] = useState([])
   const [modelos, setModelos] = useState([])
   const [showCredentialsModal, setShowCredentialsModal] = useState(false)
@@ -76,6 +77,7 @@ export default function Home() {
     setInitialLoading(true)
     try {
       // Cargar todo en paralelo
+      setDescripcionesLoading(true)
       const [lineasData, descripcionesData, equiposData, modelosData, statsAtencionData, statsEquiposData] = await Promise.all([
         getLineas(),
         getDescripciones(),
@@ -87,6 +89,10 @@ export default function Home() {
       
       setLineas(lineasData)
       setDescripciones(descripcionesData)
+      // Auto-select first descripcion if available
+      if (descripcionesData && descripcionesData.length > 0) {
+        setForm(prev => ({ ...prev, descr: descripcionesData[0].descripcion }))
+      }
       setEquipos(equiposData)
       setModelos(modelosData)
       setStatsAtencion(statsAtencionData)
@@ -100,6 +106,7 @@ export default function Home() {
       console.error('Error cargando datos iniciales:', error)
     } finally {
       setInitialLoading(false)
+      setDescripcionesLoading(false)
     }
   }
 
@@ -139,6 +146,27 @@ export default function Home() {
       setModelos(data)
     } catch (error) {
       console.error('Error cargando modelos:', error)
+    }
+  }
+
+  async function handleEquipoChange(e) {
+    const val = e.target.value
+    setForm(prev => ({ ...prev, equipo: val }))
+    try {
+      setDescripcionesLoading(true)
+      const data = await getDescripciones(val || undefined)
+      setDescripciones(data)
+      // Auto-select first description when available
+      if (data && data.length > 0) {
+        setForm(prev => ({ ...prev, descr: data[0].descripcion }))
+      } else {
+        setForm(prev => ({ ...prev, descr: '' }))
+      }
+    } catch (error) {
+      console.error('Error cargando descripciones por equipo:', error)
+    }
+    finally {
+      setDescripcionesLoading(false)
     }
   }
 
@@ -551,14 +579,20 @@ export default function Home() {
                 <option value="BOT">BOT</option>
               </select>
 
-              <select className={inputClass(form.equipo)} value={form.equipo} onChange={e => setForm({...form, equipo: e.target.value})} required>
+              <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required>
                 <option value="">Equipo *</option>
                 {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
               </select>
 
               <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({...form, descr: e.target.value})} required>
-                <option value="">Descripción *</option>
-                {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
+                {descripcionesLoading ? (
+                  <option value="">Cargando descripciones...</option>
+                ) : (
+                  <>
+                    <option value="">Descripción *</option>
+                    {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
+                  </>
+                )}
               </select>
 
               <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({...form, pf: e.target.value})} required>
