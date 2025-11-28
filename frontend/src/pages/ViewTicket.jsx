@@ -21,16 +21,13 @@ export default function ViewTicket(){
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Equipo</td><td className="py-3 text-slate-300">{ticket.equipo}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Modelo</td><td className="py-3 text-slate-300">{ticket.modelo}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Turno</td><td className="py-3 text-slate-300">{ticket.turno}</td></tr>
-              <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Prioridad</td><td className="py-3 text-slate-300">{ticket.priority}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Técnico</td><td className="py-3 text-slate-300">{ticket.tecnico}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Num. Empleado Técnico</td><td className="py-3 text-slate-300">{ticket.num_empleado1 || 'N/A'}</td></tr>
-              <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Causa</td><td className="py-3 text-slate-300">{ticket.causa}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Solución</td><td className="py-3 text-slate-300">{ticket.solucion}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Rate</td><td className="py-3 text-slate-300">{ticket.rate ?? ''}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Minutos de paro</td><td className="py-3 text-slate-300">{ticket.minutos ?? ''}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Piezas perdidas</td><td className="py-3 text-slate-300">{ticket.piezas ?? ''}</td></tr>
               <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Deadtime</td><td className="py-3 text-slate-300">{ticket.deadtime ?? ''}</td></tr>
-              <tr className="border-b border-slate-700"><td className="py-3 pr-4 font-semibold text-slate-100">Encuesta</td><td className="py-3 text-slate-300">{ticket.e_ser ?? ''}</td></tr>
             </tbody>
           </table>
         </div>

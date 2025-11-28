@@ -11,7 +11,7 @@ export default function HandleTicket({ user, setUser }) {
   const [credentialsBusy, setCredentialsBusy] = useState(false)
   const [showLogoutWarning, setShowLogoutWarning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [form, setForm] = useState({ causa: '', solucion: '', rate: '', e_ser: '' })
+  const [form, setForm] = useState({ solucion: '', rate: '' })
 
   useEffect(() => { load() }, [id])
 
@@ -42,9 +42,9 @@ export default function HandleTicket({ user, setUser }) {
       // Verificar credenciales y obtener rol
       const data = await login(employee_input, password)
       
-      // Verificar que sea técnico o admin
+      // Roles que pueden atender tickets: admin, tecnico (mapeados desde The Goat, Ingeniero, Administrador, Calidad, Soporte, Lider)
       if (data.user.rol !== 'tecnico' && data.user.rol !== 'admin') {
-        throw new Error('Solo técnicos y administradores pueden manejar tickets')
+        throw new Error('Solo Ingenieros, Administradores, Calidad, Soporte o Líderes pueden atender tickets')
       }
       
       // Si pasa la verificación, asignar el ticket al técnico que se autenticó
@@ -85,7 +85,7 @@ export default function HandleTicket({ user, setUser }) {
 
   async function handleFinish() {
     // Validar que todos los campos estén llenos
-    if (!form.causa || !form.solucion || !form.rate || !form.e_ser) {
+    if (!form.solucion || !form.rate) {
       alert('Por favor completa todos los campos antes de finalizar el ticket')
       return
     }
@@ -94,7 +94,7 @@ export default function HandleTicket({ user, setUser }) {
     const rateNum = Number(form.rate) || 0
     try {
       setIsSaving(true) // Desactivar advertencia de salida
-      await finishTicket(id, { causa: form.causa, solucion: form.solucion, rate: rateNum, e_ser: form.e_ser })
+      await finishTicket(id, { solucion: form.solucion, rate: rateNum })
       // Pequeña pausa para asegurar que el backend procesó el cierre
       await new Promise(resolve => setTimeout(resolve, 300))
       window.location.href = '/'
@@ -125,7 +125,6 @@ export default function HandleTicket({ user, setUser }) {
           <p className="text-slate-300"><strong className="text-slate-100">Equipo:</strong> {ticket.equipo}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Modelo:</strong> {ticket.modelo}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Turno:</strong> {ticket.turno}</p>
-          <p className="text-slate-300"><strong className="text-slate-100">Prioridad:</strong> {ticket.priority}</p>
         </div>
 
         {!ticket.ha && (
@@ -139,19 +138,6 @@ export default function HandleTicket({ user, setUser }) {
             <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-100">Información del Técnico</h2>
             <p className="text-sm text-amber-400 mb-4 bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">⚠️ Debes completar todos los campos antes de salir de esta página</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              <select 
-                className={`border p-3 rounded-lg text-sm sm:text-base w-full transition-all ${form.causa ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
-                value={form.causa} 
-                onChange={e => setForm({...form, causa: e.target.value})} 
-                required
-              >
-                <option value="">Seleccionar Causa *</option>
-                <option value="Falla mecánica">Falla mecánica</option>
-                <option value="Error humano">Error humano</option>
-                <option value="Falla eléctrica">Falla eléctrica</option>
-                <option value="Mantenimiento">Mantenimiento</option>
-                <option value="Otra">Otra</option>
-              </select>
               <input 
                 className={`border p-3 rounded-lg text-sm sm:text-base w-full transition-all ${form.rate ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
                 type="number" 
@@ -160,20 +146,6 @@ export default function HandleTicket({ user, setUser }) {
                 onChange={e => setForm({...form, rate: e.target.value})} 
                 required 
               />
-              {/* minutos is calculated server-side from hr/hc; user only provides rate */}
-              <select 
-                className={`border p-3 rounded-lg text-sm sm:text-base w-full md:col-span-2 transition-all ${form.e_ser ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
-                value={form.e_ser} 
-                onChange={e => setForm({...form, e_ser: e.target.value})} 
-                required
-              >
-                <option value="">Encuesta de Servicio *</option>
-                <option value="Excelente">Excelente</option>
-                <option value="Bueno">Bueno</option>
-                <option value="Regular">Regular</option>
-                <option value="Malo">Malo</option>
-                <option value="Muy Malo">Muy Malo</option>
-              </select>
             </div>
             <textarea 
               className={`border p-3 rounded-lg w-full mt-4 text-sm sm:text-base transition-all ${form.solucion ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
@@ -186,7 +158,7 @@ export default function HandleTicket({ user, setUser }) {
             <button 
               className="mt-4 w-full sm:w-auto px-6 py-3 bg-rose-700/60 text-rose-100 rounded-lg text-sm sm:text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600/70 transition-colors border border-rose-600/50" 
               onClick={handleFinish} 
-              disabled={!form.causa || !form.solucion || !form.rate || !form.e_ser}
+              disabled={!form.solucion || !form.rate}
             >
               Finalizar Ticket
             </button>

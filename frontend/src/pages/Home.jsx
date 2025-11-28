@@ -43,7 +43,7 @@ export default function Home() {
   const [statsEquipos, setStatsEquipos] = useState([])
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
   const [form, setForm] = useState({
-    descr: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', priority: '', lado: 'TOP'
+    descr: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: ''
   })
   
   // Estados para Analytics
@@ -89,19 +89,10 @@ export default function Home() {
       
       setLineas(lineasData)
       setDescripciones(descripcionesData)
-      // Auto-select first descripcion if available
-      if (descripcionesData && descripcionesData.length > 0) {
-        setForm(prev => ({ ...prev, descr: descripcionesData[0].descripcion }))
-      }
       setEquipos(equiposData)
       setModelos(modelosData)
       setStatsAtencion(statsAtencionData)
       setStatsEquipos(statsEquiposData)
-      
-      // Establecer primera línea por defecto
-      if (lineasData.length > 0) {
-        setForm(prev => ({ ...prev, linea: lineasData[0].linea }))
-      }
     } catch (error) {
       console.error('Error cargando datos iniciales:', error)
     } finally {
@@ -114,9 +105,6 @@ export default function Home() {
     try {
       const data = await getLineas()
       setLineas(data)
-      if (data.length > 0 && !form.linea) {
-        setForm(prev => ({ ...prev, linea: data[0].linea }))
-      }
     } catch (error) {
       console.error('Error cargando líneas:', error)
     }
@@ -151,17 +139,11 @@ export default function Home() {
 
   async function handleEquipoChange(e) {
     const val = e.target.value
-    setForm(prev => ({ ...prev, equipo: val }))
+    setForm(prev => ({ ...prev, equipo: val, descr: '' }))
     try {
       setDescripcionesLoading(true)
       const data = await getDescripciones(val || undefined)
       setDescripciones(data)
-      // Auto-select first description when available
-      if (data && data.length > 0) {
-        setForm(prev => ({ ...prev, descr: data[0].descripcion }))
-      } else {
-        setForm(prev => ({ ...prev, descr: '' }))
-      }
     } catch (error) {
       console.error('Error cargando descripciones por equipo:', error)
     }
@@ -253,7 +235,7 @@ export default function Home() {
         num_empleado: data.user.num_empleado 
       })
       
-      setForm({ descr: '', modelo: '', linea: lineas[0]?.linea || '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', priority: '', lado: 'TOP' })
+      setForm({ descr: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '' })
       setShowNew(false)
       setShowCredentialsModal(false)
       
@@ -563,78 +545,102 @@ export default function Home() {
               <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Crear Nuevo Ticket</h2>
               <button onClick={toggleNew} className="text-slate-400 hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
-            <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              <select className={inputClass(form.linea)} value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} required>
-                <option value="">Línea *</option>
-                {lineas.map(lin => <option key={lin.id} value={lin.linea}>Línea {lin.linea}</option>)}
-              </select>
+            <form onSubmit={submit} className="space-y-6">
+              {/* Sección 1: Línea y Modelo */}
+              <div className="border border-slate-600 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">1. Información de Línea</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                  <select className={inputClass(form.linea)} value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} required>
+                    <option value="">Seleccionar Línea *</option>
+                    {lineas.map(lin => <option key={lin.id} value={lin.linea}>Línea {lin.linea}</option>)}
+                  </select>
 
-              <select className={inputClass(form.modelo)} value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value})} required>
-                <option value="">Modelo *</option>
-                {modelos.map(mod => <option key={mod.id} value={mod.modelo}>{mod.modelo}</option>)}
-              </select>
+                  <select className={inputClass(form.modelo)} value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value})} required disabled={!form.linea}>
+                    <option value="">Seleccionar Modelo *</option>
+                    {modelos.map(mod => <option key={mod.id} value={mod.modelo}>{mod.modelo}</option>)}
+                  </select>
 
-              <select className={inputClass(form.lado)} value={form.lado} onChange={e => setForm({...form, lado: e.target.value})} required>
-                <option value="TOP">TOP</option>
-                <option value="BOT">BOT</option>
-              </select>
+                  <select className={inputClass(form.lado)} value={form.lado} onChange={e => setForm({...form, lado: e.target.value})} required disabled={!form.modelo}>
+                    <option value="">Seleccionar Lado *</option>
+                    <option value="TOP">TOP</option>
+                    <option value="BOT">BOT</option>
+                  </select>
+                </div>
+              </div>
 
-              <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required>
-                <option value="">Equipo *</option>
-                {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
-              </select>
+              {/* Sección 2: Equipo y Descripción - Desbloqueado cuando Sección 1 está completa */}
+              <div className={`border rounded-lg p-4 transition-all ${form.linea && form.modelo && form.lado ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">2. Información del Equipo</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required disabled={!form.linea || !form.modelo || !form.lado}>
+                    <option value="">Seleccionar Equipo *</option>
+                    {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
+                  </select>
 
-              <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({...form, descr: e.target.value})} required>
-                {descripcionesLoading ? (
-                  <option value="">Cargando descripciones...</option>
-                ) : (
-                  <>
-                    <option value="">Descripción *</option>
-                    {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
-                  </>
-                )}
-              </select>
+                  <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({...form, descr: e.target.value})} required disabled={!form.equipo}>
+                    {descripcionesLoading ? (
+                      <option value="">Cargando descripciones...</option>
+                    ) : (
+                      <>
+                        <option value="">Seleccionar Descripción *</option>
+                        {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
+                      </>
+                    )}
+                  </select>
+                </div>
+              </div>
 
-              <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({...form, pf: e.target.value})} required>
-                <option value="">Sección afectada *</option>
-                <option value="Equipo">Equipo</option>
-                <option value="Linea">Línea</option>
-              </select>
+              {/* Sección 3: Condiciones de Paro - Desbloqueado cuando Sección 2 está completa */}
+              <div className={`border rounded-lg p-4 transition-all ${form.equipo && form.descr ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">3. Condiciones de Paro</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({...form, pf: e.target.value})} required disabled={!form.equipo || !form.descr}>
+                    <option value="">Sección afectada *</option>
+                    <option value="Equipo">Equipo</option>
+                    <option value="Linea">Línea</option>
+                  </select>
 
-              <select className={inputClass(form.pa)} value={form.pa} onChange={e => setForm({...form, pa: e.target.value})} required>
-                <option value="">Condición de Paro *</option>
-                <option value="Intermitente">Intermitente</option>
-                <option value="Total">Total</option>
-              </select>
+                  <select className={inputClass(form.pa)} value={form.pa} onChange={e => setForm({...form, pa: e.target.value})} required disabled={!form.equipo || !form.descr}>
+                    <option value="">Condición de Paro *</option>
+                    <option value="Intermitente">Intermitente</option>
+                    <option value="Total">Total</option>
+                  </select>
+                </div>
+              </div>
 
-              <select className={inputClass(form.clasificacion)} value={form.clasificacion} onChange={e => setForm({...form, clasificacion: e.target.value})} required>
-                <option value="">Clasificación *</option>
-                {['Equipo','Facilidades','Operacion','Procesos','Calidad','Materiales','Sistemas(IT)','Otros'].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {/* Sección 4: Clasificación - Desbloqueado cuando Sección 3 está completa */}
+              <div className={`border rounded-lg p-4 transition-all ${form.pf && form.pa ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">4. Clasificación</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  <select className={inputClass(form.clasificacion)} value={form.clasificacion} onChange={e => setForm({...form, clasificacion: e.target.value})} required disabled={!form.pf || !form.pa}>
+                    <option value="">Seleccionar Clasificación *</option>
+                    {['Equipo','Facilidades','Operacion','Procesos','Calidad','Materiales','Sistemas(IT)','Produccion','Otros'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
 
-              {form.clasificacion === 'Otros' && (
-                <input className={inputClass(form.clas_others)} placeholder="Especificar *" value={form.clas_others} onChange={e => setForm({...form, clas_others: e.target.value})} required />
-              )}
+                  {form.clasificacion === 'Otros' && (
+                    <input className={inputClass(form.clas_others)} placeholder="Especificar *" value={form.clas_others} onChange={e => setForm({...form, clas_others: e.target.value})} required />
+                  )}
+                </div>
+              </div>
 
-              <select className={inputClass(form.priority)} value={form.priority} onChange={e => setForm({...form, priority: e.target.value})} required>
-                <option value="">Prioridad *</option>
-                <option value="Se da prioridad al equipo">Prioridad al equipo</option>
-                <option value="Se da prioridad a otro equipo">Prioridad a otro</option>
-              </select>
-
-              <div className="col-span-1 md:col-span-2">
-                <label className="block mb-2 sm:mb-3 text-slate-300 font-medium text-sm sm:text-base">Montadoras aplicables *</label>
+              {/* Sección 5: Montadoras - Desbloqueado cuando Sección 4 está completa */}
+              <div className={`border rounded-lg p-4 transition-all ${form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others) ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">5. Montadoras Afectadas</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                   {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
-                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-emerald-900/30 border-emerald-600/50' : 'bg-slate-800 border-slate-600 hover:border-slate-500'}`}>
-                      <input type="checkbox" className="mr-1.5 sm:mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-500" checked={form.mods[`Montadora${i}`] || false} onChange={e => setForm({...form, mods: {...form.mods, [`Montadora${i}`]: e.target.checked}})} />
+                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-emerald-900/30 border-emerald-600/50' : 'bg-slate-800 border-slate-600 hover:border-slate-500'} ${!(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others)) ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <input type="checkbox" className="mr-1.5 sm:mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-500" checked={form.mods[`Montadora${i}`] || false} onChange={e => setForm({...form, mods: {...form.mods, [`Montadora${i}`]: e.target.checked}})} disabled={!(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others))} />
                       <span className="text-slate-300 text-xs sm:text-sm font-medium">M{i}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              <button type="submit" className="md:col-span-2 bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors border border-emerald-600/50 text-sm sm:text-base">
+              <button 
+                type="submit" 
+                className="w-full bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors border border-emerald-600/50 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!form.linea || !form.modelo || !form.lado || !form.equipo || !form.descr || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
+              >
                 Crear Ticket
               </button>
             </form>

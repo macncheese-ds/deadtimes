@@ -60,11 +60,14 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Contraseña incorrecta' });
 
     // Mapear rol de credenciales a sistema de deadtimes
-    let deadtimesRol = 'empleado';
+    // Roles que pueden ATENDER tickets: The Goat, Ingeniero, Administrador, Calidad, Soporte, Lider
+    // Todos los demás solo pueden CREAR tickets
+    const rolesQueAtienden = ['The Goat', 'Ingeniero', 'Administrador', 'Calidad', 'Soporte', 'Lider'];
+    let deadtimesRol = rolesQueAtienden.includes(user.rol) ? 'tecnico' : 'empleado';
+    
+    // The Goat y Administrador son admin (tienen todos los permisos)
     if (user.rol === 'The Goat' || user.rol === 'Administrador') {
       deadtimesRol = 'admin';
-    } else if (user.rol === 'Lider' || user.rol === 'Operador') {
-      deadtimesRol = 'tecnico';
     }
 
     const token = jwt.sign(

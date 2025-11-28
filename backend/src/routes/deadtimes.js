@@ -349,6 +349,8 @@ router.get('/:id', async (req, res) => {
 // Create new ticket (first screen)
 router.post('/', async (req, res) => {
   const body = req.body;
+  console.log('CREATE TICKET - Received body:', JSON.stringify(body, null, 2));
+  
   const {
     descr,
     modelo,
@@ -361,14 +363,14 @@ router.post('/', async (req, res) => {
     pf,
     pa,
     clasificacion,
-    clas_others,
-    priority
+    clas_others
   } = body;
 
   // Build mods array mod1..mod12
+  // Frontend sends keys like 'Montadora1', 'Montadora2', etc.
   const modValues = [];
   for (let i = 1; i <= 12; i++) {
-    modValues.push(mods[`mod${i}`] ? 1 : 0);
+    modValues.push(mods[`Montadora${i}`] || mods[`mod${i}`] ? 1 : 0);
   }
 
   try {
@@ -381,15 +383,18 @@ router.post('/', async (req, res) => {
     // The frontend swapped meanings (pf = sección afectada (Equipo/Linea), pa = condición de paro (Intermitente/Total)).
     // DB schema expects pf ENUM('Total','Intermitente') and pa ENUM('Equipo','Linea').
     // So map accordingly: dbPf <- pa, dbPa <- pf
-  const dbPf = pa && pa.length ? pa : null; // DB expects 'Total'|'Intermitente' for pf
-  const dbPa = pf && pf.length ? pf : null; // DB expects 'Equipo'|'Linea' for pa
+    const dbPf = pa && pa.length ? pa : null; // DB expects 'Total'|'Intermitente' for pf
+    const dbPa = pf && pf.length ? pf : null; // DB expects 'Equipo'|'Linea' for pa
 
-  // Store priority directly (frontend now only selects the option, no extra free text for 'ceda prioridad')
-  const storedPriority = priority || null;
+    console.log('CREATE TICKET - Values to insert:', {
+      hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo,
+      modValues, dbPf, dbPa, clasificacion, clas_others
+    });
+
     const [result] = await db.query(
-      `INSERT INTO deadtimes (hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12, pf, pa, clasificacion, clas_others, priority, done)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo, ...modValues, dbPf, dbPa, clasificacion, clas_others, storedPriority, 0]
+      `INSERT INTO deadtimes (hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12, pf, pa, clasificacion, clas_others, done)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo, ...modValues, dbPf, dbPa, clasificacion, clas_others, 0]
     );
 
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [result.insertId]);
@@ -422,7 +427,7 @@ router.put('/:id', async (req, res) => {
   // For simplicity allow updating a set of known fields
   const fields = [];
   const values = [];
-  const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','priority','tecnico','num_empleado1','causa','solucion','rate','deadtime','piezas','e_ser'];
+  const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','deadtime','piezas'];
   allowed.forEach(k => {
     if (k in body) {
       fields.push(`${k} = ?`);
@@ -456,7 +461,7 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/finish', async (req, res) => {
   const id = req.params.id;
   // accept either 'piezas' (legacy) or 'minutos' (new) from client
-  const { causa, solucion, rate, piezas, minutos, e_ser } = req.body;
+  const { solucion, rate, piezas, minutos } = req.body;
   try {
     const hc = new Date();
 
@@ -487,7 +492,7 @@ router.post('/:id/finish', async (req, res) => {
     // deadtime = rate / piezas  (store as integer, 0 if piezasCalc === 0)
     const deadtimeCalc = piezasCalc > 0 ? Math.round(rateNum / piezasCalc) : 0;
 
-    await db.query('UPDATE deadtimes SET hc = ?, causa = ?, solucion = ?, rate = ?, piezas = ?, deadtime = ?, e_ser = ?, done = 1 WHERE id = ?', [hc, causa, solucion, rateNum, piezasCalc, deadtimeCalc, e_ser || null, id]);
+    await db.query('UPDATE deadtimes SET hc = ?, solucion = ?, rate = ?, piezas = ?, deadtime = ?, done = 1 WHERE id = ?', [hc, solucion, rateNum, piezasCalc, deadtimeCalc, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
