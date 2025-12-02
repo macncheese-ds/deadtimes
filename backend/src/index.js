@@ -19,5 +19,5 @@ app.use(bodyParser.json());
 app.use('/api/auth', auth);
 app.use('/api/deadtimes', deadtimes);
 
-const PORT = process.env.PORT || 8700;
+const PORT = process.env.PORT || 3107;
 app.listen(PORT, '0.0.0.0', () => console.log(`Deadtimes API on ${PORT}`));

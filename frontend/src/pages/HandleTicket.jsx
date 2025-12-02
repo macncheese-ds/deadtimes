@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { getTicket, startTicket, updateTicket, finishTicket, login } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
 
-export default function HandleTicket({ user, setUser }) {
+export default function HandleTicket() {
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
   const [editMode, setEditMode] = useState(false)
@@ -79,7 +79,6 @@ export default function HandleTicket({ user, setUser }) {
     // Cerrar sesión y volver al login
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    setUser(null)
     window.location.href = '/'
   }
 

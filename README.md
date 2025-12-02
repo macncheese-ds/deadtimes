@@ -17,7 +17,7 @@ Quick start (backend):
 
 3. Seed some users for demo (optional, since auth is removed from flows):
 
-		curl -X POST http://localhost:8555/api/auth/register -H "Content-Type: application/json" -d '{"num_empleado": 12345, "nombre": "Juan Perez", "password": "pass123", "rol": "empleado"}'
+		curl -X POST http://localhost:3107/api/auth/register -H "Content-Type: application/json" -d '{"num_empleado": 12345, "nombre": "Juan Perez", "password": "pass123", "rol": "empleado"}'
 
 4. Start the backend API:
 
@@ -25,13 +25,13 @@ Quick start (backend):
 
 Backend API (examples):
 
-- GET http://localhost:8555/api/deadtimes?status=open  -> list open tickets
-- GET http://localhost:8555/api/deadtimes?status=closed -> list closed tickets
-- GET http://localhost:8555/api/deadtimes/:id -> get ticket
-- POST http://localhost:8555/api/deadtimes -> create ticket (body: descr, linea, nombre, num_empleado, ...)
-- POST http://localhost:8555/api/deadtimes/:id/start -> assign (body: { tecnico })
-- POST http://localhost:8555/api/deadtimes/:id/finish -> finalize (body: { causa, solucion, rate, piezas, e_ser })
-- PUT http://localhost:8555/api/deadtimes/:id -> update ticket
+- GET http://localhost:3107/api/deadtimes?status=open  -> list open tickets
+- GET http://localhost:3107/api/deadtimes?status=closed -> list closed tickets
+- GET http://localhost:3107/api/deadtimes/:id -> get ticket
+- POST http://localhost:3107/api/deadtimes -> create ticket (body: descr, linea, nombre, num_empleado, ...)
+- POST http://localhost:3107/api/deadtimes/:id/start -> assign (body: { tecnico })
+- POST http://localhost:3107/api/deadtimes/:id/finish -> finalize (body: { causa, solucion, rate, piezas, e_ser })
+- PUT http://localhost:3107/api/deadtimes/:id -> update ticket
 
 Quick start (frontend):
 
