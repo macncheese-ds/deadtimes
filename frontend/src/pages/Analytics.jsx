@@ -263,7 +263,7 @@ export default function Analytics() {
             <div>
               <h1 className="text-xl sm:text-3xl font-semibold text-slate-100">Analytics Dashboard</h1>
               <p className="text-slate-400 mt-1 text-sm sm:text-base">
-                Estadísticas y análisis de deadtimes
+                Estadísticas y análisis de downtime
                 {selectedLinea !== 'all' && (
                   <span className="ml-2 px-2 py-1 bg-blue-900/40 text-blue-300 rounded text-xs font-medium">
                     Línea {selectedLinea}

@@ -3,6 +3,18 @@ import { useParams } from 'react-router-dom'
 import { getTicket, startTicket, updateTicket, finishTicket, login } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
 
+// Helper para formatear fecha/hora
+function formatDateTime(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  return date.toLocaleString('es-MX', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export default function HandleTicket() {
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
@@ -11,7 +23,8 @@ export default function HandleTicket() {
   const [credentialsBusy, setCredentialsBusy] = useState(false)
   const [showLogoutWarning, setShowLogoutWarning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [form, setForm] = useState({ solucion: '', rate: '' })
+  // Rate ahora viene guardado en el ticket (tomado de tabla modelos al crear)
+  const [form, setForm] = useState({ solucion: '' })
 
   useEffect(() => { load() }, [id])
 
@@ -42,9 +55,10 @@ export default function HandleTicket() {
       // Verificar credenciales y obtener rol
       const data = await login(employee_input, password)
       
-      // Roles que pueden atender tickets: admin, tecnico (mapeados desde The Goat, Ingeniero, Administrador, Calidad, Soporte, Lider)
-      if (data.user.rol !== 'tecnico' && data.user.rol !== 'admin') {
-        throw new Error('Solo Ingenieros, Administradores, Calidad, Soporte o Líderes pueden atender tickets')
+      // REGLA DE NEGOCIO: Solo ciertos roles pueden atender tickets
+      // Verificamos usando puedeAtender que viene del backend
+      if (!data.user.puedeAtender) {
+        throw new Error('No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento.')
       }
       
       // Si pasa la verificación, asignar el ticket al técnico que se autenticó
@@ -83,14 +97,20 @@ export default function HandleTicket() {
   }
 
   async function handleFinish() {
-    // Validar que todos los campos estén llenos
-    if (!form.solucion || !form.rate) {
-      alert('Por favor completa todos los campos antes de finalizar el ticket')
+    // Validar que la solución esté llena
+    if (!form.solucion) {
+      alert('Por favor ingresa la solución aplicada antes de finalizar el ticket')
       return
     }
 
-    // Now the backend will compute minutos (hc - hr) and derive piezas and deadtime.
-    const rateNum = Number(form.rate) || 0
+    // Validar que el ticket tenga rate guardado (viene de tabla modelos al crear)
+    if (!ticket.rate) {
+      alert('No se encontró el rate del modelo en el ticket. El ticket puede haber sido creado antes de la actualización.')
+      return
+    }
+
+    // Rate viene del ticket (fue guardado al crearlo desde la tabla modelos)
+    const rateNum = Number(ticket.rate) || 0
     try {
       setIsSaving(true) // Desactivar advertencia de salida
       await finishTicket(id, { solucion: form.solucion, rate: rateNum })
@@ -118,16 +138,38 @@ export default function HandleTicket() {
             ← Volver
           </button>
         </div>
+        
+        {/* Información de tiempos */}
+        <div className="mb-6 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Creado:</span>
+              <span className="text-slate-200 font-medium">{formatDateTime(ticket.hr) || 'N/A'}</span>
+            </div>
+            {ticket.ha && (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400">En atención:</span>
+                <span className="text-slate-200 font-medium">{formatDateTime(ticket.ha)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 text-sm sm:text-base">
           <p className="text-slate-300"><strong className="text-slate-100">Descripción:</strong> {ticket.descr}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Línea:</strong> Línea {ticket.linea}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Equipo:</strong> {ticket.equipo}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Modelo:</strong> {ticket.modelo}</p>
           <p className="text-slate-300"><strong className="text-slate-100">Turno:</strong> {ticket.turno}</p>
+          {/* Mostrar rate del ticket (guardado desde tabla modelos al crear) */}
+          {ticket.rate && (
+            <p className="text-slate-300"><strong className="text-slate-100">Rate:</strong> <span className="text-blue-400">{ticket.rate} piezas/hr</span></p>
+          )}
         </div>
 
         {!ticket.ha && (
           <div className="mb-6">
+            <p className="text-sm text-slate-400 mb-3">Roles autorizados para cerrar tickets: <span className="text-blue-400 font-medium">Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento</span></p>
             <button className="w-full sm:w-auto px-6 py-3 bg-blue-700/60 text-blue-100 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600/70 transition-colors border border-blue-600/50" onClick={handleStart}>Asignar Técnico</button>
           </div>
         )}
@@ -135,19 +177,23 @@ export default function HandleTicket() {
         {ticket.ha && (
           <div className="mt-6">
             <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-100">Información del Técnico</h2>
-            <p className="text-sm text-amber-400 mb-4 bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">⚠️ Debes completar todos los campos antes de salir de esta página</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-              <input 
-                className={`border p-3 rounded-lg text-sm sm:text-base w-full transition-all ${form.rate ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
-                type="number" 
-                placeholder="Rate (producción afectada) *" 
-                value={form.rate} 
-                onChange={e => setForm({...form, rate: e.target.value})} 
-                required 
-              />
+            <p className="text-sm text-amber-400 mb-4 bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">Debes completar la solución antes de salir de esta página</p>
+            
+            {/* Mostrar rate del ticket (guardado desde tabla modelos al crear) */}
+            <div className="mb-4 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+              <p className="text-xs text-slate-400 mb-2">Rate del modelo (automático)</p>
+              {ticket.rate ? (
+                <div className="text-sm">
+                  <span className="text-slate-500">Rate:</span>
+                  <span className="ml-2 text-blue-400 font-medium">{ticket.rate} piezas/hr</span>
+                </div>
+              ) : (
+                <p className="text-rose-400 text-sm">No se encontró rate en el ticket. Puede que haya sido creado antes de la actualización del sistema.</p>
+              )}
             </div>
+
             <textarea 
-              className={`border p-3 rounded-lg w-full mt-4 text-sm sm:text-base transition-all ${form.solucion ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
+              className={`border p-3 rounded-lg w-full text-sm sm:text-base transition-all ${form.solucion ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
               rows="4" 
               placeholder="Solución aplicada *" 
               value={form.solucion} 
@@ -157,7 +203,7 @@ export default function HandleTicket() {
             <button 
               className="mt-4 w-full sm:w-auto px-6 py-3 bg-rose-700/60 text-rose-100 rounded-lg text-sm sm:text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600/70 transition-colors border border-rose-600/50" 
               onClick={handleFinish} 
-              disabled={!form.solucion || !form.rate}
+              disabled={!form.solucion || !ticket.rate}
             >
               Finalizar Ticket
             </button>
@@ -175,7 +221,7 @@ export default function HandleTicket() {
         {showLogoutWarning && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
             <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md shadow-2xl border border-slate-700">
-              <h3 className="text-xl font-bold text-rose-400 mb-4">⚠️ Advertencia</h3>
+              <h3 className="text-xl font-bold text-rose-400 mb-4">Advertencia</h3>
               <p className="text-slate-300 mb-6">
                 Has atendido este ticket pero no lo has finalizado. Por seguridad, debes iniciar sesión nuevamente para continuar.
               </p>

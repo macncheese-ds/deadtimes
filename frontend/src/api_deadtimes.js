@@ -33,7 +33,21 @@ export const getDescripciones = (equipo) => {
   return api.get(`/deadtimes/descripcion${q ? '?' + q : ''}`).then(r => r.data);
 };
 export const getEquipos = () => api.get('/deadtimes/equipos').then(r => r.data);
-export const getModelos = () => api.get('/deadtimes/modelos').then(r => r.data);
+
+// Obtener modelos - opcionalmente filtrar por línea
+// Retorna: id, modelo, producto, linea, rate, lado
+export const getModelos = (linea) => {
+  const params = new URLSearchParams();
+  if (linea) params.append('linea', linea);
+  const query = params.toString();
+  return api.get(`/deadtimes/modelos${query ? '?' + query : ''}`).then(r => r.data);
+};
+
+// Obtener un modelo específico por nombre - retorna todos sus datos
+export const getModeloByName = (nombre) => {
+  return api.get(`/deadtimes/modelos/${encodeURIComponent(nombre)}`).then(r => r.data);
+};
+
 export const getStatsAtencion = () => api.get('/deadtimes/stats/atencion').then(r => r.data);
 export const getStatsEquipos = () => api.get('/deadtimes/stats/equipos').then(r => r.data);
 

@@ -26,7 +26,7 @@ export default function Login({ setUser }) {
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-gray-800 text-gray-100 rounded-lg p-8 w-full max-w-md shadow-2xl border border-gray-700">
-        <h1 className="text-3xl font-bold mb-2 text-center">Deadtimes</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">Downtime</h1>
         <p className="text-gray-400 text-center mb-6">Sistema de gestión de tiempos muertos</p>
         
         <button 

@@ -36,14 +36,25 @@ export default function Home() {
   const [descripciones, setDescripciones] = useState([])
   const [descripcionesLoading, setDescripcionesLoading] = useState(false)
   const [equipos, setEquipos] = useState([])
-  const [modelos, setModelos] = useState([])
+  const [modelos, setModelos] = useState([])  // Modelos filtrados por línea
+  const [modelosLoading, setModelosLoading] = useState(false)
+  const [selectedModelo, setSelectedModelo] = useState(null)  // Modelo completo con producto, rate, lado
   const [showCredentialsModal, setShowCredentialsModal] = useState(false)
   const [credentialsBusy, setCredentialsBusy] = useState(false)
   const [statsAtencion, setStatsAtencion] = useState([])
   const [statsEquipos, setStatsEquipos] = useState([])
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  // Filtros para tickets abiertos
+  const [filterOpenLinea, setFilterOpenLinea] = useState('')
+  // Filtros para tickets cerrados
+  const [filterClosedLinea, setFilterClosedLinea] = useState('')
+  const [filterClosedEquipo, setFilterClosedEquipo] = useState('')
+  const [filterClosedDescr, setFilterClosedDescr] = useState('')
+  const [filterClosedStartDate, setFilterClosedStartDate] = useState('')
+  const [filterClosedEndDate, setFilterClosedEndDate] = useState('')
+  // Form ahora incluye producto y rate (auto-rellenados desde tabla modelos)
   const [form, setForm] = useState({
-    descr: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: ''
+    descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: ''
   })
   
   // Estados para Analytics
@@ -76,13 +87,12 @@ export default function Home() {
   async function loadInitialData() {
     setInitialLoading(true)
     try {
-      // Cargar todo en paralelo
+      // Cargar todo en paralelo (modelos NO se cargan aquí - se cargan al seleccionar línea)
       setDescripcionesLoading(true)
-      const [lineasData, descripcionesData, equiposData, modelosData, statsAtencionData, statsEquiposData] = await Promise.all([
+      const [lineasData, descripcionesData, equiposData, statsAtencionData, statsEquiposData] = await Promise.all([
         getLineas(),
         getDescripciones(),
         getEquipos(),
-        getModelos(),
         getStatsAtencion(),
         getStatsEquipos()
       ])
@@ -90,7 +100,7 @@ export default function Home() {
       setLineas(lineasData)
       setDescripciones(descripcionesData)
       setEquipos(equiposData)
-      setModelos(modelosData)
+      // Modelos NO se setean aquí - se cargan dinámicamente al seleccionar línea
       setStatsAtencion(statsAtencionData)
       setStatsEquipos(statsEquiposData)
     } catch (error) {
@@ -98,6 +108,68 @@ export default function Home() {
     } finally {
       setInitialLoading(false)
       setDescripcionesLoading(false)
+    }
+  }
+
+  // Cargar modelos filtrados por línea seleccionada
+  async function loadModelosByLinea(linea) {
+    if (!linea) {
+      setModelos([])
+      return
+    }
+    try {
+      setModelosLoading(true)
+      const data = await getModelos(linea)
+      setModelos(data)
+    } catch (error) {
+      console.error('Error cargando modelos por línea:', error)
+      setModelos([])
+    } finally {
+      setModelosLoading(false)
+    }
+  }
+
+  // Handler cuando se selecciona una línea - carga modelos de esa línea
+  async function handleLineaChange(e) {
+    const lineaValue = e.target.value
+    // Resetear modelo y campos relacionados al cambiar línea
+    setForm(prev => ({ 
+      ...prev, 
+      linea: lineaValue, 
+      modelo: '', 
+      lado: '', 
+      producto: '', 
+      rate: '' 
+    }))
+    setSelectedModelo(null)
+    // Cargar modelos de la línea seleccionada
+    await loadModelosByLinea(lineaValue)
+  }
+
+  // Handler cuando se selecciona un modelo - auto-rellena producto, lado y rate
+  function handleModeloChange(e) {
+    const modeloValue = e.target.value
+    // Buscar el modelo en la lista cargada para obtener sus datos completos
+    const modeloData = modelos.find(m => m.modelo === modeloValue)
+    if (modeloData) {
+      setSelectedModelo(modeloData)
+      // Auto-rellenar lado, producto y rate desde la tabla modelos
+      setForm(prev => ({
+        ...prev,
+        modelo: modeloValue,
+        lado: modeloData.lado || '',
+        producto: modeloData.producto || '',
+        rate: modeloData.rate ? String(modeloData.rate) : ''
+      }))
+    } else {
+      setSelectedModelo(null)
+      setForm(prev => ({
+        ...prev,
+        modelo: modeloValue,
+        lado: '',
+        producto: '',
+        rate: ''
+      }))
     }
   }
 
@@ -128,9 +200,10 @@ export default function Home() {
     }
   }
 
-  async function loadModelos() {
+  async function loadModelos(linea = null) {
+    // Función legacy - ahora usa loadModelosByLinea
     try {
-      const data = await getModelos()
+      const data = await getModelos(linea)
       setModelos(data)
     } catch (error) {
       console.error('Error cargando modelos:', error)
@@ -227,15 +300,27 @@ export default function Home() {
     try {
       const data = await login(employee_input, password)
       
+      // REGLA DE NEGOCIO: Validar que el usuario pueda crear tickets
+      if (!data.user.puedeCrear) {
+        throw new Error('No tienes permisos para crear tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Líder, Soporte, Mantenimiento.')
+      }
+      
       const turno = getTurno()
+      // Si la descripción es "Otros", usar el valor de descr_otros
+      const descripcionFinal = form.descr === '__OTROS__' ? form.descr_otros : form.descr
+      
       await createTicket({ 
         ...form, 
+        descr: descripcionFinal,
         turno, 
         nombre: data.user.nombre, 
         num_empleado: data.user.num_empleado 
       })
       
-      setForm({ descr: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '' })
+      // Resetear form incluyendo producto y rate; limpiar modelos cargados
+      setForm({ descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: '' })
+      setSelectedModelo(null)
+      setModelos([])
       setShowNew(false)
       setShowCredentialsModal(false)
       
@@ -366,6 +451,46 @@ export default function Home() {
     }))
   }
 
+  // Filtrar tickets abiertos por línea
+  const getFilteredOpenTickets = () => {
+    if (!filterOpenLinea) return tickets
+    return tickets.filter(t => String(t.linea) === String(filterOpenLinea))
+  }
+
+  // Filtrar tickets cerrados por múltiples criterios
+  const getFilteredClosedTickets = () => {
+    return tickets.filter(t => {
+      // Filtro por línea
+      if (filterClosedLinea && String(t.linea) !== String(filterClosedLinea)) return false
+      // Filtro por equipo (búsqueda parcial)
+      if (filterClosedEquipo && !t.equipo?.toLowerCase().includes(filterClosedEquipo.toLowerCase())) return false
+      // Filtro por descripción (búsqueda parcial)
+      if (filterClosedDescr && !t.descr?.toLowerCase().includes(filterClosedDescr.toLowerCase())) return false
+      // Filtro por rango de fechas
+      if (filterClosedStartDate && t.hc) {
+        const ticketDate = new Date(t.hc).setHours(0, 0, 0, 0)
+        const startDate = new Date(filterClosedStartDate).setHours(0, 0, 0, 0)
+        if (ticketDate < startDate) return false
+      }
+      if (filterClosedEndDate && t.hc) {
+        const ticketDate = new Date(t.hc).setHours(23, 59, 59, 999)
+        const endDate = new Date(filterClosedEndDate).setHours(23, 59, 59, 999)
+        if (ticketDate > endDate) return false
+      }
+      return true
+    })
+  }
+
+  // Reset filtros al cambiar de vista
+  const resetFilters = () => {
+    setFilterOpenLinea('')
+    setFilterClosedLinea('')
+    setFilterClosedEquipo('')
+    setFilterClosedDescr('')
+    setFilterClosedStartDate('')
+    setFilterClosedEndDate('')
+  }
+
   const CustomYAxisTick = ({ x, y, payload }) => {
     const maxLength = 25
     const text = payload.value
@@ -410,12 +535,14 @@ export default function Home() {
     setShowOpen(false)
     setShowClosed(false)
     setShowAnalytics(false)
+    resetFilters()
   }
 
   function toggleOpen() {
     if (!showOpen) {
       setStatus('open')
       loadTickets('open')
+      resetFilters()
     }
     setShowOpen(!showOpen)
     setShowNew(false)
@@ -427,6 +554,7 @@ export default function Home() {
     if (!showClosed) {
       setStatus('closed')
       loadTickets('closed')
+      resetFilters()
     }
     setShowClosed(!showClosed)
     setShowNew(false)
@@ -439,6 +567,7 @@ export default function Home() {
     setShowNew(false)
     setShowOpen(false)
     setShowClosed(false)
+    resetFilters()
   }
 
   const inputClass = (value) => `border p-3 rounded-lg text-sm transition-all ${value ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`
@@ -458,7 +587,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
       <div>
         <div className="bg-slate-800 border-l-4 border-slate-600 rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-3xl font-semibold text-slate-100">Deadtimes Dashboard</h1>
+          <h1 className="text-xl sm:text-3xl font-semibold text-slate-100">Downtime Dashboard</h1>
           <p className="text-slate-400 mt-1 text-sm sm:text-base">Sistema de gestión de tiempos muertos</p>
         </div>
 
@@ -545,30 +674,54 @@ export default function Home() {
               <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Crear Nuevo Ticket</h2>
               <button onClick={toggleNew} className="text-slate-400 hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
+            
             <form onSubmit={submit} className="space-y-6">
-              {/* Sección 1: Línea y Modelo */}
+              {/* Sección 1: Línea y Modelo - Al seleccionar línea se cargan modelos, al seleccionar modelo se auto-rellena lado/producto/rate */}
               <div className="border border-slate-600 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-slate-300 mb-3">1. Información de Línea</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-                  <select className={inputClass(form.linea)} value={form.linea} onChange={e => setForm({...form, linea: e.target.value})} required>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">1. Información de Línea y Modelo</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                  {/* Select de línea - al cambiar carga modelos filtrados */}
+                  <select className={inputClass(form.linea)} value={form.linea} onChange={handleLineaChange} required>
                     <option value="">Seleccionar Línea *</option>
                     {lineas.map(lin => <option key={lin.id} value={lin.linea}>Línea {lin.linea}</option>)}
                   </select>
 
-                  <select className={inputClass(form.modelo)} value={form.modelo} onChange={e => setForm({...form, modelo: e.target.value})} required disabled={!form.linea}>
-                    <option value="">Seleccionar Modelo *</option>
-                    {modelos.map(mod => <option key={mod.id} value={mod.modelo}>{mod.modelo}</option>)}
-                  </select>
-
-                  <select className={inputClass(form.lado)} value={form.lado} onChange={e => setForm({...form, lado: e.target.value})} required disabled={!form.modelo}>
-                    <option value="">Seleccionar Lado *</option>
-                    <option value="TOP">TOP</option>
-                    <option value="BOT">BOT</option>
+                  {/* Select de modelo - filtrado por línea, al seleccionar auto-rellena lado/producto/rate */}
+                  <select className={inputClass(form.modelo)} value={form.modelo} onChange={handleModeloChange} required disabled={!form.linea || modelosLoading}>
+                    {modelosLoading ? (
+                      <option value="">Cargando modelos...</option>
+                    ) : (
+                      <>
+                        <option value="">Seleccionar Modelo *</option>
+                        {modelos.map(mod => <option key={mod.id} value={mod.modelo}>{mod.modelo}</option>)}
+                      </>
+                    )}
                   </select>
                 </div>
+                
+                {/* Mostrar información auto-rellenada del modelo (producto, lado, rate) - solo lectura */}
+                {selectedModelo && (
+                  <div className="mt-4 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
+                    <p className="text-xs text-slate-400 mb-2">Información del modelo (auto-rellenada desde base de datos)</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="text-slate-500">Producto:</span>
+                        <span className="ml-2 text-slate-200 font-medium">{selectedModelo.producto || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Lado:</span>
+                        <span className="ml-2 text-emerald-400 font-medium">{selectedModelo.lado || 'N/A'}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Rate:</span>
+                        <span className="ml-2 text-blue-400 font-medium">{selectedModelo.rate || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Sección 2: Equipo y Descripción - Desbloqueado cuando Sección 1 está completa */}
+              {/* Sección 2: Equipo y Descripción - Desbloqueado cuando modelo está seleccionado (lado viene automático) */}
               <div className={`border rounded-lg p-4 transition-all ${form.linea && form.modelo && form.lado ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
                 <h3 className="text-sm font-semibold text-slate-300 mb-3">2. Información del Equipo</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -577,24 +730,36 @@ export default function Home() {
                     {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
                   </select>
 
-                  <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({...form, descr: e.target.value})} required disabled={!form.equipo}>
+                  <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({...form, descr: e.target.value, descr_otros: ''})} required disabled={!form.equipo}>
                     {descripcionesLoading ? (
                       <option value="">Cargando descripciones...</option>
                     ) : (
                       <>
                         <option value="">Seleccionar Descripción *</option>
                         {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
+                        <option value="__OTROS__">Otros (especificar)</option>
                       </>
                     )}
                   </select>
+
+                  {form.descr === '__OTROS__' && (
+                    <input 
+                      className={inputClass(form.descr_otros)} 
+                      placeholder="Especificar descripción de la falla *" 
+                      value={form.descr_otros} 
+                      onChange={e => setForm({...form, descr_otros: e.target.value})} 
+                      required 
+                      disabled={!form.equipo}
+                    />
+                  )}
                 </div>
               </div>
 
               {/* Sección 3: Condiciones de Paro - Desbloqueado cuando Sección 2 está completa */}
-              <div className={`border rounded-lg p-4 transition-all ${form.equipo && form.descr ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+              <div className={`border rounded-lg p-4 transition-all ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
                 <h3 className="text-sm font-semibold text-slate-300 mb-3">3. Condiciones de Paro</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({...form, pf: e.target.value})} required disabled={!form.equipo || !form.descr}>
+                  <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({...form, pf: e.target.value})} required disabled={!form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros)}>
                     <option value="">Sección afectada *</option>
                     <option value="Equipo">Equipo</option>
                     <option value="Linea">Línea</option>
@@ -639,7 +804,7 @@ export default function Home() {
               <button 
                 type="submit" 
                 className="w-full bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors border border-emerald-600/50 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!form.linea || !form.modelo || !form.lado || !form.equipo || !form.descr || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
+                disabled={!form.linea || !form.modelo || !form.lado || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
               >
                 Crear Ticket
               </button>
@@ -653,6 +818,22 @@ export default function Home() {
               <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Tickets Abiertos</h2>
               <button onClick={toggleOpen} className="text-slate-400 hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
+            
+            {/* Filtro por Línea para tickets abiertos */}
+            <div className="mb-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+              <label className="block text-slate-300 text-xs font-medium mb-2">Filtrar por Línea</label>
+              <select 
+                className="w-full sm:w-48 bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                value={filterOpenLinea}
+                onChange={e => setFilterOpenLinea(e.target.value)}
+              >
+                <option value="">Todas las líneas</option>
+                {lineas.map(linea => (
+                  <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                ))}
+              </select>
+            </div>
+
             {loading ? (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-slate-700 border-t-slate-400"></div>
@@ -660,7 +841,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {tickets.map(t => (
+                {getFilteredOpenTickets().map(t => (
                   <div key={t.id} className="bg-slate-700 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-slate-500">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                       <div className="flex-1 min-w-0">
@@ -674,10 +855,10 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
-                {tickets.length === 0 && (
+                {getFilteredOpenTickets().length === 0 && (
                   <div className="text-center py-8 sm:py-12">
-                    <p className="text-slate-500 text-sm sm:text-base">No hay tickets abiertos</p>
-                    <p className="text-slate-600 text-xs sm:text-sm mt-1">Excelente trabajo</p>
+                    <p className="text-slate-500 text-sm sm:text-base">{filterOpenLinea ? 'No hay tickets abiertos para esta línea' : 'No hay tickets abiertos'}</p>
+                    <p className="text-slate-600 text-xs sm:text-sm mt-1">{filterOpenLinea ? 'Intenta con otra línea' : 'Excelente trabajo'}</p>
                   </div>
                 )}
               </div>
@@ -691,6 +872,95 @@ export default function Home() {
               <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Tickets Cerrados</h2>
               <button onClick={toggleClosed} className="text-slate-400 hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
+            
+            {/* Filtros multicriterio para tickets cerrados */}
+            <div className="mb-4 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-slate-300 text-xs font-medium">Filtros</span>
+                <button 
+                  onClick={() => {
+                    setFilterClosedLinea('')
+                    setFilterClosedEquipo('')
+                    setFilterClosedDescr('')
+                    setFilterClosedStartDate('')
+                    setFilterClosedEndDate('')
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-200 underline"
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {/* Filtro por Línea */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">Línea</label>
+                  <select 
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    value={filterClosedLinea}
+                    onChange={e => setFilterClosedLinea(e.target.value)}
+                  >
+                    <option value="">Todas</option>
+                    {lineas.map(linea => (
+                      <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Filtro por Equipo */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">Equipo</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    placeholder="Buscar equipo..."
+                    value={filterClosedEquipo}
+                    onChange={e => setFilterClosedEquipo(e.target.value)}
+                  />
+                </div>
+                
+                {/* Filtro por Descripción */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">Descripción</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    placeholder="Buscar descripción..."
+                    value={filterClosedDescr}
+                    onChange={e => setFilterClosedDescr(e.target.value)}
+                  />
+                </div>
+                
+                {/* Filtro por Fecha Inicio */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">Desde</label>
+                  <input 
+                    type="date"
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    value={filterClosedStartDate}
+                    onChange={e => setFilterClosedStartDate(e.target.value)}
+                  />
+                </div>
+                
+                {/* Filtro por Fecha Fin */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">Hasta</label>
+                  <input 
+                    type="date"
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    value={filterClosedEndDate}
+                    onChange={e => setFilterClosedEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              {/* Mostrar cantidad de resultados filtrados */}
+              {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) && (
+                <div className="mt-3 text-xs text-slate-400">
+                  Mostrando {getFilteredClosedTickets().length} de {tickets.length} tickets
+                </div>
+              )}
+            </div>
+
             {loading ? (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-slate-700 border-t-slate-400"></div>
@@ -698,7 +968,7 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {tickets.map(t => (
+                {getFilteredClosedTickets().map(t => (
                   <div key={t.id} className="bg-slate-700 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-slate-500">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                       <div className="flex-1 min-w-0">
@@ -714,10 +984,18 @@ export default function Home() {
                     </div>
                   </div>
                 ))}
-                {tickets.length === 0 && (
+                {getFilteredClosedTickets().length === 0 && (
                   <div className="text-center py-8 sm:py-12">
-                    <p className="text-slate-500 text-sm sm:text-base">No hay tickets cerrados</p>
-                    <p className="text-slate-600 text-xs sm:text-sm mt-1">Los tickets cerrados aparecerán aquí</p>
+                    <p className="text-slate-500 text-sm sm:text-base">
+                      {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) 
+                        ? 'No hay tickets que coincidan con los filtros' 
+                        : 'No hay tickets cerrados'}
+                    </p>
+                    <p className="text-slate-600 text-xs sm:text-sm mt-1">
+                      {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate)
+                        ? 'Intenta con otros criterios de búsqueda'
+                        : 'Los tickets cerrados aparecerán aquí'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -733,7 +1011,7 @@ export default function Home() {
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Analytics Dashboard</h2>
                   <p className="text-slate-400 text-xs sm:text-sm mt-1">
-                    Estadísticas y análisis de deadtimes
+                    Estadísticas y análisis de downtime
                     {selectedLinea !== 'all' && (
                       <span className="ml-2 px-2 py-1 bg-purple-900/40 text-purple-300 rounded text-xs font-medium">
                         Línea {selectedLinea}

@@ -1,6 +1,66 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const mysql = require('mysql2/promise');
+const dotenv = require('dotenv');
+dotenv.config();
+
+// Helper para conectar a credenciales DB
+async function createCredConnection() {
+  const config = {
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.CRED_DB_NAME || 'credenciales'
+  };
+  return await mysql.createConnection(config);
+}
+
+// Lista base de roles para operaciones de tickets
+// Base: ['Ingeniero', 'Técnico', 'AOI', 'Supervisor', 'Líder', 'Soporte', 'Mantenimiento']
+
+// Roles permitidos para crear tickets (toda la lista base incluyendo Líder)
+const ROLES_CREAR_TICKETS = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
+
+// Roles permitidos para cerrar/atender tickets (lista base EXCEPTO Líder)
+const ROLES_ATENDER_TICKETS = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+
+// Función para validar si un usuario puede crear tickets
+async function validarRolParaCrear(num_empleado) {
+  try {
+    const conn = await createCredConnection();
+    const [rows] = await conn.execute(
+      'SELECT rol FROM users WHERE num_empleado = ? LIMIT 1',
+      [num_empleado]
+    );
+    await conn.end();
+    
+    if (!rows || rows.length === 0) return false;
+    return ROLES_CREAR_TICKETS.includes(rows[0].rol);
+  } catch (err) {
+    console.error('Error validando rol para crear:', err);
+    return false;
+  }
+}
+
+// Función para validar si un usuario puede atender tickets
+async function validarRolParaAtender(num_empleado) {
+  try {
+    const conn = await createCredConnection();
+    const [rows] = await conn.execute(
+      'SELECT rol FROM users WHERE num_empleado = ? LIMIT 1',
+      [num_empleado]
+    );
+    await conn.end();
+    
+    if (!rows || rows.length === 0) return false;
+    return ROLES_ATENDER_TICKETS.includes(rows[0].rol);
+  } catch (err) {
+    console.error('Error validando rol para atender:', err);
+    return false;
+  }
+}
 
 // Get lineas list
 router.get('/lineas', async (req, res) => {
@@ -291,11 +351,40 @@ router.get('/equipos', async (req, res) => {
   }
 });
 
-// Get modelos list
+// Get modelos list - filtrar por línea si se especifica
+// Ahora retorna todos los campos: id, modelo, producto, linea, rate, lado
 router.get('/modelos', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM modelos ORDER BY modelo');
+    const { linea } = req.query;
+    if (linea) {
+      // Filtrar modelos por línea específica
+      const [rows] = await db.query(
+        'SELECT id, modelo, producto, linea, rate, lado FROM modelos WHERE linea = ? ORDER BY modelo',
+        [linea]
+      );
+      return res.json(rows);
+    }
+    // Sin filtro, retornar todos los modelos con todos los campos
+    const [rows] = await db.query('SELECT id, modelo, producto, linea, rate, lado FROM modelos ORDER BY modelo');
     res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get modelo específico por nombre - retorna producto, rate y lado
+router.get('/modelos/:nombre', async (req, res) => {
+  try {
+    const nombre = req.params.nombre;
+    const [rows] = await db.query(
+      'SELECT id, modelo, producto, linea, rate, lado FROM modelos WHERE modelo = ? LIMIT 1',
+      [nombre]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Modelo no encontrado' });
+    }
+    res.json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -347,6 +436,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new ticket (first screen)
+// Ahora recibe lado y rate desde el frontend (tomados de la tabla modelos)
 router.post('/', async (req, res) => {
   const body = req.body;
   console.log('CREATE TICKET - Received body:', JSON.stringify(body, null, 2));
@@ -363,8 +453,20 @@ router.post('/', async (req, res) => {
     pf,
     pa,
     clasificacion,
-    clas_others
+    clas_others,
+    lado,      // Viene de la tabla modelos (auto-rellenado en frontend)
+    rate       // Viene de la tabla modelos (auto-rellenado en frontend)
   } = body;
+
+  // REGLA DE NEGOCIO: Validar que el usuario tenga rol permitido para crear tickets
+  if (num_empleado) {
+    const puedeCrear = await validarRolParaCrear(num_empleado);
+    if (!puedeCrear) {
+      return res.status(403).json({ 
+        error: 'No tienes permisos para crear tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Líder, Soporte, Mantenimiento.' 
+      });
+    }
+  }
 
   // Build mods array mod1..mod12
   // Frontend sends keys like 'Montadora1', 'Montadora2', etc.
@@ -375,10 +477,13 @@ router.post('/', async (req, res) => {
 
   try {
     const hr = new Date();
-    // Normalize modelo + lado into single modelo field if lado provided
-    // frontend now may send 'lado' separately (TOP/BOT)
-    const lado = body.lado || '';
-    const storedModelo = modelo ? (lado ? `${modelo} ${lado}` : modelo) : '';
+    // Normalize modelo + lado into single modelo field
+    // lado ahora viene de la tabla modelos (no del usuario)
+    const ladoValue = lado || '';
+    const storedModelo = modelo ? (ladoValue ? `${modelo} ${ladoValue}` : modelo) : '';
+    
+    // Rate viene de la tabla modelos (se guarda al crear el ticket)
+    const rateValue = rate ? Number(rate) : null;
 
     // The frontend swapped meanings (pf = sección afectada (Equipo/Linea), pa = condición de paro (Intermitente/Total)).
     // DB schema expects pf ENUM('Total','Intermitente') and pa ENUM('Equipo','Linea').
@@ -388,13 +493,14 @@ router.post('/', async (req, res) => {
 
     console.log('CREATE TICKET - Values to insert:', {
       hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo,
-      modValues, dbPf, dbPa, clasificacion, clas_others
+      modValues, dbPf, dbPa, clasificacion, clas_others, rateValue
     });
 
+    // Incluir rate en el INSERT (viene de la tabla modelos)
     const [result] = await db.query(
-      `INSERT INTO deadtimes (hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12, pf, pa, clasificacion, clas_others, done)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo, ...modValues, dbPf, dbPa, clasificacion, clas_others, 0]
+      `INSERT INTO deadtimes (hr, descr, modelo, turno, linea, nombre, num_empleado, equipo, mod1, mod2, mod3, mod4, mod5, mod6, mod7, mod8, mod9, mod10, mod11, mod12, pf, pa, clasificacion, clas_others, rate, done)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [hr, descr, storedModelo, turno, linea, nombre, num_empleado, equipo, ...modValues, dbPf, dbPa, clasificacion, clas_others, rateValue, 0]
     );
 
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [result.insertId]);
@@ -409,6 +515,17 @@ router.post('/', async (req, res) => {
 router.post('/:id/start', async (req, res) => {
   const id = req.params.id;
   const { tecnico, num_empleado1 } = req.body;
+  
+  // REGLA DE NEGOCIO: Validar que el usuario tenga rol permitido para atender tickets
+  if (num_empleado1) {
+    const puedeAtender = await validarRolParaAtender(num_empleado1);
+    if (!puedeAtender) {
+      return res.status(403).json({ 
+        error: 'No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento.' 
+      });
+    }
+  }
+  
   try {
     const ha = new Date();
     await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, id]);
@@ -457,19 +574,22 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Finish ticket: record hc, compute piezas (from minutos) and deadtime server-side to avoid client-side truncation issues
+// Finish ticket: record hc, compute piezas (from minutos) and deadtime server-side
+// Rate ahora viene de la tabla modelos (guardado en el ticket al crearlo o consultado)
 router.post('/:id/finish', async (req, res) => {
   const id = req.params.id;
   // accept either 'piezas' (legacy) or 'minutos' (new) from client
+  // rate puede venir del cliente (desde tabla modelos) o ya estar guardado en el ticket
   const { solucion, rate, piezas, minutos } = req.body;
   try {
     const hc = new Date();
 
-    // fetch the original hr to compute elapsed minutes
-    const [origRows] = await db.query('SELECT hr FROM deadtimes WHERE id = ?', [id]);
+    // Fetch the original hr and rate from the ticket
+    const [origRows] = await db.query('SELECT hr, rate as ticket_rate FROM deadtimes WHERE id = ?', [id]);
     const hr = origRows && origRows[0] ? origRows[0].hr : null;
-
-    const rateNum = Number(rate) || 0;
+    
+    // Usar rate del request, o el rate ya guardado en el ticket, o 0
+    const rateNum = Number(rate) || Number(origRows[0]?.ticket_rate) || 0;
     let piezasCalc = 0;
     let minutosCalc = 0;
 
@@ -489,8 +609,8 @@ router.post('/:id/finish', async (req, res) => {
       }
     }
 
-    // deadtime = rate / piezas  (store as integer, 0 if piezasCalc === 0)
-    const deadtimeCalc = piezasCalc > 0 ? Math.round(rateNum / piezasCalc) : 0;
+    // deadtime (tiempo perdido) = minutos desde apertura (hr) hasta cierre (hc)
+    const deadtimeCalc = minutosCalc;
 
     await db.query('UPDATE deadtimes SET hc = ?, solucion = ?, rate = ?, piezas = ?, deadtime = ?, done = 1 WHERE id = ?', [hc, solucion, rateNum, piezasCalc, deadtimeCalc, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);

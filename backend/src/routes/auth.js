@@ -60,14 +60,28 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ message: 'Contraseña incorrecta' });
 
     // Mapear rol de credenciales a sistema de deadtimes
-    // Roles que pueden ATENDER tickets: The Goat, Ingeniero, Administrador, Calidad, Soporte, Lider
-    // Todos los demás solo pueden CREAR tickets
-    const rolesQueAtienden = ['The Goat', 'Ingeniero', 'Administrador', 'Calidad', 'Soporte', 'Lider'];
-    let deadtimesRol = rolesQueAtienden.includes(user.rol) ? 'tecnico' : 'empleado';
+    // REGLAS DE NEGOCIO:
+    // Lista base: ['Ingeniero', 'Técnico', 'AOI', 'Supervisor', 'Líder', 'Soporte', 'Mantenimiento']
+    // - Roles que pueden CREAR tickets: Toda la lista base (incluyendo Líder)
+    // - Roles que pueden CERRAR tickets: Lista base EXCEPTO Líder
+    // - The Goat tiene todos los permisos (admin)
     
-    // The Goat y Administrador son admin (tienen todos los permisos)
-    if (user.rol === 'The Goat' || user.rol === 'Administrador') {
+    const rolesCrearTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
+    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+    
+    let deadtimesRol = 'empleado'; // Por defecto solo visualización
+    let puedeCrear = rolesCrearTickets.includes(user.rol);
+    let puedeAtender = rolesAtenderTickets.includes(user.rol);
+    
+    // Determinar rol para el sistema
+    if (user.rol === 'The Goat') {
       deadtimesRol = 'admin';
+    } else if (puedeCrear && puedeAtender) {
+      deadtimesRol = 'completo';
+    } else if (puedeCrear) {
+      deadtimesRol = 'creador';
+    } else if (puedeAtender) {
+      deadtimesRol = 'tecnico';
     }
 
     const token = jwt.sign(
@@ -76,7 +90,9 @@ router.post('/login', async (req, res) => {
         num_empleado: user.num_empleado,
         nombre: user.nombre, 
         rol: deadtimesRol,
-        rolOriginal: user.rol
+        rolOriginal: user.rol,
+        puedeCrear,
+        puedeAtender
       },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
@@ -89,7 +105,9 @@ router.post('/login', async (req, res) => {
         num_empleado: user.num_empleado,
         nombre: user.nombre, 
         rol: deadtimesRol,
-        rolOriginal: user.rol
+        rolOriginal: user.rol,
+        puedeCrear,
+        puedeAtender
       } 
     });
   } catch (err) {
@@ -118,12 +136,23 @@ router.get('/lookup/:employee_input', async (req, res) => {
     }
 
     const user = rows[0];
+    
+    // Calcular permisos basados en rol
+    // Lista base: ['Ingeniero', 'Técnico', 'AOI', 'Supervisor', 'Líder', 'Soporte', 'Mantenimiento']
+    const rolesCrearTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
+    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+    
+    let puedeCrear = rolesCrearTickets.includes(user.rol);
+    let puedeAtender = rolesAtenderTickets.includes(user.rol) || user.rol === 'The Goat';
+    
     res.json({ 
       success: true, 
       nombre: user.nombre, 
       usuario: user.usuario, 
       num_empleado: user.num_empleado,
-      rol: user.rol
+      rol: user.rol,
+      puedeCrear,
+      puedeAtender
     });
   } catch (err) {
     console.error('Error buscando usuario:', err);
