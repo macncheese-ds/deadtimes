@@ -213,15 +213,26 @@ export default function Analytics() {
   }
 
   // Handle click on equipment bar chart
-  const handleEquipmentClick = async (data) => {
-    if (!data || !data.fullName) return
+  const handleEquipmentClick = async (data, index, event) => {
+    console.log('Click received - data:', data, 'index:', index)
     
-    setSelectedEquipment(data.fullName)
+    // En Recharts, cuando haces click en una barra, 'data' contiene las propiedades del item
+    // Intentar obtener el nombre del equipo de diferentes formas
+    const equipmentName = data?.fullName || data?.name || data?.payload?.fullName || data?.payload?.name
+    
+    if (!equipmentName) {
+      console.error('No se pudo extraer el nombre del equipo. Data recibida:', data)
+      return
+    }
+    
+    console.log('Opening modal for equipment:', equipmentName)
+    
+    setSelectedEquipment(equipmentName)
     setShowDrillDown(true)
     setLoadingDrillDown(true)
     
     try {
-      const params = { equipo: data.fullName }
+      const params = { equipo: equipmentName }
       
       if (selectedLinea !== 'all') {
         params.linea = selectedLinea
@@ -234,7 +245,9 @@ export default function Analytics() {
         params.days = dateRange
       }
       
+      console.log('Fetching tickets with params:', params)
       const tickets = await getTicketsByEquipment(params)
+      console.log('Tickets received:', tickets?.length || 0, 'tickets')
       setDrillDownTickets(tickets)
     } catch (error) {
       console.error('Error loading equipment tickets:', error)
@@ -323,6 +336,9 @@ export default function Analytics() {
       </div>
     )
   }
+
+  // Debug log antes del render
+  console.log('Analytics render - showDrillDown:', showDrillDown, 'selectedEquipment:', selectedEquipment, 'tickets count:', drillDownTickets?.length)
 
   return (
     <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
