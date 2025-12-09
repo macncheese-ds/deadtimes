@@ -624,10 +624,11 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          {/* Gráfica de equipos con más fallas general */}
+          {/* Gráfica de equipos con más fallas general - INTERACTIVE */}
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Equipos con Más Fallas (General)</h2>
-            <p className="text-slate-400 text-xs mb-4">Top 10 últimos 30 días - Todas las líneas</p>
+            <p className="text-slate-400 text-xs mb-3">Top 10 últimos 30 días - Todas las líneas</p>
+            <p className="text-slate-400 text-xs mb-3">Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={prepareEquiposFallasData()} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -641,7 +642,12 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Total Fallas" fill="#ef4444" />
+                <Bar 
+                  dataKey="Total Fallas" 
+                  fill="#ef4444"
+                  onClick={handleEquipmentClick}
+                  cursor="pointer"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
