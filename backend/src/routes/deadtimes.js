@@ -405,20 +405,20 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
 });
 
 // Get modelos list - filtrar por línea si se especifica
-// Ahora retorna todos los campos: id, modelo, producto, linea, rate, lado
+// Retorna: id, modelo, producto, linea, rate (campo 'lado' eliminado - está en el nombre del modelo)
 router.get('/modelos', async (req, res) => {
   try {
     const { linea } = req.query;
     if (linea) {
       // Filtrar modelos por línea específica
       const [rows] = await db.query(
-        'SELECT id, modelo, producto, linea, rate, lado FROM modelos WHERE linea = ? ORDER BY modelo',
+        'SELECT id, modelo, producto, linea, rate FROM modelos WHERE linea = ? ORDER BY modelo',
         [linea]
       );
       return res.json(rows);
     }
-    // Sin filtro, retornar todos los modelos con todos los campos
-    const [rows] = await db.query('SELECT id, modelo, producto, linea, rate, lado FROM modelos ORDER BY modelo');
+    // Sin filtro, retornar todos los modelos
+    const [rows] = await db.query('SELECT id, modelo, producto, linea, rate FROM modelos ORDER BY modelo');
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -426,12 +426,12 @@ router.get('/modelos', async (req, res) => {
   }
 });
 
-// Get modelo específico por nombre - retorna producto, rate y lado
+// Get modelo específico por nombre - retorna todos sus datos
 router.get('/modelos/:nombre', async (req, res) => {
   try {
     const nombre = req.params.nombre;
     const [rows] = await db.query(
-      'SELECT id, modelo, producto, linea, rate, lado FROM modelos WHERE modelo = ? LIMIT 1',
+      'SELECT id, modelo, producto, linea, rate FROM modelos WHERE modelo = ? LIMIT 1',
       [nombre]
     );
     if (rows.length === 0) {
@@ -489,7 +489,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new ticket (first screen)
-// Ahora recibe lado y rate desde el frontend (tomados de la tabla modelos)
+// El campo 'lado' ya no se usa - está incluido en el nombre del modelo
 router.post('/', async (req, res) => {
   const body = req.body;
   console.log('CREATE TICKET - Received body:', JSON.stringify(body, null, 2));
@@ -507,7 +507,6 @@ router.post('/', async (req, res) => {
     pa,
     clasificacion,
     clas_others,
-    lado,      // Viene de la tabla modelos (auto-rellenado en frontend)
     rate       // Viene de la tabla modelos (auto-rellenado en frontend)
   } = body;
 
@@ -530,10 +529,8 @@ router.post('/', async (req, res) => {
 
   try {
     const hr = new Date();
-    // Normalize modelo + lado into single modelo field
-    // lado ahora viene de la tabla modelos (no del usuario)
-    const ladoValue = lado || '';
-    const storedModelo = modelo ? (ladoValue ? `${modelo} ${ladoValue}` : modelo) : '';
+    // El modelo viene completo con BOT/TOP ya incluido en el nombre
+    const storedModelo = modelo || '';
     
     // Rate viene de la tabla modelos (se guarda al crear el ticket)
     const rateValue = rate ? Number(rate) : null;

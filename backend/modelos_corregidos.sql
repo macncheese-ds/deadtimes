@@ -1,0 +1,125 @@
+-- Inserts corregidos para la tabla modelos
+-- Los nombres de modelo INCLUYEN BOT/TOP directamente
+-- Cada modelo+lado es un registro único con su rate específico
+-- Campo 'lado' eliminado - ya no es necesario
+
+-- LÍNEA 1
+INSERT INTO modelos (linea, producto, modelo, rate)
+VALUES
+(1, 'P00.270-44', 'FCM30 A',              655, 'BOT'),
+(1, 'P00.271-55', 'FCM30 A',              871, 'TOP'),
+(1, 'P00.270-47', 'FCM30 B',              655, 'BOT'),
+(1, 'P00.271-60', 'FCM30 B',              871, 'TOP'),
+(1, 'P00.270-48', 'FCM30 C',              655, 'BOT'),
+(1, 'P00.271-62', 'FCM30 C',              871, 'TOP'),
+(1, 'P00.270-49', 'FCM30 D',              645, 'BOT'),
+(1, 'P00.271-63', 'FCM30 D',              871, 'TOP'),
+(1, 'P00.270-49', 'FCM30 E',              655, 'BOT'),
+(1, 'P00.271-65', 'FCM30 E',              871, 'TOP'),
+(1, 'P00.270-52', 'FCM30 F',              665, 'BOT'),
+(1, 'P00.271-67', 'FCM30 F',              871, 'TOP'),
+(1, 'P00.270-53', 'FCM30 G',              655, 'BOT'),
+(1, 'P00.271-69', 'FCM30 G',              871, 'TOP'),
+(1, 'P00.270-57', 'FCM30 H',              684, 'BOT'),
+(1, 'P00.271-70', 'FCM30 H',              871, 'TOP'),
+(1, 'P00.270-64', 'FCM30 I',              667, 'BOT'),
+(1, 'P00.271-81', 'FCM30 I',              871, 'TOP'),
+(1, 'P00.270-54', 'FCM30 J',              655, 'BOT'),
+(1, 'P00.271-82', 'FCM30 J',              871, 'TOP'),
+(1, 'P00.271-84', 'FCM30 K',              871, 'TOP'),
+(1, 'P00.270-37', 'FCM30 L',              655, 'BOT'),
+(1, 'P00.271-32', 'FCM30 L',              871, 'TOP'),
+(1, 'P00.480-00', 'MRR35',                908, 'BOT'),
+(1, 'P00.472-00', 'MRR35',                  230, 'BOT'),
+(1, 'P00.479-00', 'MRR35',                908, 'TOP'),
+(1, 'P00.584-00', 'MAS95 Gen3_PPk',       697, 'BOT'),
+(1, 'P00.583-00', 'MAS95 Gen3_PPK',       567, 'TOP');
+
+-- LÍNEA 2
+INSERT INTO modelos (linea, producto, modelo, rate, lado)
+VALUES
+(2, 'P00.458-00',  'IDB MAIN B variant',              323, 'BOT'),
+(2, 'P00.457-00',  'IDB MAIN B variant',              253, 'TOP'),
+(2, 'P00.557-01',  'IDB MAIN F variant',              303, 'BOT'),
+(2, 'P00.556-01',  'IDB MAIN F variant',              216, 'TOP'),
+(2, 'P00.557-00',  'IDB MAIN H variant',              335, 'BOT'),
+(2, 'P00.556-00',  'IDB MAIN H variant',              293, 'TOP'),
+(2, 'P00.557-02',  'IDB MAIN L variant',              303, 'BOT'),
+(2, 'P00.556-02',  'IDB MAIN L variant',              216, 'TOP'),
+(2, 'P00.557-03',  'IDB MAIN N variant',              303, 'BOT'),
+(2, 'P00.559-00',  'IPTS N-M F variant',             2955, 'BOT'),
+(2, 'P00.558-00',  'IPTS N-M F variant',             3857, 'TOP'),
+(2, 'P00.559-01',  'IPTS N-M variant',               6739, 'BOT'),
+(2, 'P00.558-01',  'IPTS N-M variant',               2955, 'TOP'),
+(2, 'P00.584-00',  'MAS95 Gen3_PPk',                  605, 'BOT'),
+(2, 'P00.583-00',  'MAS95 Gen3_PPK',                  546, 'TOP'),
+(2, 'P00.522-01',  'MGH ESC A var',                   598, 'BOT'),
+(2, 'P00.521-01',  'MGH ESC A var',                   595, 'TOP'),
+(2, 'P00.447-17',  'MGH ESC AF var',                  663, 'BOT'),
+(2, 'P00.447-16',  'MGH ESC AF var',                  635, 'TOP'),
+(2, 'P00.607-01',  'MGH ESC AG var',                  663, 'BOT'),
+(2, 'P00.607-00',  'MGH ESC AG var',                  581, 'TOP'),
+(2, 'P00.526-00',  'MGH MOCI Base B var',             465, 'BOT'),
+(2, 'P00.526-01',  'MGH MOCI Prime C var',            535, 'BOT'),
+(2, 'P00.525-00',  'MGH MOCI Base B var',             375, 'TOP'),
+(2, 'P00.526-03',  'MGH MOCI Prime 1P D var',         505, 'BOT'),
+(2, 'P00.525-03',  'MGH MOCI Prime 1P D var',         424, 'TOP'),
+(2, 'P00.526-04',  'MGH MOCI Prime 1P E var',         476, 'BOT'),
+(2, 'P00.525-04',  'MGH MOCI Prime 1P E var',         375, 'TOP'),
+(2, 'P00.526-02',  'MGH MOCI Prime 3P A var',         446, 'BOT'),
+(2, 'P00.525-02',  'MGH MOCI Prime 3P A var',         375, 'TOP'),
+(2, 'P00.526-01D', 'MGH MOCI Prime C var Delta',      526, 'BOT'),
+(2, 'P00.525-01',  'MGH MOCI Prime C var',            531, 'TOP'),
+(2, 'P00.525-01D', 'MGH MOCI Prime C var Delta',      444, 'TOP');
+
+-- LÍNEA 3
+INSERT INTO modelos (linea, producto, modelo, rate, lado)
+VALUES
+(3, 'P00.556-00', 'IDB VARIANT H',  365, 'TOP'),
+(3, 'P00.557-00', 'IDB VARIANT H',  372, 'BOT'),
+(3, 'P00.556-01', 'IDB VARIANT F',  336, 'TOP'),
+(3, 'P00.557-01', 'IDB VARIANT F',  387, 'BOT'),
+(3, 'P00.556-03', 'IDB VARIANT N',  332, 'TOP'),
+(3, 'P00.557-03', 'IDB VARIANT N',  387, 'BOT'),
+(3, 'P00.556-02', 'IDB VARIANT L',  355, 'TOP'),
+(3, 'P00.557-02', 'IDB VARIANT L',  410, 'BOT'),
+(3, 'P00.556-06', 'IDB VARIANT V',  371, 'TOP'),
+(3, 'P00.557-06', 'IDB VARIANT V',  373, 'BOT'),
+(3, 'P00.558-00', 'IPTS N-M F',    6171, 'TOP'),
+(3, 'P00.559-00', 'IPTS N-M F',    2506, 'BOT'),
+(3, 'P00.558-01', 'IPTS N-M',      6171, 'TOP'),
+(3, 'P00.559-01', 'IPTS N-M',      2506, 'BOT'),
+(3, 'P00.623-00', 'RCU H',         6831, 'BOT'),
+(3, 'P00.622-00', 'RCU H',         6125, 'TOP'),
+(3, 'P00.722-00', 'IDB',            329, 'BOT'),
+(3, 'P00.726-00', 'IDB VARIANT B',  335, 'BOT'),
+(3, 'P00.788-00', 'IDB VARIANT AA', 302, 'BOT');
+
+-- LÍNEA 4
+INSERT INTO modelos (linea, producto, modelo, rate, lado)
+VALUES
+(4, 'P00.557-01', 'IDB VARIANT F',    388, 'BOT'),
+(4, 'P00.556-01', 'IDB VARIANT F',    333, 'TOP'),
+(4, 'P00.557-00', 'IDB VARIANT H',    432, 'BOT'),
+(4, 'P00.556-00', 'IDB VARIANT H',    410, 'TOP'),
+(4, 'P00.557-02', 'IDB VARIANT L',    431, 'BOT'),
+(4, 'P00.556-02', 'IDB VARIANT L',    356, 'TOP'),
+(4, 'P00.557-03', 'IDB VARIANT N',    376, 'BOT'),
+(4, 'P00.556-03', 'IDB VARIANT N',    345, 'TOP'),
+(4, 'P00.557-06', 'IDB VARIANT V',    401, 'BOT'),
+(4, 'P00.556-06', 'IDB VARIANT V',    410, 'TOP'),
+(4, 'P00.624-00', 'IAMM2',            766, 'TOP'),
+(4, 'P00.623-00', 'RCU VARIANT H',    727, 'BOT'),
+(4, 'P00.623-01', 'RCU VARIANT I',    560, 'BOT'),
+(4, 'P00.622-00', 'RCU VARIANT H',    645, 'TOP'),
+(4, 'P00.622-01', 'RCU VARIANT I',    524, 'TOP'),
+(4, 'P00.629-00', 'FRHC',             941, 'BOT'),
+(4, 'P00.628-00', 'FRHC',             859, 'BOT'),
+(4, 'P00.627-00', 'FRHC',             836, 'TOP'),
+(4, 'P00.630-00', 'IAMM Dongfeng',    593, 'BOT'),
+(4, 'P00.631-00', 'IAMM Dongfeng',    930, 'TOP'),
+(4, 'P00.633-00', 'IAMM',             738, 'TOP'),
+(4, 'P00.634-00', 'IAMM',            1030, 'BOT'),
+(4, 'P00.625-00', 'IAMM2',            571, 'BOT'),
+(4, 'P00.643-00', 'IAMMD',            569, 'TOP'),
+(4, 'P00.644-00', 'IAMMD',            464, 'BOT');

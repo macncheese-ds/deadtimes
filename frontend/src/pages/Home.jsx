@@ -55,9 +55,9 @@ export default function Home() {
   const [filterClosedEndDate, setFilterClosedEndDate] = useState('')
   // Sorting state for closed tickets
   const [sortClosedBy, setSortClosedBy] = useState('date') // 'date', 'duration_asc', 'duration_desc'
-  // Form ahora incluye producto y rate (auto-rellenados desde tabla modelos)
+  // Form - ya NO incluye campo 'lado' ni 'producto' (lado está en el nombre del modelo)
   const [form, setForm] = useState({
-    descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: ''
+    descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', rate: ''
   })
   
   // Estados para Analytics
@@ -135,13 +135,11 @@ export default function Home() {
   // Handler cuando se selecciona una línea - carga modelos de esa línea
   async function handleLineaChange(e) {
     const lineaValue = e.target.value
-    // Resetear modelo y campos relacionados al cambiar línea
+    // Resetear modelo y rate al cambiar línea
     setForm(prev => ({ 
       ...prev, 
       linea: lineaValue, 
       modelo: '', 
-      lado: '', 
-      producto: '', 
       rate: '' 
     }))
     setSelectedModelo(null)
@@ -149,19 +147,17 @@ export default function Home() {
     await loadModelosByLinea(lineaValue)
   }
 
-  // Handler cuando se selecciona un modelo - auto-rellena producto, lado y rate
+  // Handler cuando se selecciona un modelo - auto-rellena rate
   function handleModeloChange(e) {
     const modeloValue = e.target.value
-    // Buscar el modelo en la lista cargada para obtener sus datos completos
+    // Buscar el modelo en la lista cargada para obtener su rate
     const modeloData = modelos.find(m => m.modelo === modeloValue)
     if (modeloData) {
       setSelectedModelo(modeloData)
-      // Auto-rellenar lado, producto y rate desde la tabla modelos
+      // Auto-rellenar rate desde la tabla modelos
       setForm(prev => ({
         ...prev,
         modelo: modeloValue,
-        lado: modeloData.lado || '',
-        producto: modeloData.producto || '',
         rate: modeloData.rate ? String(modeloData.rate) : ''
       }))
     } else {
@@ -169,8 +165,6 @@ export default function Home() {
       setForm(prev => ({
         ...prev,
         modelo: modeloValue,
-        lado: '',
-        producto: '',
         rate: ''
       }))
     }
@@ -758,39 +752,33 @@ export default function Home() {
                     ) : (
                       <>
                         <option value="">Seleccionar Modelo *</option>
-                        {modelos.map(mod => <option key={mod.id} value={mod.modelo}>{mod.modelo}</option>)}
+                        {modelos.map(mod => (
+                          <option key={mod.id} value={mod.modelo}>
+                            {mod.modelo}
+                          </option>
+                        ))}
                       </>
                     )}
                   </select>
                 </div>
                 
-                {/* Mostrar información auto-rellenada del modelo (producto, lado, rate) - solo lectura */}
+                {/* Mostrar rate auto-rellenado del modelo seleccionado */}
                 {selectedModelo && (
                   <div className="mt-4 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-                    <p className="text-xs text-slate-400 mb-2">Información del modelo (auto-rellenada desde base de datos)</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <span className="text-slate-500">Producto:</span>
-                        <span className="ml-2 text-slate-200 font-medium">{selectedModelo.producto || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Lado:</span>
-                        <span className="ml-2 text-emerald-400 font-medium">{selectedModelo.lado || 'N/A'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Rate:</span>
-                        <span className="ml-2 text-blue-400 font-medium">{selectedModelo.rate || 'N/A'}</span>
-                      </div>
+                    <p className="text-xs text-slate-400 mb-2">Rate del modelo (auto-rellenado desde base de datos)</p>
+                    <div className="text-sm">
+                      <span className="text-slate-500">Rate:</span>
+                      <span className="ml-2 text-blue-400 font-medium">{selectedModelo.rate || 'N/A'}</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* Sección 2: Equipo y Descripción - Desbloqueado cuando modelo está seleccionado (lado viene automático) */}
-              <div className={`border rounded-lg p-4 transition-all ${form.linea && form.modelo && form.lado ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+              {/* Sección 2: Equipo y Descripción - Desbloqueado cuando modelo está seleccionado */}
+              <div className={`border rounded-lg p-4 transition-all ${form.linea && form.modelo ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
                 <h3 className="text-sm font-semibold text-slate-300 mb-3">2. Información del Equipo</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required disabled={!form.linea || !form.modelo || !form.lado}>
+                  <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required disabled={!form.linea || !form.modelo}>
                     <option value="">Seleccionar Equipo *</option>
                     {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
                   </select>
@@ -869,7 +857,7 @@ export default function Home() {
               <button 
                 type="submit" 
                 className="w-full bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors border border-emerald-600/50 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!form.linea || !form.modelo || !form.lado || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
+                disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
               >
                 Crear Ticket
               </button>

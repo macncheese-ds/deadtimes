@@ -1,0 +1,125 @@
+-- Inserts para la tabla modelos
+-- Los nombres de modelo INCLUYEN BOT/TOP directamente en el nombre
+-- Cada modelo+lado es un registro único con su rate específico
+-- Campo 'lado' YA NO SE USA - el lado está en el nombre del modelo
+
+-- LÍNEA 1
+INSERT INTO modelos (linea, producto, modelo, rate)
+VALUES
+(1, 'P00.270-44', 'FCM30 A BOT',          655),
+(1, 'P00.271-55', 'FCM30 A TOP',          871),
+(1, 'P00.270-47', 'FCM30 B BOT',          655),
+(1, 'P00.271-60', 'FCM30 B TOP',          871),
+(1, 'P00.270-48', 'FCM30 C BOT',          655),
+(1, 'P00.271-62', 'FCM30 C TOP',          871),
+(1, 'P00.270-49', 'FCM30 D BOT',          645),
+(1, 'P00.271-63', 'FCM30 D TOP',          871),
+(1, 'P00.270-49', 'FCM30 E BOT',          655),
+(1, 'P00.271-65', 'FCM30 E TOP',          871),
+(1, 'P00.270-52', 'FCM30 F BOT',          665),
+(1, 'P00.271-67', 'FCM30 F TOP',          871),
+(1, 'P00.270-53', 'FCM30 G BOT',          655),
+(1, 'P00.271-69', 'FCM30 G TOP',          871),
+(1, 'P00.270-57', 'FCM30 H BOT',          684),
+(1, 'P00.271-70', 'FCM30 H TOP',          871),
+(1, 'P00.270-64', 'FCM30 I BOT',          667),
+(1, 'P00.271-81', 'FCM30 I TOP',          871),
+(1, 'P00.270-54', 'FCM30 J BOT',          655),
+(1, 'P00.271-82', 'FCM30 J TOP',          871),
+(1, 'P00.271-84', 'FCM30 K TOP',          871),
+(1, 'P00.270-37', 'FCM30 L BOT',          655),
+(1, 'P00.271-32', 'FCM30 L TOP',          871),
+(1, 'P00.480-00', 'MRR35 BOT',            908),
+(1, 'P00.472-00', 'MRR35 BOT',            230),
+(1, 'P00.479-00', 'MRR35 TOP',            908),
+(1, 'P00.584-00', 'MAS95 Gen3_PPk BOT',   697),
+(1, 'P00.583-00', 'MAS95 Gen3_PPK TOP',   567);
+
+-- LÍNEA 2
+INSERT INTO modelos (linea, producto, modelo, rate)
+VALUES
+(2, 'P00.458-00',  'IDB MAIN B variant BOT',         323),
+(2, 'P00.457-00',  'IDB MAIN B variant TOP',         253),
+(2, 'P00.557-01',  'IDB MAIN F variant BOT',         303),
+(2, 'P00.556-01',  'IDB MAIN F variant TOP',         216),
+(2, 'P00.557-00',  'IDB MAIN H variant BOT',         335),
+(2, 'P00.556-00',  'IDB MAIN H variant TOP',         293),
+(2, 'P00.557-02',  'IDB MAIN L variant BOT',         303),
+(2, 'P00.556-02',  'IDB MAIN L variant TOP',         216),
+(2, 'P00.557-03',  'IDB MAIN N variant BOT',         303),
+(2, 'P00.559-00',  'IPTS N-M F variant BOT',        2955),
+(2, 'P00.558-00',  'IPTS N-M F variant TOP',        3857),
+(2, 'P00.559-01',  'IPTS N-M variant BOT',          6739),
+(2, 'P00.558-01',  'IPTS N-M variant TOP',          2955),
+(2, 'P00.584-00',  'MAS95 Gen3_PPk BOT',             605),
+(2, 'P00.583-00',  'MAS95 Gen3_PPK TOP',             546),
+(2, 'P00.522-01',  'MGH ESC A var BOT',              598),
+(2, 'P00.521-01',  'MGH ESC A var TOP',              595),
+(2, 'P00.447-17',  'MGH ESC AF var BOT',             663),
+(2, 'P00.447-16',  'MGH ESC AF var TOP',             635),
+(2, 'P00.607-01',  'MGH ESC AG var BOT',             663),
+(2, 'P00.607-00',  'MGH ESC AG var TOP',             581),
+(2, 'P00.526-00',  'MGH MOCI Base B var BOT',        465),
+(2, 'P00.526-01',  'MGH MOCI Prime C var BOT',       535),
+(2, 'P00.525-00',  'MGH MOCI Base B var TOP',        375),
+(2, 'P00.526-03',  'MGH MOCI Prime 1P D var BOT',    505),
+(2, 'P00.525-03',  'MGH MOCI Prime 1P D var TOP',    424),
+(2, 'P00.526-04',  'MGH MOCI Prime 1P E var BOT',    476),
+(2, 'P00.525-04',  'MGH MOCI Prime 1P E var TOP',    375),
+(2, 'P00.526-02',  'MGH MOCI Prime 3P A var BOT',    446),
+(2, 'P00.525-02',  'MGH MOCI Prime 3P A var TOP',    375),
+(2, 'P00.526-01D', 'MGH MOCI Prime C var Delta BOT', 526),
+(2, 'P00.525-01',  'MGH MOCI Prime C var TOP',       531),
+(2, 'P00.525-01D', 'MGH MOCI Prime C var Delta TOP', 444);
+
+-- LÍNEA 3
+INSERT INTO modelos (linea, producto, modelo, rate)
+VALUES
+(3, 'P00.556-00', 'IDB VARIANT H TOP',   365),
+(3, 'P00.557-00', 'IDB VARIANT H BOT',   372),
+(3, 'P00.556-01', 'IDB VARIANT F TOP',   336),
+(3, 'P00.557-01', 'IDB VARIANT F BOT',   387),
+(3, 'P00.556-03', 'IDB VARIANT N TOP',   332),
+(3, 'P00.557-03', 'IDB VARIANT N BOT',   387),
+(3, 'P00.556-02', 'IDB VARIANT L TOP',   355),
+(3, 'P00.557-02', 'IDB VARIANT L BOT',   410),
+(3, 'P00.556-06', 'IDB VARIANT V TOP',   371),
+(3, 'P00.557-06', 'IDB VARIANT V BOT',   373),
+(3, 'P00.558-00', 'IPTS N-M F TOP',     6171),
+(3, 'P00.559-00', 'IPTS N-M F BOT',     2506),
+(3, 'P00.558-01', 'IPTS N-M TOP',       6171),
+(3, 'P00.559-01', 'IPTS N-M BOT',       2506),
+(3, 'P00.623-00', 'RCU H BOT',          6831),
+(3, 'P00.622-00', 'RCU H TOP',          6125),
+(3, 'P00.722-00', 'IDB BOT',             329),
+(3, 'P00.726-00', 'IDB VARIANT B BOT',   335),
+(3, 'P00.788-00', 'IDB VARIANT AA BOT',  302);
+
+-- LÍNEA 4
+INSERT INTO modelos (linea, producto, modelo, rate)
+VALUES
+(4, 'P00.557-01', 'IDB VARIANT F BOT',    388),
+(4, 'P00.556-01', 'IDB VARIANT F TOP',    333),
+(4, 'P00.557-00', 'IDB VARIANT H BOT',    432),
+(4, 'P00.556-00', 'IDB VARIANT H TOP',    410),
+(4, 'P00.557-02', 'IDB VARIANT L BOT',    431),
+(4, 'P00.556-02', 'IDB VARIANT L TOP',    356),
+(4, 'P00.557-03', 'IDB VARIANT N BOT',    376),
+(4, 'P00.556-03', 'IDB VARIANT N TOP',    345),
+(4, 'P00.557-06', 'IDB VARIANT V BOT',    401),
+(4, 'P00.556-06', 'IDB VARIANT V TOP',    410),
+(4, 'P00.624-00', 'IAMM2 TOP',            766),
+(4, 'P00.623-00', 'RCU VARIANT H BOT',    727),
+(4, 'P00.623-01', 'RCU VARIANT I BOT',    560),
+(4, 'P00.622-00', 'RCU VARIANT H TOP',    645),
+(4, 'P00.622-01', 'RCU VARIANT I TOP',    524),
+(4, 'P00.629-00', 'FRHC BOT',             941),
+(4, 'P00.628-00', 'FRHC BOT',             859),
+(4, 'P00.627-00', 'FRHC TOP',             836),
+(4, 'P00.630-00', 'IAMM Dongfeng BOT',    593),
+(4, 'P00.631-00', 'IAMM Dongfeng TOP',    930),
+(4, 'P00.633-00', 'IAMM TOP',             738),
+(4, 'P00.634-00', 'IAMM BOT',            1030),
+(4, 'P00.625-00', 'IAMM2 BOT',            571),
+(4, 'P00.643-00', 'IAMMD TOP',            569),
+(4, 'P00.644-00', 'IAMMD BOT',            464);
