@@ -351,6 +351,59 @@ router.get('/equipos', async (req, res) => {
   }
 });
 
+// Get detailed tickets by equipment name (for drill-down in analytics)
+router.get('/stats/tickets-by-equipment', async (req, res) => {
+  try {
+    const { equipo, linea, startDate, endDate, days = 30 } = req.query;
+    
+    if (!equipo) {
+      return res.status(400).json({ error: 'Equipment name (equipo) is required' });
+    }
+    
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const params = [equipo];
+    
+    if (startDate && endDate) {
+      dateCondition = 'hr >= ? AND hr <= ?';
+      params.push(startDate, endDate);
+      params.unshift(equipo);
+    }
+    
+    let lineaCondition = '';
+    if (linea) {
+      lineaCondition = 'AND linea = ?';
+      params.push(linea);
+    }
+    
+    const query = `
+      SELECT 
+        id,
+        descr,
+        modelo,
+        linea,
+        equipo,
+        clasificacion,
+        hr,
+        hc,
+        tecnico,
+        nombre,
+        TIMESTAMPDIFF(MINUTE, hr, hc) as duracion_minutos,
+        piezas,
+        deadtime,
+        solucion
+      FROM deadtimes 
+      WHERE equipo = ? AND ${dateCondition} ${lineaCondition}
+      ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
+    `;
+    
+    const [rows] = await db.query(query, params);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get modelos list - filtrar por línea si se especifica
 // Ahora retorna todos los campos: id, modelo, producto, linea, rate, lado
 router.get('/modelos', async (req, res) => {

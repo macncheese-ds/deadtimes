@@ -77,6 +77,12 @@ export const getStatsTotales = (params = {}) => {
   return api.get(`/deadtimes/stats/totales?${query}`).then(r => r.data);
 };
 
+// Get detailed tickets by equipment (for drill-down in analytics)
+export const getTicketsByEquipment = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/stats/tickets-by-equipment?${query}`).then(r => r.data);
+};
+
 // Auth functions with credentials system
 export const login = async (employee_input, password) => {
   const { data } = await api.post('/auth/login', { employee_input, password });

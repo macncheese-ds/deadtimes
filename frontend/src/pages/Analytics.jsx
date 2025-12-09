@@ -8,12 +8,14 @@ import {
   getStatsClasificacion, 
   getStatsTotales,
   getStatsAtencion,
-  getStatsEquipos
+  getStatsEquipos,
+  getTicketsByEquipment
 } from '../api_deadtimes'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
+import * as XLSX from 'xlsx'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
@@ -35,6 +37,12 @@ export default function Analytics() {
   const [clasificacion, setClasificacion] = useState([])
   const [statsAtencion, setStatsAtencion] = useState([])
   const [statsEquiposFallas, setStatsEquiposFallas] = useState([])
+  
+  // States for drill-down modal
+  const [showDrillDown, setShowDrillDown] = useState(false)
+  const [selectedEquipment, setSelectedEquipment] = useState(null)
+  const [drillDownTickets, setDrillDownTickets] = useState([])
+  const [loadingDrillDown, setLoadingDrillDown] = useState(false)
 
   useEffect(() => {
     loadInitialData()
@@ -202,6 +210,68 @@ export default function Analytics() {
       fullName: item.equipo,
       'Total Fallas': item.total_fallas
     }))
+  }
+
+  // Handle click on equipment bar chart
+  const handleEquipmentClick = async (data) => {
+    if (!data || !data.fullName) return
+    
+    setSelectedEquipment(data.fullName)
+    setShowDrillDown(true)
+    setLoadingDrillDown(true)
+    
+    try {
+      const params = { equipo: data.fullName }
+      
+      if (selectedLinea !== 'all') {
+        params.linea = selectedLinea
+      }
+      
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate
+        params.endDate = customEndDate
+      } else {
+        params.days = dateRange
+      }
+      
+      const tickets = await getTicketsByEquipment(params)
+      setDrillDownTickets(tickets)
+    } catch (error) {
+      console.error('Error loading equipment tickets:', error)
+      setDrillDownTickets([])
+    } finally {
+      setLoadingDrillDown(false)
+    }
+  }
+
+  // Export drill-down tickets to Excel
+  const exportDrillDownToExcel = () => {
+    if (!drillDownTickets || drillDownTickets.length === 0) return
+    
+    const data = drillDownTickets.map((ticket, idx) => ({
+      '#': idx + 1,
+      'ID Ticket': ticket.id,
+      'Descripción': ticket.descr,
+      'Modelo': ticket.modelo,
+      'Línea': ticket.linea,
+      'Equipo': ticket.equipo,
+      'Clasificación': ticket.clasificacion,
+      'Duración (min)': ticket.duracion_minutos || 0,
+      'Piezas Perdidas': ticket.piezas || 0,
+      'Tiempo Perdido': ticket.deadtime || 0,
+      'Reportado por': ticket.nombre,
+      'Técnico': ticket.tecnico,
+      'Solución': ticket.solucion || '',
+      'Fecha Apertura': ticket.hr ? new Date(ticket.hr).toLocaleString('es-MX') : '',
+      'Fecha Cierre': ticket.hc ? new Date(ticket.hc).toLocaleString('es-MX') : ''
+    }))
+    
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Tickets')
+    
+    const fileName = `Tickets_${selectedEquipment}_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
   }
 
   const CustomYAxisTick = ({ x, y, payload }) => {
@@ -496,11 +566,12 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          {/* Gráfica de equipos con más fallas */}
+          {/* Gráfica de equipos con más fallas - INTERACTIVE */}
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">
               {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
             </h2>
+            <p className="text-slate-400 text-xs mb-3">Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={prepareEquiposData()} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -514,7 +585,12 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Fallas" fill="#ef4444" />
+                <Bar 
+                  dataKey="Fallas" 
+                  fill="#ef4444" 
+                  onClick={handleEquipmentClick}
+                  cursor="pointer"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -642,6 +718,96 @@ export default function Analytics() {
           )}
         </div>
       </div>
+
+      {/* Drill-Down Modal for Equipment Details */}
+      {showDrillDown && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowDrillDown(false)}>
+          <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 max-w-6xl w-full max-h-[90vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-slate-900 border-b border-slate-700 p-4 sm:p-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-slate-100 mb-2">
+                  Tickets Detallados - {selectedEquipment}
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  Ordenados por tiempo consumido (mayor a menor)
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={exportDrillDownToExcel}
+                  disabled={!drillDownTickets || drillDownTickets.length === 0}
+                  className="bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 px-4 py-2 rounded-lg transition-colors border border-emerald-600/50 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Exportar a Excel
+                </button>
+                <button 
+                  onClick={() => setShowDrillDown(false)} 
+                  className="text-slate-400 hover:text-slate-200 text-2xl leading-none px-3"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+              {loadingDrillDown ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-slate-400 mb-4"></div>
+                  <p className="text-slate-300 text-lg font-medium">Cargando tickets...</p>
+                </div>
+              ) : drillDownTickets && drillDownTickets.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-slate-300 uppercase bg-slate-700 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3">#</th>
+                        <th className="px-4 py-3">ID</th>
+                        <th className="px-4 py-3">Descripción</th>
+                        <th className="px-4 py-3">Modelo</th>
+                        <th className="px-4 py-3">Línea</th>
+                        <th className="px-4 py-3">Clasificación</th>
+                        <th className="px-4 py-3">Duración (min)</th>
+                        <th className="px-4 py-3">Piezas</th>
+                        <th className="px-4 py-3">Reportado</th>
+                        <th className="px-4 py-3">Técnico</th>
+                        <th className="px-4 py-3">Fecha Cierre</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {drillDownTickets.map((ticket, idx) => (
+                        <tr key={ticket.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                          <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
+                          <td className="px-4 py-3 font-medium text-blue-300">#{ticket.id}</td>
+                          <td className="px-4 py-3 text-slate-200">{ticket.descr}</td>
+                          <td className="px-4 py-3 text-slate-300">{ticket.modelo}</td>
+                          <td className="px-4 py-3 text-slate-300">Línea {ticket.linea}</td>
+                          <td className="px-4 py-3 text-slate-300">{ticket.clasificacion}</td>
+                          <td className="px-4 py-3 text-amber-300 font-semibold">{ticket.duracion_minutos || 0}</td>
+                          <td className="px-4 py-3 text-rose-300">{ticket.piezas || 0}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{ticket.nombre}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">{ticket.tecnico}</td>
+                          <td className="px-4 py-3 text-slate-400 text-xs">
+                            {ticket.hc ? new Date(ticket.hc).toLocaleDateString('es-MX') : 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-slate-500 text-lg">No hay tickets disponibles para este equipo</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

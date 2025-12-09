@@ -20,6 +20,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts'
+import * as XLSX from 'xlsx'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
@@ -52,6 +53,8 @@ export default function Home() {
   const [filterClosedDescr, setFilterClosedDescr] = useState('')
   const [filterClosedStartDate, setFilterClosedStartDate] = useState('')
   const [filterClosedEndDate, setFilterClosedEndDate] = useState('')
+  // Sorting state for closed tickets
+  const [sortClosedBy, setSortClosedBy] = useState('date') // 'date', 'duration_asc', 'duration_desc'
   // Form ahora incluye producto y rate (auto-rellenados desde tabla modelos)
   const [form, setForm] = useState({
     descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: ''
@@ -459,7 +462,7 @@ export default function Home() {
 
   // Filtrar tickets cerrados por múltiples criterios
   const getFilteredClosedTickets = () => {
-    return tickets.filter(t => {
+    let filtered = tickets.filter(t => {
       // Filtro por línea
       if (filterClosedLinea && String(t.linea) !== String(filterClosedLinea)) return false
       // Filtro por equipo (búsqueda parcial)
@@ -479,6 +482,68 @@ export default function Home() {
       }
       return true
     })
+
+    // Apply sorting
+    if (sortClosedBy === 'duration_asc') {
+      filtered.sort((a, b) => {
+        const durA = calcularMinutos(a.hr, a.hc) || 0
+        const durB = calcularMinutos(b.hr, b.hc) || 0
+        return durA - durB
+      })
+    } else if (sortClosedBy === 'duration_desc') {
+      filtered.sort((a, b) => {
+        const durA = calcularMinutos(a.hr, a.hc) || 0
+        const durB = calcularMinutos(b.hr, b.hc) || 0
+        return durB - durA
+      })
+    } else {
+      // Default: sort by close date (most recent first)
+      filtered.sort((a, b) => {
+        const dateA = a.hc ? new Date(a.hc).getTime() : 0
+        const dateB = b.hc ? new Date(b.hc).getTime() : 0
+        return dateB - dateA
+      })
+    }
+
+    return filtered
+  }
+
+  // Helper para calcular minutos entre dos fechas
+  function calcularMinutos(fechaInicio, fechaFin) {
+    if (!fechaInicio || !fechaFin) return null
+    const diffMs = new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()
+    return Math.max(0, Math.round(diffMs / 60000))
+  }
+
+  // Export closed tickets to Excel
+  const exportClosedTicketsToExcel = () => {
+    const ticketsToExport = getFilteredClosedTickets()
+    if (!ticketsToExport || ticketsToExport.length === 0) return
+    
+    const data = ticketsToExport.map((ticket, idx) => ({
+      '#': idx + 1,
+      'ID Ticket': ticket.id,
+      'Descripción': ticket.descr,
+      'Modelo': ticket.modelo,
+      'Línea': ticket.linea,
+      'Equipo': ticket.equipo,
+      'Clasificación': ticket.clasificacion,
+      'Duración (min)': calcularMinutos(ticket.hr, ticket.hc) || 0,
+      'Piezas Perdidas': ticket.piezas || 0,
+      'Tiempo Perdido': ticket.deadtime || 0,
+      'Reportado por': ticket.nombre,
+      'Técnico': ticket.tecnico,
+      'Solución': ticket.solucion || '',
+      'Fecha Apertura': ticket.hr ? new Date(ticket.hr).toLocaleString('es-MX') : '',
+      'Fecha Cierre': ticket.hc ? new Date(ticket.hc).toLocaleString('es-MX') : ''
+    }))
+    
+    const ws = XLSX.utils.json_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Tickets Cerrados')
+    
+    const fileName = `Tickets_Cerrados_${new Date().toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(wb, fileName)
   }
 
   // Reset filtros al cambiar de vista
@@ -953,6 +1018,33 @@ export default function Home() {
                 </div>
               </div>
               
+              {/* Sorting and Export Controls */}
+              <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="flex items-center gap-3">
+                  <label className="text-slate-400 text-xs font-medium">Ordenar por:</label>
+                  <select 
+                    className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    value={sortClosedBy}
+                    onChange={e => setSortClosedBy(e.target.value)}
+                  >
+                    <option value="date">Fecha de Cierre (Reciente)</option>
+                    <option value="duration_desc">Duración (Mayor a Menor)</option>
+                    <option value="duration_asc">Duración (Menor a Mayor)</option>
+                  </select>
+                </div>
+                
+                <button
+                  onClick={exportClosedTicketsToExcel}
+                  disabled={getFilteredClosedTickets().length === 0}
+                  className="bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 px-4 py-2 rounded-lg transition-colors border border-emerald-600/50 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Exportar a Excel
+                </button>
+              </div>
+              
               {/* Mostrar cantidad de resultados filtrados */}
               {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) && (
                 <div className="mt-3 text-xs text-slate-400">
@@ -968,22 +1060,30 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {getFilteredClosedTickets().map(t => (
-                  <div key={t.id} className="bg-slate-700 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-slate-500">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-slate-100 font-semibold text-sm sm:text-base">#{t.id} - {t.descr}</h3>
-                        <p className="text-slate-300 text-xs sm:text-sm mt-1">Línea {t.linea} • {t.modelo} • {t.equipo}</p>
-                        <p className="text-slate-400 text-xs mt-1">
-                          Cerrado: {new Date(t.hc).toLocaleString('es', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})} • {t.tecnico}
-                        </p>
+                {getFilteredClosedTickets().map(t => {
+                  const duracion = calcularMinutos(t.hr, t.hc)
+                  return (
+                    <div key={t.id} className="bg-slate-700 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-slate-500">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-slate-100 font-semibold text-sm sm:text-base">#{t.id} - {t.descr}</h3>
+                          <p className="text-slate-300 text-xs sm:text-sm mt-1">Línea {t.linea} • {t.modelo} • {t.equipo}</p>
+                          <p className="text-slate-400 text-xs mt-1">
+                            Cerrado: {new Date(t.hc).toLocaleString('es', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})} • {t.tecnico}
+                          </p>
+                          {duracion !== null && (
+                            <p className="text-amber-300 text-xs mt-1 font-medium">
+                              Duración: {duracion} minutos
+                            </p>
+                          )}
+                        </div>
+                        <button onClick={() => window.location.href = `/view/${t.id}`} className="bg-blue-700/60 hover:bg-blue-600/70 text-blue-100 font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-blue-600/50 text-sm w-full sm:w-auto">
+                          Ver
+                        </button>
                       </div>
-                      <button onClick={() => window.location.href = `/view/${t.id}`} className="bg-blue-700/60 hover:bg-blue-600/70 text-blue-100 font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-blue-600/50 text-sm w-full sm:w-auto">
-                        Ver
-                      </button>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
                 {getFilteredClosedTickets().length === 0 && (
                   <div className="text-center py-8 sm:py-12">
                     <p className="text-slate-500 text-sm sm:text-base">
