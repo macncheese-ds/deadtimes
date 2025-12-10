@@ -9,7 +9,8 @@ import {
   getStatsTotales,
   getStatsAtencion,
   getStatsEquipos,
-  getTicketsByEquipment
+  getTicketsByEquipment,
+  getTopTicketsByEquipment
 } from '../api_deadtimes'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -43,6 +44,17 @@ export default function Analytics() {
   const [selectedEquipment, setSelectedEquipment] = useState(null)
   const [drillDownTickets, setDrillDownTickets] = useState([])
   const [loadingDrillDown, setLoadingDrillDown] = useState(false)
+  
+  // States for top 5 tickets modal (machines with more failures)
+  const [showTop5Modal, setShowTop5Modal] = useState(false)
+  const [selectedMachine, setSelectedMachine] = useState(null)
+  const [top5Tickets, setTop5Tickets] = useState([])
+  const [loadingTop5, setLoadingTop5] = useState(false)
+  
+  // State for top tickets by machine chart
+  const [selectedMachineForTop, setSelectedMachineForTop] = useState('')
+  const [topTicketsByMachine, setTopTicketsByMachine] = useState([])
+  const [loadingTopTickets, setLoadingTopTickets] = useState(false)
 
   useEffect(() => {
     loadInitialData()
@@ -296,6 +308,78 @@ export default function Analytics() {
     
     const fileName = `Tickets_${selectedEquipment}_${new Date().toISOString().split('T')[0]}.xlsx`
     XLSX.writeFile(wb, fileName)
+  }
+
+  // Open top 5 modal for machines with more failures bar chart
+  const openTop5Modal = async (machineName) => {
+    if (!machineName) return
+    
+    setSelectedMachine(machineName)
+    setShowTop5Modal(true)
+    setLoadingTop5(true)
+    
+    try {
+      const params = { equipo: machineName, limit: 5 }
+      
+      // Respect the current filters (line and date range)
+      if (selectedLinea !== 'all') {
+        params.linea = selectedLinea
+      }
+      
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate
+        params.endDate = customEndDate
+      } else {
+        params.days = dateRange
+      }
+      
+      const tickets = await getTopTicketsByEquipment(params)
+      setTop5Tickets(tickets)
+    } catch (error) {
+      console.error('Error loading top 5 tickets:', error)
+      setTop5Tickets([])
+    } finally {
+      setLoadingTop5(false)
+    }
+  }
+
+  // Load top tickets when machine selector changes
+  const loadTopTicketsByMachine = async (machineName) => {
+    if (!machineName) {
+      setTopTicketsByMachine([])
+      return
+    }
+    
+    setLoadingTopTickets(true)
+    
+    try {
+      const params = { equipo: machineName, limit: 5 }
+      
+      if (selectedLinea !== 'all') {
+        params.linea = selectedLinea
+      }
+      
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate
+        params.endDate = customEndDate
+      } else {
+        params.days = dateRange
+      }
+      
+      const tickets = await getTopTicketsByEquipment(params)
+      setTopTicketsByMachine(tickets)
+    } catch (error) {
+      console.error('Error loading top tickets by machine:', error)
+      setTopTicketsByMachine([])
+    } finally {
+      setLoadingTopTickets(false)
+    }
+  }
+
+  // Handle machine selector change
+  const handleMachineSelectChange = (machineName) => {
+    setSelectedMachineForTop(machineName)
+    loadTopTicketsByMachine(machineName)
   }
 
   const CustomYAxisTick = ({ x, y, payload }) => {
@@ -595,9 +679,19 @@ export default function Analytics() {
             <h2 className="text-lg font-semibold text-slate-100 mb-4">
               {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
             </h2>
-            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
+            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los Top 5 tickets con más tiempo</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposData()} layout="vertical">
+              <BarChart 
+                data={prepareEquiposData()} 
+                layout="vertical"
+                onClick={(data) => {
+                  if (data && data.activePayload && data.activePayload[0]) {
+                    const equipo = data.activePayload[0].payload.fullName
+                    if (equipo) openTop5Modal(equipo)
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -609,15 +703,7 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Fallas" fill="#ef4444">
-                  {prepareEquiposData().map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      cursor="pointer"
-                      onClick={() => openDrillDown(entry.fullName, false)}
-                    />
-                  ))}
-                </Bar>
+                <Bar dataKey="Fallas" fill="#ef4444" cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -655,9 +741,19 @@ export default function Analytics() {
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Equipos con Más Fallas (General)</h2>
             <p className="text-slate-400 text-xs mb-3">Top 10 últimos 30 días - Todas las líneas</p>
-            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
+            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los Top 5 tickets con más tiempo</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposFallasData()} layout="vertical">
+              <BarChart 
+                data={prepareEquiposFallasData()} 
+                layout="vertical"
+                onClick={(data) => {
+                  if (data && data.activePayload && data.activePayload[0]) {
+                    const equipo = data.activePayload[0].payload.fullName
+                    if (equipo) openTop5Modal(equipo)
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -669,15 +765,7 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Total Fallas" fill="#ef4444">
-                  {prepareEquiposFallasData().map((entry, index) => (
-                    <Cell 
-                      key={`cell-general-${index}`} 
-                      cursor="pointer"
-                      onClick={() => openDrillDown(entry.fullName, true)}
-                    />
-                  ))}
-                </Bar>
+                <Bar dataKey="Total Fallas" fill="#ef4444" cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -750,6 +838,89 @@ export default function Analytics() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Top 5 Tickets por Máquina - New Chart Section */}
+        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-100">Top 5 Tickets con Más Tiempo por Máquina</h2>
+              <p className="text-slate-400 text-xs mt-1">Selecciona una máquina para ver los tickets con mayor duración</p>
+            </div>
+            <div className="w-full sm:w-64">
+              <select
+                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                value={selectedMachineForTop}
+                onChange={(e) => handleMachineSelectChange(e.target.value)}
+              >
+                <option value="">-- Seleccionar máquina --</option>
+                {statsEquiposFallas.map((equipo, idx) => (
+                  <option key={idx} value={equipo.equipo}>{equipo.equipo} ({equipo.total_fallas} fallas)</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {loadingTopTickets ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-700 border-t-blue-400 mb-4"></div>
+              <p className="text-slate-300">Cargando tickets...</p>
+            </div>
+          ) : selectedMachineForTop && topTicketsByMachine.length > 0 ? (
+            <div className="space-y-3">
+              {topTicketsByMachine.map((ticket, idx) => (
+                <div 
+                  key={ticket.id} 
+                  className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 hover:bg-slate-700/70 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className={`
+                        w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                        ${idx === 0 ? 'bg-red-600 text-white' : 
+                          idx === 1 ? 'bg-orange-600 text-white' : 
+                          idx === 2 ? 'bg-amber-600 text-white' : 
+                          'bg-slate-600 text-slate-200'}
+                      `}>
+                        {idx + 1}
+                      </span>
+                      <div>
+                        <span className="text-blue-300 font-medium">Ticket #{ticket.id}</span>
+                        <span className="text-slate-500 text-xs ml-2">Línea {ticket.linea}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-2xl font-bold text-amber-300">{ticket.duracion_minutos || 0}</span>
+                      <span className="text-amber-400 text-sm ml-1">min</span>
+                    </div>
+                  </div>
+                  
+                  <p className="text-slate-200 text-sm mb-2">{ticket.descr}</p>
+                  
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-400">
+                    <span><span className="text-slate-500">Modelo:</span> {ticket.modelo}</span>
+                    <span><span className="text-slate-500">Clasificación:</span> {ticket.clasificacion || 'N/A'}</span>
+                    <span><span className="text-slate-500">Piezas:</span> <span className="text-rose-300">{ticket.piezas || 0}</span></span>
+                    <span><span className="text-slate-500">Fecha:</span> {ticket.hc ? new Date(ticket.hc).toLocaleDateString('es-MX') : 'N/A'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : selectedMachineForTop ? (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-slate-500">No hay tickets para esta máquina en el período seleccionado</p>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+              </svg>
+              <p className="text-slate-500">Selecciona una máquina del selector para ver los tickets con más tiempo</p>
             </div>
           )}
         </div>
@@ -838,6 +1009,124 @@ export default function Analytics() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-slate-500 text-lg">No hay tickets disponibles para este equipo</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top 5 Modal for Machines with More Failures */}
+      {showTop5Modal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowTop5Modal(false)}>
+          <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 max-w-4xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-red-900/60 to-slate-900 border-b border-slate-700 p-4 sm:p-6 flex justify-between items-start">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-slate-100 mb-2 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Top 5 Tickets con Más Tiempo
+                </h2>
+                <p className="text-slate-400 text-sm">
+                  <span className="font-medium text-red-300">{selectedMachine}</span>
+                </p>
+                <p className="text-slate-500 text-xs mt-1">
+                  {selectedLinea !== 'all' ? `Línea ${selectedLinea} • ` : ''}
+                  {dateRange === 'custom' 
+                    ? `${customStartDate} - ${customEndDate}` 
+                    : `Últimos ${dateRange} días`}
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowTop5Modal(false)} 
+                className="text-slate-400 hover:text-slate-200 text-2xl leading-none px-3 hover:bg-slate-700/50 rounded-lg transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
+              {loadingTop5 ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-700 border-t-red-400 mb-4"></div>
+                  <p className="text-slate-300 text-lg font-medium">Cargando tickets...</p>
+                </div>
+              ) : top5Tickets && top5Tickets.length > 0 ? (
+                <div className="space-y-4">
+                  {top5Tickets.map((ticket, idx) => (
+                    <div 
+                      key={ticket.id} 
+                      className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 hover:bg-slate-700/70 transition-colors"
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className={`
+                            w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg
+                            ${idx === 0 ? 'bg-red-600 text-white' : 
+                              idx === 1 ? 'bg-orange-600 text-white' : 
+                              idx === 2 ? 'bg-amber-600 text-white' : 
+                              'bg-slate-600 text-slate-200'}
+                          `}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <span className="text-blue-300 font-medium">Ticket #{ticket.id}</span>
+                            <p className="text-slate-400 text-xs">Línea {ticket.linea}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-2xl font-bold text-amber-300">{ticket.duracion_minutos || 0}</span>
+                          <span className="text-amber-400 text-sm ml-1">min</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <p className="text-slate-200 font-medium">{ticket.descr}</p>
+                        {ticket.solucion && (
+                          <p className="text-slate-400 text-sm mt-1">
+                            <span className="text-emerald-400">Solución:</span> {ticket.solucion}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <span className="text-slate-500 text-xs block">Modelo</span>
+                          <span className="text-slate-300">{ticket.modelo}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-xs block">Clasificación</span>
+                          <span className="text-slate-300">{ticket.clasificacion || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-xs block">Piezas Perdidas</span>
+                          <span className="text-rose-300 font-medium">{ticket.piezas || 0}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-xs block">Fecha Cierre</span>
+                          <span className="text-slate-300">
+                            {ticket.hc ? new Date(ticket.hc).toLocaleDateString('es-MX') : 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 pt-3 border-t border-slate-600 flex justify-between text-xs text-slate-400">
+                        <span>Reportado: {ticket.nombre}</span>
+                        <span>Técnico: {ticket.tecnico || 'N/A'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-slate-500 text-lg">No hay tickets disponibles para esta máquina</p>
+                  <p className="text-slate-600 text-sm mt-1">en el período seleccionado</p>
                 </div>
               )}
             </div>

@@ -83,6 +83,12 @@ export const getTicketsByEquipment = (params = {}) => {
   return api.get(`/deadtimes/stats/tickets-by-equipment?${query}`).then(r => r.data);
 };
 
+// Get top N tickets with most time by equipment (for modal drill-down)
+export const getTopTicketsByEquipment = (params = {}) => {
+  const query = new URLSearchParams({ ...params, limit: params.limit || 5 }).toString();
+  return api.get(`/deadtimes/stats/tickets-by-equipment?${query}`).then(r => r.data);
+};
+
 // Auth functions with credentials system
 export const login = async (employee_input, password) => {
   const { data } = await api.post('/auth/login', { employee_input, password });

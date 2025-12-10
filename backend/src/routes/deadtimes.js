@@ -354,7 +354,7 @@ router.get('/equipos', async (req, res) => {
 // Get detailed tickets by equipment name (for drill-down in analytics)
 router.get('/stats/tickets-by-equipment', async (req, res) => {
   try {
-    const { equipo, linea, startDate, endDate, days = 30 } = req.query;
+    const { equipo, linea, startDate, endDate, days = 30, limit } = req.query;
     
     if (!equipo) {
       return res.status(400).json({ error: 'Equipment name (equipo) is required' });
@@ -375,6 +375,9 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
       params.push(linea);
     }
     
+    // Add LIMIT clause if specified (for top N tickets)
+    const limitClause = limit ? `LIMIT ${parseInt(limit, 10)}` : '';
+    
     const query = `
       SELECT 
         id,
@@ -394,6 +397,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
       FROM deadtimes 
       WHERE equipo = ? AND ${dateCondition} ${lineaCondition}
       ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
+      ${limitClause}
     `;
     
     const [rows] = await db.query(query, params);
