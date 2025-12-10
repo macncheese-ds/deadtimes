@@ -221,32 +221,7 @@ export default function Analytics() {
     
     if (!equipmentName) return
     
-    setSelectedEquipment(equipmentName)
-    setShowDrillDown(true)
-    setLoadingDrillDown(true)
-    
-    try {
-      const params = { equipo: equipmentName }
-      
-      if (selectedLinea !== 'all') {
-        params.linea = selectedLinea
-      }
-      
-      if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
-      } else {
-        params.days = dateRange
-      }
-      
-      const tickets = await getTicketsByEquipment(params)
-      setDrillDownTickets(tickets)
-    } catch (error) {
-      console.error('Error loading equipment tickets:', error)
-      setDrillDownTickets([])
-    } finally {
-      setLoadingDrillDown(false)
-    }
+    openDrillDown(equipmentName, false)
   }
 
   // Handle click for general equipment chart (all lines)
@@ -258,13 +233,30 @@ export default function Analytics() {
     
     if (!equipmentName) return
     
+    openDrillDown(equipmentName, true)
+  }
+
+  // Open drill-down modal with equipment tickets
+  const openDrillDown = async (equipmentName, isGeneral = false) => {
+    if (!equipmentName) return
+    
     setSelectedEquipment(equipmentName)
     setShowDrillDown(true)
     setLoadingDrillDown(true)
     
     try {
-      // For general chart, don't filter by line
-      const params = { equipo: equipmentName, days: 30 }
+      const params = { equipo: equipmentName }
+      
+      if (!isGeneral && selectedLinea !== 'all') {
+        params.linea = selectedLinea
+      }
+      
+      if (!isGeneral && dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate
+        params.endDate = customEndDate
+      } else {
+        params.days = isGeneral ? 30 : dateRange
+      }
       
       const tickets = await getTicketsByEquipment(params)
       setDrillDownTickets(tickets)
@@ -605,7 +597,7 @@ export default function Analytics() {
             </h2>
             <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposData()} layout="vertical" onClick={handleBarChartClick} style={{ cursor: 'pointer' }}>
+              <BarChart data={prepareEquiposData()} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -617,11 +609,15 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar 
-                  dataKey="Fallas" 
-                  fill="#ef4444" 
-                  className="cursor-pointer hover:opacity-80"
-                />
+                <Bar dataKey="Fallas" fill="#ef4444">
+                  {prepareEquiposData().map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      cursor="pointer"
+                      onClick={() => openDrillDown(entry.fullName, false)}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -661,7 +657,7 @@ export default function Analytics() {
             <p className="text-slate-400 text-xs mb-3">Top 10 últimos 30 días - Todas las líneas</p>
             <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposFallasData()} layout="vertical" onClick={handleGeneralBarChartClick} style={{ cursor: 'pointer' }}>
+              <BarChart data={prepareEquiposFallasData()} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -673,11 +669,15 @@ export default function Analytics() {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar 
-                  dataKey="Total Fallas" 
-                  fill="#ef4444"
-                  className="cursor-pointer hover:opacity-80"
-                />
+                <Bar dataKey="Total Fallas" fill="#ef4444">
+                  {prepareEquiposFallasData().map((entry, index) => (
+                    <Cell 
+                      key={`cell-general-${index}`} 
+                      cursor="pointer"
+                      onClick={() => openDrillDown(entry.fullName, true)}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
