@@ -212,20 +212,14 @@ export default function Analytics() {
     }))
   }
 
-  // Handle click on equipment bar chart
-  const handleEquipmentClick = async (data, index, event) => {
-    console.log('Click received - data:', data, 'index:', index)
+  // Handle click on equipment bar chart - using activePayload from chart click
+  const handleBarChartClick = async (chartData) => {
+    if (!chartData || !chartData.activePayload || chartData.activePayload.length === 0) return
     
-    // En Recharts, cuando haces click en una barra, 'data' contiene las propiedades del item
-    // Intentar obtener el nombre del equipo de diferentes formas
-    const equipmentName = data?.fullName || data?.name || data?.payload?.fullName || data?.payload?.name
+    const payload = chartData.activePayload[0].payload
+    const equipmentName = payload?.fullName || payload?.name
     
-    if (!equipmentName) {
-      console.error('No se pudo extraer el nombre del equipo. Data recibida:', data)
-      return
-    }
-    
-    console.log('Opening modal for equipment:', equipmentName)
+    if (!equipmentName) return
     
     setSelectedEquipment(equipmentName)
     setShowDrillDown(true)
@@ -245,9 +239,34 @@ export default function Analytics() {
         params.days = dateRange
       }
       
-      console.log('Fetching tickets with params:', params)
       const tickets = await getTicketsByEquipment(params)
-      console.log('Tickets received:', tickets?.length || 0, 'tickets')
+      setDrillDownTickets(tickets)
+    } catch (error) {
+      console.error('Error loading equipment tickets:', error)
+      setDrillDownTickets([])
+    } finally {
+      setLoadingDrillDown(false)
+    }
+  }
+
+  // Handle click for general equipment chart (all lines)
+  const handleGeneralBarChartClick = async (chartData) => {
+    if (!chartData || !chartData.activePayload || chartData.activePayload.length === 0) return
+    
+    const payload = chartData.activePayload[0].payload
+    const equipmentName = payload?.fullName || payload?.name
+    
+    if (!equipmentName) return
+    
+    setSelectedEquipment(equipmentName)
+    setShowDrillDown(true)
+    setLoadingDrillDown(true)
+    
+    try {
+      // For general chart, don't filter by line
+      const params = { equipo: equipmentName, days: 30 }
+      
+      const tickets = await getTicketsByEquipment(params)
       setDrillDownTickets(tickets)
     } catch (error) {
       console.error('Error loading equipment tickets:', error)
@@ -336,9 +355,6 @@ export default function Analytics() {
       </div>
     )
   }
-
-  // Debug log antes del render
-  console.log('Analytics render - showDrillDown:', showDrillDown, 'selectedEquipment:', selectedEquipment, 'tickets count:', drillDownTickets?.length)
 
   return (
     <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
@@ -587,9 +603,9 @@ export default function Analytics() {
             <h2 className="text-lg font-semibold text-slate-100 mb-4">
               {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
             </h2>
-            <p className="text-slate-400 text-xs mb-3">Haz clic en una barra para ver los tickets detallados</p>
+            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposData()} layout="vertical">
+              <BarChart data={prepareEquiposData()} layout="vertical" onClick={handleBarChartClick} style={{ cursor: 'pointer' }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -604,8 +620,7 @@ export default function Analytics() {
                 <Bar 
                   dataKey="Fallas" 
                   fill="#ef4444" 
-                  onClick={handleEquipmentClick}
-                  cursor="pointer"
+                  className="cursor-pointer hover:opacity-80"
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -644,9 +659,9 @@ export default function Analytics() {
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Equipos con Más Fallas (General)</h2>
             <p className="text-slate-400 text-xs mb-3">Top 10 últimos 30 días - Todas las líneas</p>
-            <p className="text-slate-400 text-xs mb-3">Haz clic en una barra para ver los tickets detallados</p>
+            <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los tickets detallados</p>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={prepareEquiposFallasData()} layout="vertical">
+              <BarChart data={prepareEquiposFallasData()} layout="vertical" onClick={handleGeneralBarChartClick} style={{ cursor: 'pointer' }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
                 <YAxis 
@@ -661,8 +676,7 @@ export default function Analytics() {
                 <Bar 
                   dataKey="Total Fallas" 
                   fill="#ef4444"
-                  onClick={handleEquipmentClick}
-                  cursor="pointer"
+                  className="cursor-pointer hover:opacity-80"
                 />
               </BarChart>
             </ResponsiveContainer>
