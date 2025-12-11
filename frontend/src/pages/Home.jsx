@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   listTickets, 
   createTicket, 
@@ -25,6 +26,7 @@ import * as XLSX from 'xlsx'
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
 export default function Home() {
+  const navigate = useNavigate()
   const [tickets, setTickets] = useState([])
   const [status, setStatus] = useState('open')
   const [showNew, setShowNew] = useState(false)
@@ -655,7 +657,7 @@ export default function Home() {
           <p className="text-slate-400 mt-1 text-sm sm:text-base">Sistema de gestión de tiempos muertos</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <button onClick={toggleNew} className={`font-medium py-2.5 sm:py-3 px-4 sm:px-5 rounded-lg border transition-all text-sm sm:text-base ${showNew ? 'bg-emerald-900/40 border-emerald-700/50 text-emerald-200' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-emerald-900/20 hover:border-emerald-700/30'}`}>
             + Nuevo Ticket
           </button>
@@ -667,6 +669,9 @@ export default function Home() {
           </button>
           <button onClick={toggleAnalytics} className={`font-medium py-2.5 sm:py-3 px-4 sm:px-5 rounded-lg border transition-all text-sm sm:text-base ${showAnalytics ? 'bg-purple-900/40 border-purple-700/50 text-purple-200' : 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-purple-900/20 hover:border-purple-700/30'}`}>
             Analytics
+          </button>
+          <button onClick={() => navigate('/machine-analysis')} className="font-medium py-2.5 sm:py-3 px-4 sm:px-5 rounded-lg border transition-all text-sm sm:text-base bg-slate-800 border-slate-700 text-slate-300 hover:bg-orange-900/20 hover:border-orange-700/30">
+            Análisis Máquinas
           </button>
         </div>
 

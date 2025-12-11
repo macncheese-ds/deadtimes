@@ -361,12 +361,13 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
     }
     
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
-    const params = [equipo];
+    const params = [];
     
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
-      params.push(startDate, endDate);
-      params.unshift(equipo);
+      params.push(equipo, startDate, endDate);
+    } else {
+      params.push(equipo);
     }
     
     let lineaCondition = '';
@@ -395,7 +396,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
         deadtime,
         solucion
       FROM deadtimes 
-      WHERE equipo = ? AND ${dateCondition} ${lineaCondition}
+      WHERE equipo = ? AND done = 1 AND ${dateCondition} ${lineaCondition}
       ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
       ${limitClause}
     `;
