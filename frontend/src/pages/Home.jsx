@@ -212,7 +212,10 @@ export default function Home() {
 
   async function handleEquipoChange(e) {
     const val = e.target.value
-    setForm(prev => ({ ...prev, equipo: val, descr: '' }))
+    // Si el equipo no es NXT, resetear todas las montadoras a false
+    const isNXT = val === 'NXT'
+    const resetMods = isNXT ? {} : { Montadora1: false, Montadora2: false, Montadora3: false, Montadora4: false, Montadora5: false, Montadora6: false, Montadora7: false, Montadora8: false, Montadora9: false, Montadora10: false, Montadora11: false, Montadora12: false }
+    setForm(prev => ({ ...prev, equipo: val, descr: '', mods: isNXT ? prev.mods : resetMods }))
     try {
       setDescripcionesLoading(true)
       const data = await getDescripciones(val || undefined)
@@ -309,9 +312,17 @@ export default function Home() {
       // Si la descripción es "Otros", usar el valor de descr_otros
       const descripcionFinal = form.descr === '__OTROS__' ? form.descr_otros : form.descr
       
+      // Si el equipo no es NXT, asegurar que todas las montadoras sean false (0)
+      const modsToSend = form.equipo === 'NXT' ? form.mods : {
+        Montadora1: false, Montadora2: false, Montadora3: false, Montadora4: false,
+        Montadora5: false, Montadora6: false, Montadora7: false, Montadora8: false,
+        Montadora9: false, Montadora10: false, Montadora11: false, Montadora12: false
+      }
+      
       await createTicket({ 
         ...form, 
         descr: descripcionFinal,
+        mods: modsToSend,
         turno, 
         nombre: data.user.nombre, 
         num_empleado: data.user.num_empleado 
@@ -852,13 +863,13 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Sección 5: Montadoras - Desbloqueado cuando Sección 4 está completa */}
-              <div className={`border rounded-lg p-4 transition-all ${form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others) ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
-                <h3 className="text-sm font-semibold text-slate-300 mb-3">5. Montadoras Afectadas</h3>
+              {/* Sección 5: Montadoras - Solo habilitado cuando el equipo es NXT */}
+              <div className={`border rounded-lg p-4 transition-all ${form.equipo === 'NXT' && form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others) ? 'border-slate-600' : 'border-slate-700 opacity-50'}`}>
+                <h3 className="text-sm font-semibold text-slate-300 mb-3">5. Montadoras Afectadas {form.equipo === 'NXT' ? '(Selecciona al menos una)' : '(Solo para equipo NXT)'}</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                   {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
-                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-emerald-900/30 border-emerald-600/50' : 'bg-slate-800 border-slate-600 hover:border-slate-500'} ${!(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others)) ? 'opacity-50 pointer-events-none' : ''}`}>
-                      <input type="checkbox" className="mr-1.5 sm:mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-500" checked={form.mods[`Montadora${i}`] || false} onChange={e => setForm({...form, mods: {...form.mods, [`Montadora${i}`]: e.target.checked}})} disabled={!(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others))} />
+                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-emerald-900/30 border-emerald-600/50' : 'bg-slate-800 border-slate-600 hover:border-slate-500'} ${form.equipo !== 'NXT' || !(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others)) ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <input type="checkbox" className="mr-1.5 sm:mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-500" checked={form.mods[`Montadora${i}`] || false} onChange={e => setForm({...form, mods: {...form.mods, [`Montadora${i}`]: e.target.checked}})} disabled={form.equipo !== 'NXT' || !(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others))} />
                       <span className="text-slate-300 text-xs sm:text-sm font-medium">M{i}</span>
                     </label>
                   ))}
@@ -868,7 +879,7 @@ export default function Home() {
               <button 
                 type="submit" 
                 className="w-full bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-lg transition-colors border border-emerald-600/50 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others)}
+                disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others) || (form.equipo === 'NXT' && !Object.values(form.mods).some(m => m === true))}
               >
                 Crear Ticket
               </button>
