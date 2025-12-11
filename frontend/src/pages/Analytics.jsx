@@ -137,6 +137,7 @@ export default function Analytics() {
 
   // Formatear datos para gráficas
   const prepareLineaData = () => {
+    if (!Array.isArray(statsLinea)) return [];
     return statsLinea.map(item => ({
       name: `Línea ${item.linea}`,
       'Total Tickets': item.total_tickets,
@@ -176,6 +177,7 @@ export default function Analytics() {
   }
 
   const prepareClasificacionData = () => {
+    if (!Array.isArray(clasificacion)) return [];
     const grouped = {}
     clasificacion.forEach(item => {
       if (!grouped[item.clasificacion]) {
@@ -214,6 +216,7 @@ export default function Analytics() {
   }
 
   const prepareEquiposData = () => {
+    if (!Array.isArray(statsEquipos)) return [];
     return statsEquipos
       .slice(0, 10)
       .map(item => ({
@@ -226,6 +229,7 @@ export default function Analytics() {
   }
 
   const prepareAtencionData = () => {
+    if (!Array.isArray(statsAtencion)) return [];
     return statsAtencion.slice(0, 15).map((item, idx) => ({
       fecha: new Date(item.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' }),
       'Tiempo Promedio': Math.round(item.promedio_minutos || 0),
@@ -234,6 +238,7 @@ export default function Analytics() {
   }
 
   const prepareEquiposFallasData = () => {
+    if (!Array.isArray(statsEquiposFallas)) return [];
     return statsEquiposFallas.slice(0, 10).map(item => ({
       name: item.equipo.length > 30 ? item.equipo.substring(0, 30) + '...' : item.equipo,
       fullName: item.equipo,
@@ -943,41 +948,85 @@ export default function Analytics() {
         </div>
 
         {/* Análisis de Tiempos - Nueva Pestaña */}
-        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
-          <h2 className="text-lg font-semibold text-slate-100 mb-4">Análisis de Tiempos</h2>
-          <div className="mb-4">
-            <label htmlFor="maquina" className="block text-sm font-medium text-gray-700">Filtrar por Máquina:</label>
-            <select
-              id="maquina"
-              value={selectedMaquina}
-              onChange={(e) => setSelectedMaquina(e.target.value)}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-            >
-              <option value="">Todas</option>
-              {maquinas.map((maquina) => (
-                <option key={maquina} value={maquina}>{maquina}</option>
-              ))}
-            </select>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máquina</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Causa</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Total</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {topTiempos.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.maquina}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.causa}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.tiempo_total}</td>
-                  </tr>
+        <div className="bg-gradient-to-br from-red-900/40 to-orange-900/40 rounded-lg shadow-lg border-4 border-red-500 p-4 sm:p-6 mb-6">
+          <div className="border-4 border-yellow-400 p-4 bg-slate-800/90 rounded-lg">
+            <h2 className="text-2xl font-bold text-red-400 mb-6 border-b-4 border-green-500 pb-3">
+              🔍 Análisis de Tiempos - TOP de Tiempos Perdidos
+            </h2>
+            
+            {/* Selector de máquina */}
+            <div className="mb-6 border-2 border-cyan-400 p-4 rounded-lg bg-slate-700/50">
+              <label htmlFor="maquina" className="block text-base font-semibold text-cyan-300 mb-3">
+                Filtrar por Máquina:
+              </label>
+              <select
+                id="maquina"
+                value={selectedMaquina}
+                onChange={(e) => setSelectedMaquina(e.target.value)}
+                className="w-full bg-slate-600 border-2 border-purple-500 text-slate-100 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                <option value="">Todas las Máquinas</option>
+                {maquinas.map((maquina) => (
+                  <option key={maquina} value={maquina}>{maquina}</option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+
+            {/* Tabla de resultados */}
+            <div className="overflow-x-auto border-4 border-pink-500 rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-gradient-to-r from-blue-900 to-purple-900 border-b-4 border-orange-500">
+                  <tr>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider border-r-2 border-cyan-400">
+                      Máquina
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider border-r-2 border-cyan-400">
+                      Causa
+                    </th>
+                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider">
+                      Tiempo Total (min)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-slate-700/50 divide-y-2 divide-slate-600">
+                  {topTiempos && topTiempos.length > 0 ? (
+                    topTiempos.map((item, index) => (
+                      <tr key={index} className="hover:bg-slate-600/70 transition-colors border-l-4 border-green-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-300 border-r border-slate-600">
+                          {item.maquina || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-200 border-r border-slate-600">
+                          {item.causa || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-300">
+                          {item.tiempo_total || 0}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="3" className="px-6 py-12 text-center">
+                        <div className="text-slate-400 text-lg">
+                          <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <p>No hay datos disponibles</p>
+                          <p className="text-sm text-slate-500 mt-2">Selecciona una máquina o verifica que haya datos</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Info de debugging */}
+            <div className="mt-4 p-3 bg-blue-900/30 border-2 border-blue-500 rounded-lg text-xs text-blue-200">
+              <p><strong>DEBUG INFO:</strong></p>
+              <p>Máquina seleccionada: {selectedMaquina || 'Ninguna (mostrando todas)'}</p>
+              <p>Total de máquinas: {maquinas.length}</p>
+              <p>Registros en topTiempos: {topTiempos?.length || 0}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1192,59 +1241,3 @@ export default function Analytics() {
     </div>
   )
 }
-
-const AnalisisTiempos = () => {
-  const [maquinas, setMaquinas] = useState([]);
-  const [selectedMaquina, setSelectedMaquina] = useState('');
-  const [topTiempos, setTopTiempos] = useState([]);
-
-  useEffect(() => {
-    // Cargar la lista de máquinas
-    getEquipos().then(setMaquinas).catch(console.error);
-  }, []);
-
-  useEffect(() => {
-    // Cargar el TOP de tiempos perdidos
-    getTopTiempos(selectedMaquina).then(setTopTiempos).catch(console.error);
-  }, [selectedMaquina]);
-
-  return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Análisis de Tiempos</h2>
-      <div className="mb-4">
-        <label htmlFor="maquina" className="block text-sm font-medium text-gray-700">Filtrar por Máquina:</label>
-        <select
-          id="maquina"
-          value={selectedMaquina}
-          onChange={(e) => setSelectedMaquina(e.target.value)}
-          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-        >
-          <option value="">Todas</option>
-          {maquinas.map((maquina) => (
-            <option key={maquina} value={maquina}>{maquina}</option>
-          ))}
-        </select>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máquina</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Causa</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Total</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {topTiempos.map((item, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.maquina}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.causa}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.tiempo_total}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};

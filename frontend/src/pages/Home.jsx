@@ -346,6 +346,7 @@ export default function Home() {
 
   // Funciones para Analytics
   const prepareLineaData = () => {
+    if (!Array.isArray(statsLinea)) return [];
     return statsLinea.map(item => ({
       name: `Línea ${item.linea}`,
       'Total Tickets': item.total_tickets,
@@ -383,6 +384,7 @@ export default function Home() {
   }
 
   const prepareClasificacionData = () => {
+    if (!Array.isArray(clasificacion)) return [];
     const grouped = {}
     clasificacion.forEach(item => {
       if (!grouped[item.clasificacion]) {
@@ -421,6 +423,7 @@ export default function Home() {
   }
 
   const prepareEquiposDetalleData = () => {
+    if (!Array.isArray(statsEquiposDetalle)) return [];
     return statsEquiposDetalle
       .slice(0, 10)
       .map(item => ({
@@ -433,6 +436,7 @@ export default function Home() {
   }
 
   const prepareAtencionData = () => {
+    if (!Array.isArray(statsAtencion)) return [];
     return statsAtencion.slice(0, 15).map((item) => ({
       fecha: new Date(item.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' }),
       'Tiempo Promedio': Math.round(item.promedio_minutos || 0),
@@ -441,6 +445,7 @@ export default function Home() {
   }
 
   const prepareEquiposFallasData = () => {
+    if (!Array.isArray(statsEquipos)) return [];
     return statsEquipos.slice(0, 10).map(item => ({
       name: item.equipo.length > 30 ? item.equipo.substring(0, 30) + '...' : item.equipo,
       fullName: item.equipo,
@@ -671,7 +676,7 @@ export default function Home() {
               <h2 className="text-lg sm:text-xl font-semibold text-slate-100 mb-1">Tiempos de Atención</h2>
               <p className="text-slate-400 text-xs sm:text-sm mb-4 sm:mb-6">Promedio últimos 30 días</p>
               <div className="space-y-2 sm:space-y-3">
-                {statsAtencion.slice(0, 10).map((stat, idx) => {
+                {Array.isArray(statsAtencion) && statsAtencion.slice(0, 10).map((stat, idx) => {
                   const maxMinutes = Math.max(...statsAtencion.map(s => s.promedio_minutos), 1)
                   const widthPercent = (stat.promedio_minutos / maxMinutes) * 100
                   return (
