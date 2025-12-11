@@ -240,7 +240,7 @@ export default function Analytics() {
   const prepareEquiposFallasData = () => {
     if (!Array.isArray(statsEquiposFallas)) return [];
     return statsEquiposFallas.slice(0, 10).map(item => ({
-      name: item.equipo.length > 30 ? item.equipo.substring(0, 30) + '...' : item.equipo,
+      name: item.equipo, // Nombre completo sin truncar
       fullName: item.equipo,
       'Total Fallas': item.total_fallas
     }))
@@ -702,7 +702,7 @@ export default function Analytics() {
               {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
             </h2>
             <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los Top 5 tickets con más tiempo</p>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart 
                 data={prepareEquiposData()} 
                 layout="vertical"
@@ -713,6 +713,7 @@ export default function Analytics() {
                   }
                 }}
                 style={{ cursor: 'pointer' }}
+                margin={{ left: 20, right: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
@@ -720,12 +721,16 @@ export default function Analytics() {
                   dataKey="name" 
                   type="category" 
                   stroke="#94a3b8" 
-                  width={180} 
-                  tick={<CustomYAxisTick />}
+                  width={200}
+                  tick={{ fill: '#cbd5e1', fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Fallas" fill="#ef4444" cursor="pointer" />
+                <Bar dataKey="Fallas" cursor="pointer">
+                  {prepareEquiposData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -764,7 +769,7 @@ export default function Analytics() {
             <h2 className="text-lg font-semibold text-slate-100 mb-4">Equipos con Más Fallas (General)</h2>
             <p className="text-slate-400 text-xs mb-3">Top 10 últimos 30 días - Todas las líneas</p>
             <p className="text-slate-400 text-xs mb-3">🖱️ Haz clic en una barra para ver los Top 5 tickets con más tiempo</p>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={400}>
               <BarChart 
                 data={prepareEquiposFallasData()} 
                 layout="vertical"
@@ -775,6 +780,7 @@ export default function Analytics() {
                   }
                 }}
                 style={{ cursor: 'pointer' }}
+                margin={{ left: 20, right: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis type="number" stroke="#94a3b8" />
@@ -782,12 +788,16 @@ export default function Analytics() {
                   dataKey="name" 
                   type="category" 
                   stroke="#94a3b8" 
-                  width={180}
-                  tick={<CustomYAxisTick />}
+                  width={200}
+                  tick={{ fill: '#cbd5e1', fontSize: 12 }}
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="Total Fallas" fill="#ef4444" cursor="pointer" />
+                <Bar dataKey="Total Fallas" cursor="pointer">
+                  {prepareEquiposFallasData().map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

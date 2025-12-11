@@ -450,7 +450,7 @@ export default function Home() {
   const prepareEquiposFallasData = () => {
     if (!Array.isArray(statsEquipos)) return [];
     return statsEquipos.slice(0, 10).map(item => ({
-      name: item.equipo.length > 30 ? item.equipo.substring(0, 30) + '...' : item.equipo,
+      name: item.equipo,
       fullName: item.equipo,
       'Total Fallas': item.total_fallas
     }))
@@ -561,9 +561,7 @@ export default function Home() {
   }
 
   const CustomYAxisTick = ({ x, y, payload }) => {
-    const maxLength = 25
     const text = payload.value
-    const displayText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text
     
     return (
       <g transform={`translate(${x},${y})`}>
@@ -576,7 +574,7 @@ export default function Home() {
           fontSize={11}
           fontWeight={400}
         >
-          {displayText}
+          {text}
         </text>
       </g>
     )
@@ -1319,20 +1317,24 @@ export default function Home() {
                 <h2 className="text-base font-semibold text-slate-100 mb-4">
                   {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
                 </h2>
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={prepareEquiposDetalleData()} layout="vertical">
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={prepareEquiposDetalleData()} layout="vertical" margin={{ left: 20, right: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis type="number" stroke="#94a3b8" />
                     <YAxis 
                       dataKey="name" 
                       type="category" 
                       stroke="#94a3b8" 
-                      width={150} 
-                      tick={<CustomYAxisTick />}
+                      width={200}
+                      tick={{ fill: '#cbd5e1', fontSize: 11 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
-                    <Bar dataKey="Fallas" fill="#ef4444" />
+                    <Bar dataKey="Fallas" cursor="pointer">
+                      {prepareEquiposDetalleData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1367,20 +1369,24 @@ export default function Home() {
               <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
                 <h2 className="text-base font-semibold text-slate-100 mb-2">Equipos con Más Fallas (General)</h2>
                 <p className="text-slate-400 text-xs mb-4">Top 10 últimos 30 días</p>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={prepareEquiposFallasData()} layout="vertical">
+                <ResponsiveContainer width="100%" height={400}>
+                  <BarChart data={prepareEquiposFallasData()} layout="vertical" margin={{ left: 20, right: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis type="number" stroke="#94a3b8" />
                     <YAxis 
                       dataKey="name" 
                       type="category" 
                       stroke="#94a3b8" 
-                      width={150}
-                      tick={<CustomYAxisTick />}
+                      width={200}
+                      tick={{ fill: '#cbd5e1', fontSize: 11 }}
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend wrapperStyle={{ fontSize: '12px' }} />
-                    <Bar dataKey="Total Fallas" fill="#ef4444" />
+                    <Bar dataKey="Total Fallas" cursor="pointer">
+                      {prepareEquiposFallasData().map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>

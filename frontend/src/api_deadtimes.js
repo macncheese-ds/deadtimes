@@ -18,7 +18,10 @@ export const listTickets = (status='open') => {
   const timestamp = new Date().getTime();
   return api.get(`/deadtimes?status=${status}&_t=${timestamp}`).then(r => r.data);
 };
-export const getTicket = (id) => api.get(`/deadtimes/${id}`).then(r => r.data);
+export const getTicket = (id) => {
+  const timestamp = new Date().getTime();
+  return api.get(`/deadtimes/${id}?_t=${timestamp}`).then(r => r.data);
+};
 export const createTicket = (payload) => api.post('/deadtimes', payload).then(r => r.data);
 export const startTicket = (id, tecnico, num_empleado1) => api.post(`/deadtimes/${id}/start`, { tecnico, num_empleado1 }).then(r => r.data);
 export const finishTicket = (id, payload) => api.post(`/deadtimes/${id}/finish`, payload).then(r => r.data);

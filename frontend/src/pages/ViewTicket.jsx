@@ -26,7 +26,17 @@ function calcularMinutos(fechaInicio, fechaFin) {
 export default function ViewTicket(){
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
-  useEffect(() => { getTicket(id).then(setTicket).catch(console.error) }, [id])
+  const [loading, setLoading] = useState(true)
+  
+  const loadTicket = () => {
+    setLoading(true)
+    getTicket(id)
+      .then(setTicket)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }
+  
+  useEffect(() => { loadTicket() }, [id])
 
   if (!ticket) return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><span className="text-slate-300">Cargando...</span></div>
 
@@ -38,7 +48,19 @@ export default function ViewTicket(){
   return (
     <div className="min-h-screen bg-slate-900 p-3 sm:p-6 md:p-8">
       <div className="max-w-3xl mx-auto bg-slate-800 border border-slate-700 p-4 sm:p-6 rounded-lg shadow-lg">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-4 md:mb-6 text-slate-100">Ticket #{ticket.id} - Resumen</h1>
+        <div className="flex justify-between items-center mb-4 md:mb-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-100">Ticket #{ticket.id} - Resumen</h1>
+          <button 
+            onClick={loadTicket}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors"
+          >
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Actualizando...' : 'Recargar'}
+          </button>
+        </div>
         
         {/* Sección de Tiempos del Proceso */}
         <div className="mb-6 bg-slate-700/50 rounded-lg p-4 border border-slate-600">

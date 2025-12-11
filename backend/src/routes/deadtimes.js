@@ -144,7 +144,9 @@ router.get('/stats/linea', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    // Si days es 'custom', usar valor por defecto de 30
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -186,7 +188,8 @@ router.get('/stats/equipos-detalle', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -226,7 +229,8 @@ router.get('/stats/tendencia', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -267,7 +271,8 @@ router.get('/stats/clasificacion', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -306,7 +311,8 @@ router.get('/stats/totales', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -360,7 +366,8 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
       return res.status(400).json({ error: 'Equipment name (equipo) is required' });
     }
     
-    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY)`;
+    const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
+    let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
     if (startDate && endDate) {
@@ -455,7 +462,7 @@ router.get('/', async (req, res) => {
   try {
     if (status === 'closed') {
       // Tickets cerrados: done=1
-      const [rows] = await db.query('SELECT * FROM deadtimes WHERE done = 1 ORDER BY hc DESC LIMIT 100');
+      const [rows] = await db.query('SELECT * FROM deadtimes WHERE done = 1 ORDER BY hc DESC');
       return res.json(rows);
     } else {
       // Tickets abiertos: done=0 (ya no verificamos NULL porque ahora siempre se asigna 0 al crear)
@@ -583,7 +590,17 @@ router.post('/:id/start', async (req, res) => {
   
   try {
     const ha = new Date();
-    await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, id]);
+    // Obtener hr para calcular tiempo de respuesta
+    const [ticketRows] = await db.query('SELECT hr FROM deadtimes WHERE id = ?', [id]);
+    const hr = ticketRows && ticketRows[0] ? ticketRows[0].hr : null;
+    
+    let tr = null;
+    if (hr) {
+      const diffMs = new Date(ha).getTime() - new Date(hr).getTime();
+      tr = Math.max(0, Math.round(diffMs / 60000)); // minutos
+    }
+    
+    await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ?, tr = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, tr, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
