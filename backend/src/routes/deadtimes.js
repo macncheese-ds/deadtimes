@@ -590,17 +590,8 @@ router.post('/:id/start', async (req, res) => {
   
   try {
     const ha = new Date();
-    // Obtener hr para calcular tiempo de respuesta
-    const [ticketRows] = await db.query('SELECT hr FROM deadtimes WHERE id = ?', [id]);
-    const hr = ticketRows && ticketRows[0] ? ticketRows[0].hr : null;
     
-    let tr = null;
-    if (hr) {
-      const diffMs = new Date(ha).getTime() - new Date(hr).getTime();
-      tr = Math.max(0, Math.round(diffMs / 60000)); // minutos
-    }
-    
-    await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ?, tr = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, tr, id]);
+    await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
