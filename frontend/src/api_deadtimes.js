@@ -111,4 +111,12 @@ export const lookupUser = async (employeeInput) => {
 
 api.lookupUser = lookupUser;
 
+// Obtener el TOP de tiempos perdidos agrupados por máquina y causa
+export const getTopTiempos = (maquina) => {
+  const params = new URLSearchParams();
+  if (maquina) params.append('maquina', maquina);
+  const query = params.toString();
+  return api.get(`/analisis/top-tiempos${query ? '?' + query : ''}`).then(r => r.data);
+};
+
 export default api;

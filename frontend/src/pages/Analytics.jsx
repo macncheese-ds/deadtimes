@@ -10,7 +10,9 @@ import {
   getStatsAtencion,
   getStatsEquipos,
   getTicketsByEquipment,
-  getTopTicketsByEquipment
+  getTopTicketsByEquipment,
+  getEquipos,
+  getTopTiempos
 } from '../api_deadtimes'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -56,6 +58,11 @@ export default function Analytics() {
   const [topTicketsByMachine, setTopTicketsByMachine] = useState([])
   const [loadingTopTickets, setLoadingTopTickets] = useState(false)
 
+  // State for analysis tab
+  const [maquinas, setMaquinas] = useState([])
+  const [selectedMaquina, setSelectedMaquina] = useState('')
+  const [topTiempos, setTopTiempos] = useState([])
+
   useEffect(() => {
     loadInitialData()
   }, [])
@@ -65,6 +72,16 @@ export default function Analytics() {
       loadStats()
     }
   }, [selectedLinea, dateRange, customStartDate, customEndDate, lineas.length])
+
+  useEffect(() => {
+    // Cargar la lista de máquinas
+    getEquipos().then(setMaquinas).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    // Cargar el TOP de tiempos perdidos
+    getTopTiempos(selectedMaquina).then(setTopTiempos).catch(console.error);
+  }, [selectedMaquina]);
 
   async function loadInitialData() {
     setLoading(true)
@@ -924,6 +941,45 @@ export default function Analytics() {
             </div>
           )}
         </div>
+
+        {/* Análisis de Tiempos - Nueva Pestaña */}
+        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">Análisis de Tiempos</h2>
+          <div className="mb-4">
+            <label htmlFor="maquina" className="block text-sm font-medium text-gray-700">Filtrar por Máquina:</label>
+            <select
+              id="maquina"
+              value={selectedMaquina}
+              onChange={(e) => setSelectedMaquina(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            >
+              <option value="">Todas</option>
+              {maquinas.map((maquina) => (
+                <option key={maquina} value={maquina}>{maquina}</option>
+              ))}
+            </select>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máquina</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Causa</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Total</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {topTiempos.map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.maquina}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.causa}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.tiempo_total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Drill-Down Modal for Equipment Details */}
@@ -1136,3 +1192,59 @@ export default function Analytics() {
     </div>
   )
 }
+
+const AnalisisTiempos = () => {
+  const [maquinas, setMaquinas] = useState([]);
+  const [selectedMaquina, setSelectedMaquina] = useState('');
+  const [topTiempos, setTopTiempos] = useState([]);
+
+  useEffect(() => {
+    // Cargar la lista de máquinas
+    getEquipos().then(setMaquinas).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    // Cargar el TOP de tiempos perdidos
+    getTopTiempos(selectedMaquina).then(setTopTiempos).catch(console.error);
+  }, [selectedMaquina]);
+
+  return (
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Análisis de Tiempos</h2>
+      <div className="mb-4">
+        <label htmlFor="maquina" className="block text-sm font-medium text-gray-700">Filtrar por Máquina:</label>
+        <select
+          id="maquina"
+          value={selectedMaquina}
+          onChange={(e) => setSelectedMaquina(e.target.value)}
+          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+        >
+          <option value="">Todas</option>
+          {maquinas.map((maquina) => (
+            <option key={maquina} value={maquina}>{maquina}</option>
+          ))}
+        </select>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Máquina</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Causa</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo Total</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {topTiempos.map((item, index) => (
+              <tr key={index}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.maquina}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.causa}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.tiempo_total}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};

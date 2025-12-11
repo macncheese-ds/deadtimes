@@ -675,4 +675,30 @@ router.post('/:id/finish', async (req, res) => {
   }
 });
 
+// Endpoint para obtener el TOP de tiempos perdidos agrupados por máquina y causa
+router.get('/analisis/top-tiempos', async (req, res) => {
+  const { maquina } = req.query;
+  try {
+    const query = `
+      SELECT 
+        maquina, 
+        causa, 
+        SUM(duracion) AS tiempo_total
+      FROM tiempos_perdidos
+      ${maquina ? 'WHERE maquina = ?' : ''}
+      GROUP BY maquina, causa
+      ORDER BY tiempo_total DESC
+      LIMIT 10;
+    `;
+
+    const params = maquina ? [maquina] : [];
+    const [rows] = await db.execute(query, params);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener el TOP de tiempos perdidos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 module.exports = router;
