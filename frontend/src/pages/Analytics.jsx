@@ -1036,13 +1036,14 @@ export default function Analytics() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={topTiempos.slice(0, 10).map(item => ({
-                      name: `${(item.maquina || '').substring(0, 15)}${item.maquina?.length > 15 ? '...' : ''} - ${(item.causa || 'N/A').substring(0, 15)}${item.causa?.length > 15 ? '...' : ''}`,
+                      name: `${item.maquina || 'N/A'}`,
+                      causa: `${item.causa || 'N/A'}`,
                       fullName: `${item.maquina} - ${item.causa}`,
                       'Tiempo (min)': Number(item.tiempo_total) || 0,
                       'Tickets': Number(item.total_tickets) || 0
                     }))}
                     layout="vertical"
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    margin={{ top: 5, right: 30, left: 250, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                     <XAxis type="number" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
@@ -1050,8 +1051,8 @@ export default function Analytics() {
                       type="category" 
                       dataKey="name" 
                       stroke="#94a3b8" 
-                      tick={{ fill: '#94a3b8', fontSize: 10 }}
-                      width={180}
+                      tick={{ fill: '#94a3b8', fontSize: 9 }}
+                      width={240}
                     />
                     <Tooltip 
                       contentStyle={{ 

@@ -53,6 +53,7 @@ export default function Home() {
   const [filterClosedLinea, setFilterClosedLinea] = useState('')
   const [filterClosedEquipo, setFilterClosedEquipo] = useState('')
   const [filterClosedDescr, setFilterClosedDescr] = useState('')
+  const [filterClosedTicketId, setFilterClosedTicketId] = useState('')
   const [filterClosedStartDate, setFilterClosedStartDate] = useState('')
   const [filterClosedEndDate, setFilterClosedEndDate] = useState('')
   // Sorting state for closed tickets
@@ -464,6 +465,8 @@ export default function Home() {
   // Filtrar tickets cerrados por múltiples criterios
   const getFilteredClosedTickets = () => {
     let filtered = tickets.filter(t => {
+      // Filtro por ID de ticket
+      if (filterClosedTicketId && !String(t.id).includes(filterClosedTicketId.replace('#', ''))) return false
       // Filtro por línea
       if (filterClosedLinea && String(t.linea) !== String(filterClosedLinea)) return false
       // Filtro por equipo (búsqueda parcial)
@@ -942,6 +945,7 @@ export default function Home() {
                 <span className="text-slate-300 text-xs font-medium">Filtros</span>
                 <button 
                   onClick={() => {
+                    setFilterClosedTicketId('')
                     setFilterClosedLinea('')
                     setFilterClosedEquipo('')
                     setFilterClosedDescr('')
@@ -953,7 +957,19 @@ export default function Home() {
                   Limpiar filtros
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                {/* Filtro por ID de Ticket */}
+                <div>
+                  <label className="block text-slate-400 text-xs mb-1">ID Ticket</label>
+                  <input 
+                    type="text"
+                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    placeholder="#123"
+                    value={filterClosedTicketId}
+                    onChange={e => setFilterClosedTicketId(e.target.value)}
+                  />
+                </div>
+                
                 {/* Filtro por Línea */}
                 <div>
                   <label className="block text-slate-400 text-xs mb-1">Línea</label>
@@ -1044,7 +1060,7 @@ export default function Home() {
               </div>
               
               {/* Mostrar cantidad de resultados filtrados */}
-              {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) && (
+              {(filterClosedTicketId || filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) && (
                 <div className="mt-3 text-xs text-slate-400">
                   Mostrando {getFilteredClosedTickets().length} de {tickets.length} tickets
                 </div>
@@ -1085,12 +1101,12 @@ export default function Home() {
                 {getFilteredClosedTickets().length === 0 && (
                   <div className="text-center py-8 sm:py-12">
                     <p className="text-slate-500 text-sm sm:text-base">
-                      {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) 
+                      {(filterClosedTicketId || filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate) 
                         ? 'No hay tickets que coincidan con los filtros' 
                         : 'No hay tickets cerrados'}
                     </p>
                     <p className="text-slate-600 text-xs sm:text-sm mt-1">
-                      {(filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate)
+                      {(filterClosedTicketId || filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate)
                         ? 'Intenta con otros criterios de búsqueda'
                         : 'Los tickets cerrados aparecerán aquí'}
                     </p>
