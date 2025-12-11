@@ -116,7 +116,7 @@ export const getTopTiempos = (maquina) => {
   const params = new URLSearchParams();
   if (maquina) params.append('maquina', maquina);
   const query = params.toString();
-  return api.get(`/analisis/top-tiempos${query ? '?' + query : ''}`).then(r => r.data);
+  return api.get(`/deadtimes/analisis/top-tiempos${query ? '?' + query : ''}`).then(r => r.data);
 };
 
 export default api;

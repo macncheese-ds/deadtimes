@@ -679,20 +679,31 @@ router.post('/:id/finish', async (req, res) => {
 router.get('/analisis/top-tiempos', async (req, res) => {
   const { maquina } = req.query;
   try {
-    const query = `
+    // Usar la tabla deadtimes con los campos correctos
+    // equipo = máquina, clasificacion o descr = causa, calcular duración
+    let query = `
       SELECT 
-        maquina, 
-        causa, 
-        SUM(duracion) AS tiempo_total
-      FROM tiempos_perdidos
-      ${maquina ? 'WHERE maquina = ?' : ''}
-      GROUP BY maquina, causa
+        equipo AS maquina, 
+        COALESCE(clasificacion, descr) AS causa, 
+        SUM(COALESCE(deadtime, TIMESTAMPDIFF(MINUTE, hr, COALESCE(hc, NOW())))) AS tiempo_total,
+        COUNT(*) AS total_tickets
+      FROM deadtimes
+      WHERE done = 1
+    `;
+    
+    const params = [];
+    if (maquina) {
+      query += ' AND equipo = ?';
+      params.push(maquina);
+    }
+    
+    query += `
+      GROUP BY equipo, COALESCE(clasificacion, descr)
       ORDER BY tiempo_total DESC
-      LIMIT 10;
+      LIMIT 20
     `;
 
-    const params = maquina ? [maquina] : [];
-    const [rows] = await db.execute(query, params);
+    const [rows] = await db.query(query, params);
 
     res.json(rows);
   } catch (error) {

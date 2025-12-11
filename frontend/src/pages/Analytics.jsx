@@ -947,87 +947,129 @@ export default function Analytics() {
           )}
         </div>
 
-        {/* Análisis de Tiempos - Nueva Pestaña */}
-        <div className="bg-gradient-to-br from-red-900/40 to-orange-900/40 rounded-lg shadow-lg border-4 border-red-500 p-4 sm:p-6 mb-6">
-          <div className="border-4 border-yellow-400 p-4 bg-slate-800/90 rounded-lg">
-            <h2 className="text-2xl font-bold text-red-400 mb-6 border-b-4 border-green-500 pb-3">
-              🔍 Análisis de Tiempos - TOP de Tiempos Perdidos
-            </h2>
-            
-            {/* Selector de máquina */}
-            <div className="mb-6 border-2 border-cyan-400 p-4 rounded-lg bg-slate-700/50">
-              <label htmlFor="maquina" className="block text-base font-semibold text-cyan-300 mb-3">
-                Filtrar por Máquina:
-              </label>
-              <select
-                id="maquina"
-                value={selectedMaquina}
-                onChange={(e) => setSelectedMaquina(e.target.value)}
-                className="w-full bg-slate-600 border-2 border-purple-500 text-slate-100 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
-              >
-                <option value="">Todas las Máquinas</option>
-                {maquinas.map((maquina) => (
-                  <option key={maquina} value={maquina}>{maquina}</option>
-                ))}
-              </select>
-            </div>
+        {/* Análisis de Tiempos - Nueva Sección */}
+        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
+          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+            <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Análisis de Tiempos - TOP de Tiempos Perdidos
+          </h2>
+          
+          {/* Selector de máquina */}
+          <div className="mb-6">
+            <label htmlFor="maquina" className="block text-sm font-medium text-slate-300 mb-2">
+              Filtrar por Máquina:
+            </label>
+            <select
+              id="maquina"
+              value={selectedMaquina}
+              onChange={(e) => setSelectedMaquina(e.target.value)}
+              className="w-full sm:w-64 bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            >
+              <option value="">Todas las Máquinas</option>
+              {maquinas.map((maquina) => (
+                <option key={maquina} value={maquina}>{maquina}</option>
+              ))}
+            </select>
+          </div>
 
-            {/* Tabla de resultados */}
-            <div className="overflow-x-auto border-4 border-pink-500 rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-gradient-to-r from-blue-900 to-purple-900 border-b-4 border-orange-500">
-                  <tr>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider border-r-2 border-cyan-400">
-                      Máquina
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider border-r-2 border-cyan-400">
-                      Causa
-                    </th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-blue-200 uppercase tracking-wider">
-                      Tiempo Total (min)
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-slate-700/50 divide-y-2 divide-slate-600">
-                  {topTiempos && topTiempos.length > 0 ? (
-                    topTiempos.map((item, index) => (
-                      <tr key={index} className="hover:bg-slate-600/70 transition-colors border-l-4 border-green-400">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-300 border-r border-slate-600">
-                          {item.maquina || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-200 border-r border-slate-600">
-                          {item.causa || 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-300">
-                          {item.tiempo_total || 0}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="3" className="px-6 py-12 text-center">
-                        <div className="text-slate-400 text-lg">
-                          <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <p>No hay datos disponibles</p>
-                          <p className="text-sm text-slate-500 mt-2">Selecciona una máquina o verifica que haya datos</p>
-                        </div>
+          {/* Tabla de resultados */}
+          <div className="overflow-x-auto rounded-lg border border-slate-700">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-700/50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Máquina
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Causa/Clasificación
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Tiempo Total (min)
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    Total Tickets
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-slate-800 divide-y divide-slate-700">
+                {topTiempos && topTiempos.length > 0 ? (
+                  topTiempos.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-700/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-emerald-400">
+                        {item.maquina || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-300">
+                        {item.causa || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-amber-400">
+                        {item.tiempo_total || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                        {item.total_tickets || 0}
                       </td>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Info de debugging */}
-            <div className="mt-4 p-3 bg-blue-900/30 border-2 border-blue-500 rounded-lg text-xs text-blue-200">
-              <p><strong>DEBUG INFO:</strong></p>
-              <p>Máquina seleccionada: {selectedMaquina || 'Ninguna (mostrando todas)'}</p>
-              <p>Total de máquinas: {maquinas.length}</p>
-              <p>Registros en topTiempos: {topTiempos?.length || 0}</p>
-            </div>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-12 text-center">
+                      <div className="text-slate-400">
+                        <svg className="w-12 h-12 text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p>No hay datos disponibles</p>
+                        <p className="text-sm text-slate-500 mt-1">Verifica que existan tickets cerrados en la base de datos</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
+
+          {/* Gráfica de barras para visualizar tiempos perdidos */}
+          {topTiempos && topTiempos.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-medium text-slate-200 mb-4">Visualización - Tiempo Total por Causa</h3>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={topTiempos.slice(0, 10).map(item => ({
+                      name: `${(item.maquina || '').substring(0, 15)}${item.maquina?.length > 15 ? '...' : ''} - ${(item.causa || 'N/A').substring(0, 15)}${item.causa?.length > 15 ? '...' : ''}`,
+                      fullName: `${item.maquina} - ${item.causa}`,
+                      'Tiempo (min)': Number(item.tiempo_total) || 0,
+                      'Tickets': Number(item.total_tickets) || 0
+                    }))}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis type="number" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                    <YAxis 
+                      type="category" 
+                      dataKey="name" 
+                      stroke="#94a3b8" 
+                      tick={{ fill: '#94a3b8', fontSize: 10 }}
+                      width={180}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1e293b', 
+                        border: '1px solid #475569',
+                        borderRadius: '8px'
+                      }}
+                      labelStyle={{ color: '#f1f5f9' }}
+                      formatter={(value, name) => [value, name]}
+                      labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label}
+                    />
+                    <Legend />
+                    <Bar dataKey="Tiempo (min)" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
