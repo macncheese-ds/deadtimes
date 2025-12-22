@@ -353,9 +353,8 @@ export default function Home() {
 
   function getTurno() {
     const hour = new Date().getHours()
-    if (hour >= 6 && hour < 14) return 'Matutino'
-    if (hour >= 14 && hour < 22) return 'Vespertino'
-    return 'Nocturno'
+    if (hour >= 8 && hour < 20) return '1'
+    return '2'
   }
 
   // Funciones para Analytics

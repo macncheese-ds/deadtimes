@@ -122,13 +122,18 @@ router.get('/stats/atencion', async (req, res) => {
 router.get('/stats/equipos', async (req, res) => {
   try {
     // Equipos que más fallan (últimos 30 días) - sin tiempo promedio
+    // Agrupamos por TRIM(equipo) para evitar duplicados por espacios
     const [rows] = await db.query(`
       SELECT 
-        equipo,
-        COUNT(*) as total_fallas
-      FROM deadtimes 
-      WHERE hr >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-      GROUP BY equipo
+        TRIM(equipo) as equipo,
+        SUM(cnt) as total_fallas
+      FROM (
+        SELECT equipo, COUNT(*) as cnt
+        FROM deadtimes 
+        WHERE hr >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY equipo
+      ) sub
+      GROUP BY TRIM(equipo)
       ORDER BY total_fallas DESC
       LIMIT 10
     `);
@@ -362,19 +367,28 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
   try {
     const { equipo, linea, startDate, endDate, days = 30, limit } = req.query;
     
-    if (!equipo) {
-      return res.status(400).json({ error: 'Equipment name (equipo) is required' });
-    }
-    
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
     
+    // Condición de equipo (opcional - si no se especifica, muestra todos)
+    let equipoCondition = '';
+    if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
+      equipoCondition = 'AND equipo = ?';
+    } else if (equipo === 'sin_otros') {
+      equipoCondition = 'AND LOWER(equipo) NOT LIKE ?';
+    }
+    
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
-      params.push(equipo, startDate, endDate);
-    } else {
+      params.push(startDate, endDate);
+    }
+    
+    // Agregar equipo a params si está especificado
+    if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
       params.push(equipo);
+    } else if (equipo === 'sin_otros') {
+      params.push('%otro%');
     }
     
     let lineaCondition = '';
@@ -403,7 +417,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
         deadtime,
         solucion
       FROM deadtimes 
-      WHERE equipo = ? AND done = 1 AND ${dateCondition} ${lineaCondition}
+      WHERE done = 1 AND ${dateCondition} ${equipoCondition} ${lineaCondition}
       ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
       ${limitClause}
     `;

@@ -217,33 +217,100 @@ export default function Analytics() {
 
   const prepareEquiposData = () => {
     if (!Array.isArray(statsEquipos)) return [];
-    return statsEquipos
+    
+    // Agrupar por equipo (combinar datos de todas las líneas)
+    const grouped = {}
+    statsEquipos.forEach(item => {
+      const equipoKey = (item.equipo || '').trim()
+      if (!equipoKey) return
+      
+      if (!grouped[equipoKey]) {
+        grouped[equipoKey] = {
+          equipo: equipoKey,
+          total_fallas: 0,
+          total_minutos: 0,
+          count_minutos: 0,
+          total_piezas_perdidas: 0
+        }
+      }
+      grouped[equipoKey].total_fallas += parseInt(item.total_fallas, 10) || 0
+      if (item.promedio_minutos) {
+        grouped[equipoKey].total_minutos += (parseFloat(item.promedio_minutos) * (parseInt(item.total_fallas, 10) || 1))
+        grouped[equipoKey].count_minutos += parseInt(item.total_fallas, 10) || 1
+      }
+      grouped[equipoKey].total_piezas_perdidas += parseInt(item.total_piezas_perdidas, 10) || 0
+    })
+    
+    return Object.values(grouped)
+      .sort((a, b) => b.total_fallas - a.total_fallas)
       .slice(0, 10)
       .map(item => ({
         name: item.equipo,
         fullName: item.equipo,
         'Fallas': item.total_fallas,
-        'Tiempo Prom': Math.round(item.promedio_minutos || 0),
-        'Piezas Perdidas': item.total_piezas_perdidas || 0
+        'Tiempo Prom': item.count_minutos > 0 ? Math.round(item.total_minutos / item.count_minutos) : 0,
+        'Piezas Perdidas': item.total_piezas_perdidas
       }))
   }
 
   const prepareAtencionData = () => {
     if (!Array.isArray(statsAtencion)) return [];
-    return statsAtencion.slice(0, 15).map((item, idx) => ({
-      fecha: new Date(item.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' }),
-      'Tiempo Promedio': Math.round(item.promedio_minutos || 0),
-      'Total Tickets': item.total_tickets
-    }))
+    
+    // Agrupar por fecha (combinar datos de todas las líneas)
+    const grouped = {}
+    statsAtencion.forEach(item => {
+      const fechaKey = item.fecha
+      if (!grouped[fechaKey]) {
+        grouped[fechaKey] = {
+          fecha: fechaKey,
+          total_minutos: 0,
+          count_minutos: 0,
+          total_tickets: 0
+        }
+      }
+      if (item.promedio_minutos) {
+        grouped[fechaKey].total_minutos += (item.promedio_minutos * (item.total_tickets || 1))
+        grouped[fechaKey].count_minutos += item.total_tickets || 1
+      }
+      grouped[fechaKey].total_tickets += item.total_tickets || 0
+    })
+    
+    return Object.values(grouped)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+      .slice(-15)
+      .map(item => ({
+        fecha: new Date(item.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' }),
+        'Tiempo Promedio': item.count_minutos > 0 ? Math.round(item.total_minutos / item.count_minutos) : 0,
+        'Total Tickets': item.total_tickets
+      }))
   }
 
   const prepareEquiposFallasData = () => {
     if (!Array.isArray(statsEquiposFallas)) return [];
-    return statsEquiposFallas.slice(0, 10).map(item => ({
-      name: item.equipo, // Nombre completo sin truncar
-      fullName: item.equipo,
-      'Total Fallas': item.total_fallas
-    }))
+    
+    // Agrupar por equipo (combinar datos de todas las líneas)
+    const grouped = {}
+    statsEquiposFallas.forEach(item => {
+      const equipoKey = (item.equipo || '').trim()
+      if (!equipoKey) return
+      
+      if (!grouped[equipoKey]) {
+        grouped[equipoKey] = {
+          equipo: equipoKey,
+          total_fallas: 0
+        }
+      }
+      grouped[equipoKey].total_fallas += parseInt(item.total_fallas, 10) || 0
+    })
+    
+    return Object.values(grouped)
+      .sort((a, b) => b.total_fallas - a.total_fallas)
+      .slice(0, 10)
+      .map(item => ({
+        name: item.equipo,
+        fullName: item.equipo,
+        'Total Fallas': item.total_fallas
+      }))
   }
 
   // Handle click on equipment bar chart - using activePayload from chart click

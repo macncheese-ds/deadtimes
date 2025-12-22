@@ -59,8 +59,16 @@ export default function MachineAnalysis() {
     
     setLoadingTickets(true)
     try {
-      const params = { 
-        equipo: selectedMaquina
+      const params = {}
+      
+      // Si es 'all', enviar el parámetro para indicar todas las máquinas
+      // Si es 'sin_otros', enviar el parámetro para excluir "otros"
+      if (selectedMaquina === 'all') {
+        params.equipo = 'all'
+      } else if (selectedMaquina === 'sin_otros') {
+        params.equipo = 'sin_otros'
+      } else {
+        params.equipo = selectedMaquina
       }
       
       // Agregar filtro de línea si está seleccionado
@@ -126,7 +134,8 @@ export default function MachineAnalysis() {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Análisis de Máquina')
     
-    const fileName = `Analisis_${selectedMaquina}_${new Date().toISOString().split('T')[0]}.xlsx`
+    const nombreArchivo = selectedMaquina === 'all' ? 'Todas_Maquinas' : selectedMaquina === 'sin_otros' ? 'Sin_Otros' : selectedMaquina
+    const fileName = `Analisis_${nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`
     XLSX.writeFile(wb, fileName)
   }
 
@@ -163,7 +172,7 @@ export default function MachineAnalysis() {
 
   return (
     <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="bg-slate-800 border-l-4 border-orange-600 rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex justify-between items-start">
@@ -200,6 +209,8 @@ export default function MachineAnalysis() {
                 onChange={e => setSelectedMaquina(e.target.value)}
               >
                 <option value="">-- Seleccionar máquina --</option>
+                <option value="all">Todas las máquinas</option>
+                <option value="sin_otros">Sin otros</option>
                 {maquinas.map((maquina, idx) => (
                   <option key={idx} value={maquina}>{maquina}</option>
                 ))}
@@ -283,7 +294,7 @@ export default function MachineAnalysis() {
             <svg className="w-20 h-20 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <p className="text-slate-400 text-lg">Selecciona una máquina para ver el análisis</p>
+            <p className="text-slate-400 text-lg">Selecciona una máquina o "Todas las máquinas" para ver el análisis</p>
           </div>
         ) : loadingTickets ? (
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-12 text-center">
@@ -393,6 +404,7 @@ export default function MachineAnalysis() {
                     <tr>
                       <th className="px-4 py-3">#</th>
                       <th className="px-4 py-3">ID</th>
+                      <th className="px-4 py-3">Máquina</th>
                       <th className="px-4 py-3">Descripción</th>
                       <th className="px-4 py-3">Clasificación</th>
                       <th className="px-4 py-3">Modelo</th>
@@ -408,6 +420,7 @@ export default function MachineAnalysis() {
                       <tr key={ticket.id} className="border-b border-slate-700 hover:bg-slate-700/50">
                         <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
                         <td className="px-4 py-3 font-medium text-blue-300">#{ticket.id}</td>
+                        <td className="px-4 py-3 text-orange-300 font-medium">{ticket.equipo}</td>
                         <td className="px-4 py-3 text-slate-200 max-w-xs truncate" title={ticket.descr}>
                           {ticket.descr}
                         </td>
