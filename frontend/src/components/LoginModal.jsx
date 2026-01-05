@@ -46,57 +46,94 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 text-slate-100 rounded-lg p-6 w-full max-w-sm shadow-2xl border border-slate-700">
-        <h3 className="text-xl font-semibold mb-2 text-slate-100">Iniciar Sesión</h3>
-        <p className="text-sm text-slate-400 mb-5">Ingrese sus credenciales para continuar</p>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="glass-card rounded-2xl p-8 w-full max-w-sm shadow-2xl border border-slate-700/50 animate-slide-up">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-bold text-white">Iniciar Sesión</h3>
+          <p className="text-sm text-slate-400 mt-1">Ingrese sus credenciales para continuar</p>
+        </div>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-1.5 font-medium">Número de Empleado</label>
-            <input
-              ref={employeeInputRef}
-              type="text"
-              className="w-full border border-slate-600 bg-slate-700 text-slate-100 px-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500"
-              value={employeeInput}
-              onChange={(e) => setEmployeeInput(e.target.value)}
-              placeholder="Ej: 1A, 123B"
-              autoComplete="username"
-            />
+            <label className="block text-sm text-slate-300 mb-2 font-medium">Número de Empleado</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                </svg>
+              </div>
+              <input
+                ref={employeeInputRef}
+                type="text"
+                className="w-full bg-slate-800/50 border border-slate-600/50 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition-all"
+                value={employeeInput}
+                onChange={(e) => setEmployeeInput(e.target.value)}
+                placeholder="Ej: 1A, 123B"
+                autoComplete="username"
+              />
+            </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-1.5 font-medium">Contraseña</label>
-            <input
-              type="password"
-              className="w-full border border-slate-600 bg-slate-700 text-slate-100 px-3 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
+            <label className="block text-sm text-slate-300 mb-2 font-medium">Contraseña</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <input
+                type="password"
+                className="w-full bg-slate-800/50 border border-slate-600/50 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
           </div>
 
           {status && (
-            <div className="text-sm text-rose-400 bg-rose-900/20 border border-rose-700/30 p-3 rounded-lg mb-4">
-              {status}
+            <div className="flex items-center gap-2 text-sm text-rose-400 bg-rose-500/10 border border-rose-500/30 p-4 rounded-xl mb-4">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{status}</span>
             </div>
           )}
 
-          <div className="flex gap-3 justify-end mt-5">
+          <div className="flex gap-3 mt-6">
             <button 
               type="button" 
               onClick={onClose} 
-              className="px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium transition-colors border border-slate-600"
+              className="flex-1 px-4 py-3 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 font-medium transition-all border border-slate-600/50"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
-              className="px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
               disabled={busy}
             >
-              {busy ? 'Verificando...' : 'Iniciar Sesión'}
+              {busy ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>Verificando...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Iniciar Sesión</span>
+                </>
+              )}
             </button>
           </div>
         </form>

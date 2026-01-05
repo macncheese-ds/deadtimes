@@ -124,124 +124,222 @@ export default function HandleTicket() {
     }
   }
 
-  if (!ticket) return <div className="min-h-screen bg-slate-900 flex items-center justify-center"><span className="text-slate-300">Cargando...</span></div>
+  if (!ticket) return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-925 via-slate-900 to-slate-925 flex items-center justify-center">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-blue-400 mb-4"></div>
+        <p className="text-slate-300 font-medium">Cargando ticket...</p>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
-      <div className="max-w-4xl mx-auto bg-slate-800 p-4 sm:p-6 rounded-lg shadow-lg border border-slate-700">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-slate-100">Manejar Ticket #{id}</h1>
-          <button 
-            onClick={handleBackWithoutFinish}
-            className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg text-sm sm:text-base hover:bg-slate-600 transition-colors border border-slate-600"
-          >
-            ← Volver
-          </button>
-        </div>
-        
-        {/* Información de tiempos */}
-        <div className="mb-6 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400">Creado:</span>
-              <span className="text-slate-200 font-medium">{formatDateTime(ticket.hr) || 'N/A'}</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-925 via-slate-900 to-slate-925 p-3 sm:p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="glass-card rounded-2xl p-5 sm:p-8 shadow-2xl animate-slide-up">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">Manejar Ticket</h1>
+                <span className="badge badge-amber">#{id}</span>
+              </div>
             </div>
-            {ticket.ha && (
+            <button 
+              onClick={handleBackWithoutFinish}
+              className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 rounded-xl text-sm font-medium transition-all border border-slate-600/50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Volver
+            </button>
+          </div>
+          
+          {/* Información de tiempos */}
+          <div className="mb-6 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+            <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">En atención:</span>
-                <span className="text-slate-200 font-medium">{formatDateTime(ticket.ha)}</span>
+                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-slate-400">Creado:</span>
+                <span className="text-white font-medium">{formatDateTime(ticket.hr) || 'N/A'}</span>
+              </div>
+              {ticket.ha && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-slate-400">En atención:</span>
+                  <span className="text-emerald-400 font-medium">{formatDateTime(ticket.ha)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Información del ticket */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-slate-400 text-xs mb-1">Descripción</p>
+              <p className="text-white font-medium">{ticket.descr}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-slate-400 text-xs mb-1">Línea</p>
+              <p className="text-white font-medium">Línea {ticket.linea}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-slate-400 text-xs mb-1">Equipo</p>
+              <p className="text-white font-medium">{ticket.equipo}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-slate-400 text-xs mb-1">Modelo</p>
+              <p className="text-white font-medium">{ticket.modelo}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-slate-400 text-xs mb-1">Turno</p>
+              <p className="text-white font-medium">{ticket.turno}</p>
+            </div>
+            {ticket.rate && (
+              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
+                <p className="text-blue-300 text-xs mb-1">Rate</p>
+                <p className="text-blue-400 font-semibold flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  {ticket.rate} piezas/hr
+                </p>
               </div>
             )}
           </div>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 text-sm sm:text-base">
-          <p className="text-slate-300"><strong className="text-slate-100">Descripción:</strong> {ticket.descr}</p>
-          <p className="text-slate-300"><strong className="text-slate-100">Línea:</strong> Línea {ticket.linea}</p>
-          <p className="text-slate-300"><strong className="text-slate-100">Equipo:</strong> {ticket.equipo}</p>
-          <p className="text-slate-300"><strong className="text-slate-100">Modelo:</strong> {ticket.modelo}</p>
-          <p className="text-slate-300"><strong className="text-slate-100">Turno:</strong> {ticket.turno}</p>
-          {/* Mostrar rate del ticket (guardado desde tabla modelos al crear) */}
-          {ticket.rate && (
-            <p className="text-slate-300"><strong className="text-slate-100">Rate:</strong> <span className="text-blue-400">{ticket.rate} piezas/hr</span></p>
-          )}
-        </div>
 
-        {!ticket.ha && (
-          <div className="mb-6">
-            <p className="text-sm text-slate-400 mb-3">Roles autorizados para cerrar tickets: <span className="text-blue-400 font-medium">Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento</span></p>
-            <button className="w-full sm:w-auto px-6 py-3 bg-blue-700/60 text-blue-100 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-600/70 transition-colors border border-blue-600/50" onClick={handleStart}>Asignar Técnico</button>
-          </div>
-        )}
-
-        {ticket.ha && (
-          <div className="mt-6">
-            <h2 className="text-lg sm:text-xl font-semibold mb-4 text-slate-100">Información del Técnico</h2>
-            <p className="text-sm text-amber-400 mb-4 bg-amber-900/20 border border-amber-700/30 rounded-lg p-3">Debes completar la solución antes de salir de esta página</p>
-            
-            {/* Mostrar rate del ticket (guardado desde tabla modelos al crear) */}
-            <div className="mb-4 bg-slate-700/50 rounded-lg p-3 border border-slate-600">
-              <p className="text-xs text-slate-400 mb-2">Rate del modelo (automático)</p>
-              {ticket.rate ? (
-                <div className="text-sm">
-                  <span className="text-slate-500">Rate:</span>
-                  <span className="ml-2 text-blue-400 font-medium">{ticket.rate} piezas/hr</span>
-                </div>
-              ) : (
-                <p className="text-rose-400 text-sm">No se encontró rate en el ticket. Puede que haya sido creado antes de la actualización del sistema.</p>
-              )}
+          {/* Botón asignar técnico */}
+          {!ticket.ha && (
+            <div className="mb-6">
+              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30 mb-4">
+                <p className="text-blue-300 text-sm flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Roles autorizados: <span className="font-semibold">Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento</span>
+                </p>
+              </div>
+              <button 
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2" 
+                onClick={handleStart}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Asignar Técnico
+              </button>
             </div>
+          )}
 
-            <textarea 
-              className={`border p-3 rounded-lg w-full text-sm sm:text-base transition-all ${form.solucion ? 'bg-emerald-900/30 border-emerald-600/50 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`} 
-              rows="4" 
-              placeholder="Solución aplicada *" 
-              value={form.solucion} 
-              onChange={e => setForm({...form, solucion: e.target.value})} 
-              required 
-            />
-            <button 
-              className="mt-4 w-full sm:w-auto px-6 py-3 bg-rose-700/60 text-rose-100 rounded-lg text-sm sm:text-base font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-rose-600/70 transition-colors border border-rose-600/50" 
-              onClick={handleFinish} 
-              disabled={!form.solucion || !ticket.rate}
-            >
-              Finalizar Ticket
-            </button>
-          </div>
-        )}
+          {/* Formulario de solución */}
+          {ticket.ha && (
+            <div className="mt-6">
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Información del Técnico
+              </h2>
+              
+              <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 mb-4">
+                <p className="text-amber-300 text-sm flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  Debes completar la solución antes de salir de esta página
+                </p>
+              </div>
+              
+              {/* Rate del modelo */}
+              <div className="mb-5 bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
+                <p className="text-xs text-blue-300 mb-2 font-medium">Rate del modelo (automático)</p>
+                {ticket.rate ? (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span className="text-blue-400 font-semibold">{ticket.rate} piezas/hr</span>
+                  </div>
+                ) : (
+                  <p className="text-rose-400 text-sm">No se encontró rate. El ticket puede haber sido creado antes de la actualización.</p>
+                )}
+              </div>
 
-        <LoginModal
-          visible={showCredentialsModal}
-          onClose={() => setShowCredentialsModal(false)}
-          onConfirm={handleCredentialsConfirm}
-          busy={credentialsBusy}
-        />
+              <div className="mb-4">
+                <label className="block text-sm text-slate-300 mb-2 font-medium">Solución Aplicada *</label>
+                <textarea 
+                  className={`w-full bg-slate-800/50 border text-white p-4 rounded-xl transition-all focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${form.solucion ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-600/50'}`} 
+                  rows="4" 
+                  placeholder="Describe la solución aplicada..." 
+                  value={form.solucion} 
+                  onChange={e => setForm({...form, solucion: e.target.value})} 
+                  required 
+                />
+              </div>
 
-        {/* Modal de advertencia de cierre de sesión */}
-        {showLogoutWarning && (
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-            <div className="bg-slate-800 rounded-lg p-6 w-full max-w-md shadow-2xl border border-slate-700">
-              <h3 className="text-xl font-bold text-rose-400 mb-4">Advertencia</h3>
-              <p className="text-slate-300 mb-6">
-                Has atendido este ticket pero no lo has finalizado. Por seguridad, debes iniciar sesión nuevamente para continuar.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button 
-                  onClick={() => setShowLogoutWarning(false)}
-                  className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors border border-slate-600"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={confirmLogoutAndReturn}
-                  className="px-4 py-2 bg-rose-700/60 text-rose-100 rounded-lg hover:bg-rose-600/70 transition-colors border border-rose-600/50"
-                >
-                  Cerrar Sesión y Volver
-                </button>
+              <button 
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
+                onClick={handleFinish} 
+                disabled={!form.solucion || !ticket.rate}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Finalizar Ticket
+              </button>
+            </div>
+          )}
+
+          <LoginModal
+            visible={showCredentialsModal}
+            onClose={() => setShowCredentialsModal(false)}
+            onConfirm={handleCredentialsConfirm}
+            busy={credentialsBusy}
+          />
+
+          {/* Modal de advertencia de cierre de sesión */}
+          {showLogoutWarning && (
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+              <div className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-700/50 animate-slide-up">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Advertencia</h3>
+                </div>
+                <p className="text-slate-300 mb-6">
+                  Has atendido este ticket pero no lo has finalizado. Por seguridad, debes iniciar sesión nuevamente para continuar.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button 
+                    onClick={() => setShowLogoutWarning(false)}
+                    className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 rounded-xl font-medium transition-all border border-slate-600/50"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmLogoutAndReturn}
+                    className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
