@@ -79,8 +79,15 @@ export default function MachineAnalysis() {
       // Manejar fechas personalizadas
       if (dateRange === 'custom') {
         if (customStartDate && customEndDate) {
-          params.startDate = customStartDate
-          params.endDate = customEndDate
+          // normalizar datetime-local -> 'YYYY-MM-DD HH:MM:SS'
+          const normalize = (val) => {
+            if (!val) return val
+            if (val.includes('T')) return val.replace('T', ' ') + ':00'
+            if (val.length === 10) return val + ' 00:00:00'
+            return val
+          }
+          params.startDate = normalize(customStartDate)
+          params.endDate = normalize(customEndDate)
         } else {
           // Si no hay fechas válidas, usar 30 días por defecto
           params.days = '30'
@@ -268,7 +275,7 @@ export default function MachineAnalysis() {
                 <div>
                   <label className="block text-slate-300 text-sm font-medium mb-2">Desde</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
                     value={customStartDate}
                     onChange={e => setCustomStartDate(e.target.value)}
@@ -277,7 +284,7 @@ export default function MachineAnalysis() {
                 <div>
                   <label className="block text-slate-300 text-sm font-medium mb-2">Hasta</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
                     value={customEndDate}
                     onChange={e => setCustomEndDate(e.target.value)}

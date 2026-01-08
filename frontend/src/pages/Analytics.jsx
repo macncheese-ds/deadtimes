@@ -32,6 +32,19 @@ export default function Analytics() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   
+  // Normaliza valores de input datetime-local ("YYYY-MM-DDTHH:MM")
+  function normalizeDateTimeInput(val) {
+    if (!val) return val
+    // Si viene en formato datetime-local 'YYYY-MM-DDTHH:MM', convertir a 'YYYY-MM-DD HH:MM:SS'
+    if (val.includes('T')) {
+      // Agregar segundos si no están presentes
+      return val.replace('T', ' ') + ':00'
+    }
+    // Si sólo tiene fecha, añadir hora 00:00:00
+    if (val.length === 10) return val + ' 00:00:00'
+    return val
+  }
+  
   // Datos de estadísticas
   const [totales, setTotales] = useState({})
   const [statsLinea, setStatsLinea] = useState([])
@@ -105,8 +118,8 @@ export default function Analytics() {
       }
       
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = dateRange
       }
@@ -353,8 +366,8 @@ export default function Analytics() {
       }
       
       if (!isGeneral && dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = isGeneral ? 30 : dateRange
       }
@@ -416,8 +429,8 @@ export default function Analytics() {
       }
       
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = dateRange
       }
@@ -449,8 +462,8 @@ export default function Analytics() {
       }
       
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = dateRange
       }
@@ -596,7 +609,7 @@ export default function Analytics() {
                 <div>
                   <label className="block text-slate-300 text-sm font-medium mb-2">Desde</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
                     value={customStartDate}
                     onChange={e => setCustomStartDate(e.target.value)}
@@ -605,7 +618,7 @@ export default function Analytics() {
                 <div>
                   <label className="block text-slate-300 text-sm font-medium mb-2">Hasta</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
                     value={customEndDate}
                     onChange={e => setCustomEndDate(e.target.value)}

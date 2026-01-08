@@ -95,6 +95,14 @@ export default function Home() {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   
+  // Normaliza valores de input datetime-local ("YYYY-MM-DDTHH:MM")
+  function normalizeDateTimeInput(val) {
+    if (!val) return val
+    if (val.includes('T')) return val.replace('T', ' ') + ':00'
+    if (val.length === 10) return val + ' 00:00:00'
+    return val
+  }
+  
   // Estados para Handle/View Ticket Modal
   const [showHandleModal, setShowHandleModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
@@ -131,6 +139,19 @@ export default function Home() {
     const interval = setInterval(loadStats, 60000)
     return () => clearInterval(interval)
   }, [])
+
+  // Poll tickets every 10s when the "open" tickets view is visible
+  useEffect(() => {
+    let iv
+    if (showOpen) {
+      // carga inmediata y luego polling cada 10s
+      loadTickets('open')
+      iv = setInterval(() => loadTickets('open'), 10000)
+    }
+    return () => {
+      if (iv) clearInterval(iv)
+    }
+  }, [showOpen])
 
   useEffect(() => {
     if (showAnalytics && lineas.length > 0) {
@@ -299,8 +320,8 @@ export default function Home() {
       }
       
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = dateRange
       }
@@ -333,7 +354,26 @@ export default function Home() {
     setLoading(true)
     try {
       const data = await listTickets(statusToLoad)
-      setTickets(data)
+      // Marcar sólo tickets nuevos para animación suave
+      setTickets(prev => {
+        const prevMap = new Map((prev || []).map(p => [p.id, p]))
+        const enhanced = data.map(item => ({ ...item, _isNew: !prevMap.has(item.id) }))
+        // Limpiar marca _isNew después de 1.5s
+        const hasNew = enhanced.some(e => e._isNew)
+        if (hasNew) {
+          setTimeout(() => {
+            setTickets(cur => (cur || []).map(t => {
+              if (t._isNew) {
+                const copy = { ...t }
+                delete copy._isNew
+                return copy
+              }
+              return t
+            }))
+          }, 1500)
+        }
+        return enhanced
+      })
     } catch (error) {
       console.error('Error cargando tickets:', error)
     } finally {
@@ -507,8 +547,8 @@ export default function Home() {
       const params = { equipo: machineEquipo }
       if (machineLinea) params.linea = machineLinea
       if (dateRange === 'custom' && customStartDate && customEndDate) {
-        params.startDate = customStartDate
-        params.endDate = customEndDate
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate = normalizeDateTimeInput(customEndDate)
       } else {
         params.days = dateRange
       }
@@ -692,13 +732,19 @@ export default function Home() {
       if (filterClosedDescr && !t.descr?.toLowerCase().includes(filterClosedDescr.toLowerCase())) return false
       // Filtro por rango de fechas
       if (filterClosedStartDate && t.hc) {
-        const ticketDate = new Date(t.hc).setHours(0, 0, 0, 0)
-        const startDate = new Date(filterClosedStartDate).setHours(0, 0, 0, 0)
+        const ticketDate = new Date(t.hc).getTime()
+        // Si el filtro trae hora (datetime-local), respetarla; si sólo trae fecha, usar inicio del día
+        const startDate = filterClosedStartDate.includes('T')
+          ? new Date(filterClosedStartDate).getTime()
+          : new Date(filterClosedStartDate).setHours(0, 0, 0, 0)
         if (ticketDate < startDate) return false
       }
       if (filterClosedEndDate && t.hc) {
-        const ticketDate = new Date(t.hc).setHours(23, 59, 59, 999)
-        const endDate = new Date(filterClosedEndDate).setHours(23, 59, 59, 999)
+        const ticketDate = new Date(t.hc).getTime()
+        // Si el filtro trae hora (datetime-local), respetarla; si sólo trae fecha, usar fin del día
+        const endDate = filterClosedEndDate.includes('T')
+          ? new Date(filterClosedEndDate).getTime()
+          : new Date(filterClosedEndDate).setHours(23, 59, 59, 999)
         if (ticketDate > endDate) return false
       }
       return true
@@ -1288,7 +1334,7 @@ export default function Home() {
             ) : (
               <div className="space-y-3">
                 {getFilteredOpenTickets().map((t, idx) => (
-                  <div key={t.id} className="bg-slate-800/80 rounded-xl p-4 hover:bg-slate-700/80 transition-all duration-300 border-l-4 border-slate-500 card-hover animate-fade-in" style={{animationDelay: `${idx * 50}ms`}}>
+                  <div key={t.id} className={`bg-slate-800/80 rounded-xl p-4 hover:bg-slate-700/80 transition-all duration-300 border-l-4 border-slate-500 card-hover ${t._isNew ? 'animate-slide-up' : ''}`} style={t._isNew ? { animationDelay: `${idx * 50}ms` } : {}}>
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
@@ -1426,7 +1472,7 @@ export default function Home() {
                 <div>
                   <label className="block text-slate-400 text-xs mb-1">Desde</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                     value={filterClosedStartDate}
                     onChange={e => setFilterClosedStartDate(e.target.value)}
@@ -1437,7 +1483,7 @@ export default function Home() {
                 <div>
                   <label className="block text-slate-400 text-xs mb-1">Hasta</label>
                   <input 
-                    type="date"
+                    type="datetime-local"
                     className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                     value={filterClosedEndDate}
                     onChange={e => setFilterClosedEndDate(e.target.value)}
@@ -1639,7 +1685,7 @@ export default function Home() {
                     <div>
                       <label className="block text-slate-300 text-xs font-medium mb-2">Desde</label>
                       <input 
-                        type="date"
+                        type="datetime-local"
                         className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                         value={customStartDate}
                         onChange={e => setCustomStartDate(e.target.value)}
@@ -1648,7 +1694,7 @@ export default function Home() {
                     <div>
                       <label className="block text-slate-300 text-xs font-medium mb-2">Hasta</label>
                       <input 
-                        type="date"
+                        type="datetime-local"
                         className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                         value={customEndDate}
                         onChange={e => setCustomEndDate(e.target.value)}
@@ -2086,7 +2132,7 @@ export default function Home() {
                         <div>
                           <label className="block text-slate-300 text-xs font-medium mb-2">Desde</label>
                           <input 
-                            type="date"
+                            type="datetime-local"
                             className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                             value={customStartDate}
                             onChange={e => setCustomStartDate(e.target.value)}
@@ -2095,7 +2141,7 @@ export default function Home() {
                         <div>
                           <label className="block text-slate-300 text-xs font-medium mb-2">Hasta</label>
                           <input 
-                            type="date"
+                            type="datetime-local"
                             className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
                             value={customEndDate}
                             onChange={e => setCustomEndDate(e.target.value)}
