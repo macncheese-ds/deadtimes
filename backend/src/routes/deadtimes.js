@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -15,6 +16,58 @@ async function createCredConnection() {
     database: process.env.CRED_DB_NAME || 'credenciales'
   };
   return await mysql.createConnection(config);
+}
+
+// Función para normalizar entrada de empleado
+function normalizeEmployeeInput(input) {
+  let normalized = String(input).trim();
+  const match = normalized.match(/^0*(\d+)([A-Za-z])?$/);
+  if (match) {
+    const number = match[1];
+    const letter = match[2] || 'A';
+    normalized = `${number}${letter}`;
+  } else {
+    normalized = normalized.replace(/^0+/, '') + 'A';
+  }
+  return normalized;
+}
+
+// Función para validar credenciales (Basic Auth)
+async function validateCredentials(authHeader) {
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return { valid: false, error: 'No authorization header' };
+  }
+
+  try {
+    const credentials = Buffer.from(authHeader.substring(6), 'base64').toString('utf-8');
+    const [employee_input, password] = credentials.split(':');
+
+    if (!employee_input || !password) {
+      return { valid: false, error: 'Invalid credentials format' };
+    }
+
+    const normalized = normalizeEmployeeInput(employee_input);
+    const conn = await createCredConnection();
+    const [rows] = await conn.execute(
+      'SELECT num_empleado, pass_hash FROM users WHERE num_empleado = ? LIMIT 1',
+      [normalized]
+    );
+    await conn.end();
+
+    if (!rows || rows.length === 0) {
+      return { valid: false, error: 'User not found' };
+    }
+
+    const passwordMatch = await bcrypt.compare(password, rows[0].pass_hash.toString());
+    if (!passwordMatch) {
+      return { valid: false, error: 'Invalid password' };
+    }
+
+    return { valid: true, num_empleado: rows[0].num_empleado };
+  } catch (err) {
+    console.error('Error validating credentials:', err);
+    return { valid: false, error: err.message };
+  }
 }
 
 // Lista base de roles para operaciones de tickets
@@ -58,6 +111,26 @@ async function validarRolParaAtender(num_empleado) {
     return ROLES_ATENDER_TICKETS.includes(rows[0].rol);
   } catch (err) {
     console.error('Error validando rol para atender:', err);
+    return false;
+  }
+}
+
+// Función para validar si un usuario puede actualizar tickets
+async function validarRolParaActualizar(num_empleado) {
+  try {
+    const conn = await createCredConnection();
+    const [rows] = await conn.execute(
+      'SELECT rol FROM users WHERE num_empleado = ? LIMIT 1',
+      [num_empleado]
+    );
+    await conn.end();
+    
+    if (!rows || rows.length === 0) return false;
+    // Solo Ingeniero puede actualizar tickets
+    const rolesParaActualizar = ['Ingeniero', 'The Goat'];
+    return rolesParaActualizar.includes(rows[0].rol);
+  } catch (err) {
+    console.error('Error validando rol para actualizar:', err);
     return false;
   }
 }
@@ -618,10 +691,23 @@ router.post('/:id/start', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const id = req.params.id;
   const body = req.body;
+
+  // Validar autenticación
+  const authResult = await validateCredentials(req.headers.authorization);
+  if (!authResult.valid) {
+    return res.status(401).json({ error: authResult.error || 'Unauthorized' });
+  }
+
+  // Validar que el usuario tenga permiso para actualizar tickets
+  const canUpdate = await validarRolParaActualizar(authResult.num_empleado);
+  if (!canUpdate) {
+    return res.status(403).json({ error: 'No tienes permiso para actualizar tickets. Solo Ingenieros pueden hacerlo.' });
+  }
+
   // For simplicity allow updating a set of known fields
   const fields = [];
   const values = [];
-  const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','deadtime','piezas'];
+  const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','deadtime','piezas','hr','hc'];
   allowed.forEach(k => {
     if (k in body) {
       fields.push(`${k} = ?`);

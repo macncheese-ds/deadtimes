@@ -46,7 +46,7 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fade-in">
       <div className="glass-card rounded-2xl p-8 w-full max-w-sm shadow-2xl border border-slate-700/50 animate-slide-up">
         {/* Header */}
         <div className="text-center mb-6">

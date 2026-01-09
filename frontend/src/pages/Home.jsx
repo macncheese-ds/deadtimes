@@ -20,6 +20,7 @@ import {
   getTicketsByEquipment
 } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
+import ProduccionSection from '../components/ProduccionSection'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -46,6 +47,18 @@ function minutosAHoras(minutos) {
   return Math.round((minutos / 60) * 100) / 100;
 }
 
+// Helper para formatear datetime-local (preserva hora local)
+function formatToDatetimeLocal(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 // Helper para formatear horas (ej: 1.5 hrs, 0.25 hrs)
 function formatHoras(horas) {
   if (!horas && horas !== 0) return '0';
@@ -59,6 +72,7 @@ export default function Home() {
   const [showOpen, setShowOpen] = useState(false)
   const [showClosed, setShowClosed] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showProduccion, setShowProduccion] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [lineas, setLineas] = useState([])
@@ -70,6 +84,7 @@ export default function Home() {
   const [selectedModelo, setSelectedModelo] = useState(null)
   const [showCredentialsModal, setShowCredentialsModal] = useState(false)
   const [credentialsBusy, setCredentialsBusy] = useState(false)
+  const [currentCredentials, setCurrentCredentials] = useState(null)
   const [statsAtencion, setStatsAtencion] = useState([])
   const [statsEquipos, setStatsEquipos] = useState([])
   const [showSuccessMessage, setShowSuccessMessage] = useState(false)
@@ -110,6 +125,15 @@ export default function Home() {
   const [selectedTicket, setSelectedTicket] = useState(null)
   const [ticketLoading, setTicketLoading] = useState(false)
   const [handleForm, setHandleForm] = useState({ solucion: '' })
+  
+  // Estados para Edit Ticket Modal
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingTicketId, setEditingTicketId] = useState(null)
+  const [editForm, setEditForm] = useState(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [editSuccess, setEditSuccess] = useState(false)
+  const [editCredentialsNeeded, setEditCredentialsNeeded] = useState(false)
   const [handleCredentialsModal, setHandleCredentialsModal] = useState(false)
   const [handleCredentialsBusy, setHandleCredentialsBusy] = useState(false)
   
@@ -396,6 +420,12 @@ export default function Home() {
         throw new Error('No tienes permisos para crear tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Líder, Soporte, Mantenimiento.')
       }
       
+      // Guardar credenciales para uso en modales
+      setCurrentCredentials({
+        num_empleado: data.user.num_empleado,
+        nombre: data.user.nombre
+      })
+      
       const turno = getTurno()
       // Si la descripción es "Otros", usar el valor de descr_otros
       const descripcionFinal = form.descr === '__OTROS__' ? form.descr_otros : form.descr
@@ -475,6 +505,22 @@ export default function Home() {
     }
   }
 
+  function openEditModal() {
+    if (!selectedTicket) return
+    setEditError('')
+    setEditSuccess(false)
+    setEditForm({
+      id: selectedTicket.id,
+      descr: selectedTicket.descr || '',
+      modelo: selectedTicket.modelo || '',
+      equipo: selectedTicket.equipo || '',
+      hr: formatToDatetimeLocal(selectedTicket.hr),
+      hc: formatToDatetimeLocal(selectedTicket.hc),
+      solucion: selectedTicket.solucion || ''
+    })
+    setShowEditModal(true)
+  }
+
   function closeHandleModal() {
     setShowHandleModal(false)
     setSelectedTicket(null)
@@ -488,6 +534,65 @@ export default function Home() {
     setSelectedTicketId(null)
   }
 
+  function closeEditModal() {
+    setShowEditModal(false)
+    setEditingTicketId(null)
+    setEditForm(null)
+    setEditError('')
+    setEditSuccess(false)
+  }
+
+  function saveEditTicket() {
+    if (!editForm || !editForm.id) return
+    setEditCredentialsNeeded(true)
+  }
+
+  async function confirmEditWithCredentials({ employee_input, password }) {
+    if (!editForm || !editForm.id) return
+    
+    setEditLoading(true)
+    setEditError('')
+    setEditSuccess(false)
+    
+    try {
+      const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3107'
+      const response = await fetch(`${baseURL}/api/deadtimes/${editForm.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Employee': employee_input || '',
+          'Authorization': `Basic ${btoa(`${employee_input}:${password}`)}`
+        },
+        body: JSON.stringify({
+          descr: editForm.descr,
+          modelo: editForm.modelo,
+          equipo: editForm.equipo,
+          hr: editForm.hr,
+          hc: editForm.hc,
+          solucion: editForm.solucion
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Error al actualizar el ticket')
+      }
+
+      setEditSuccess(true)
+      setTimeout(() => {
+        closeEditModal()
+        loadTickets('closed')
+        setEditCredentialsNeeded(false)
+      }, 1500)
+    } catch (error) {
+      console.error('Error guardando ticket:', error)
+      setEditError(error.message || 'Error al guardar los cambios')
+    } finally {
+      setEditLoading(false)
+      setEditCredentialsNeeded(false)
+    }
+  }
+
   async function handleStartTicket() {
     setHandleCredentialsModal(true)
   }
@@ -499,6 +604,11 @@ export default function Home() {
       if (!data.user.puedeAtender) {
         throw new Error('No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento.')
       }
+      // Guardar credenciales
+      setCurrentCredentials({
+        num_empleado: data.user.num_empleado,
+        nombre: data.user.nombre
+      })
       await startTicket(selectedTicketId, data.user.nombre, data.user.num_empleado)
       setHandleCredentialsModal(false)
       // Recargar el ticket
@@ -952,6 +1062,15 @@ export default function Home() {
     resetFilters()
   }
 
+  function toggleProduccion() {
+    setShowProduccion(!showProduccion)
+    setShowNew(false)
+    setShowOpen(false)
+    setShowClosed(false)
+    setShowAnalytics(false)
+    resetFilters()
+  }
+
   const inputClass = (value) => `border p-3 rounded-lg text-sm transition-all ${value ? 'bg-slate-700 border-slate-500 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`
 
   if (initialLoading) {
@@ -995,7 +1114,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
           <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
             <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1020,9 +1139,15 @@ export default function Home() {
             </svg>
             <span>Analytics</span>
           </button>
+          <button onClick={toggleProduccion} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showProduccion ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+            <svg className={`w-6 h-6 transition-transform duration-300 ${showProduccion ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Producción</span>
+          </button>
         </div>
 
-        {!showNew && !showOpen && !showClosed && !showAnalytics && (
+        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
@@ -2392,6 +2517,10 @@ export default function Home() {
             )}
           </div>
         )}
+
+        {showProduccion && (
+          <ProduccionSection onClose={() => { setShowProduccion(false); resetFilters() }} />
+        )}
       </div>
 
       <LoginModal visible={showCredentialsModal} onClose={() => setShowCredentialsModal(false)} onConfirm={handleCredentialsConfirm} busy={credentialsBusy} />
@@ -2524,6 +2653,16 @@ export default function Home() {
         busy={handleCredentialsBusy} 
       />
 
+      {/* Modal para credenciales de edición */}
+      <LoginModal 
+        visible={editCredentialsNeeded} 
+        onClose={() => setEditCredentialsNeeded(false)} 
+        onConfirm={confirmEditWithCredentials} 
+        busy={editLoading}
+        title="Confirmar edición"
+        subtitle="Ingresa tus credenciales para confirmar los cambios"
+      />
+
       {/* Modal para Ver Ticket */}
       {showViewModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2628,11 +2767,142 @@ export default function Home() {
                       <p className="text-white">{selectedTicket.tecnico || 'N/A'}</p>
                     </div>
                   </div>
+
+                  {/* Action Button */}
+                  <button 
+                    onClick={openEditModal}
+                    className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Editar Ticket
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-slate-400">No se pudo cargar el ticket</p>
                 </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Ticket Modal */}
+      {showEditModal && editForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
+            <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Editar Ticket #{editForm.id}</h2>
+              <button onClick={closeEditModal} className="text-slate-400 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {editError && (
+                <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                  {editError}
+                </div>
+              )}
+
+              {editSuccess && (
+                <div className="bg-emerald-900/30 border border-emerald-700 text-emerald-300 px-4 py-3 rounded-lg text-sm">
+                  ✓ Ticket actualizado exitosamente
+                </div>
+              )}
+
+              {editLoading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-slate-400"></div>
+                  <p className="text-slate-400 mt-2">Guardando cambios...</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">Descripción</label>
+                    <input 
+                      type="text"
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      value={editForm.descr}
+                      onChange={e => setEditForm({...editForm, descr: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">Modelo</label>
+                    <input 
+                      type="text"
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      value={editForm.modelo}
+                      onChange={e => setEditForm({...editForm, modelo: e.target.value})}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">Equipo</label>
+                    <input 
+                      type="text"
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      value={editForm.equipo}
+                      onChange={e => setEditForm({...editForm, equipo: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">Hora de Apertura</label>
+                      <input 
+                        type="datetime-local"
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        value={editForm.hr}
+                        onChange={e => setEditForm({...editForm, hr: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 text-sm font-medium mb-2">Hora de Cierre</label>
+                      <input 
+                        type="datetime-local"
+                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        value={editForm.hc}
+                        onChange={e => setEditForm({...editForm, hc: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 text-sm font-medium mb-2">Solución</label>
+                    <textarea 
+                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                      rows="3"
+                      value={editForm.solucion}
+                      onChange={e => setEditForm({...editForm, solucion: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-slate-700">
+                    <button 
+                      onClick={saveEditTicket}
+                      className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      disabled={editLoading}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Guardar Cambios
+                    </button>
+                    <button 
+                      onClick={closeEditModal}
+                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      disabled={editLoading}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           </div>

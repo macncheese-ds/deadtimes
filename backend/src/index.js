@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const deadtimes = require('./routes/deadtimes');
 const auth = require('./routes/auth');
+const produccion = require('./routes/produccion');
 
 dotenv.config();
 const app = express();
@@ -18,6 +19,7 @@ app.use(bodyParser.json());
 
 app.use('/api/auth', auth);
 app.use('/api/deadtimes', deadtimes);
+app.use('/api/produccion', produccion);
 
 const PORT = process.env.PORT || 3107;
 app.listen(PORT, '0.0.0.0', () => console.log(`Deadtimes API on ${PORT}`));
