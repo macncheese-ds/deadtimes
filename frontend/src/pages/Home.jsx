@@ -518,6 +518,23 @@ export default function Home() {
       hc: formatToDatetimeLocal(selectedTicket.hc),
       solucion: selectedTicket.solucion || ''
     })
+    
+    // Cargar modelos de la línea del ticket
+    if (selectedTicket.linea) {
+      setModelosLoading(true)
+      getModelos(selectedTicket.linea)
+        .then(data => {
+          setModelos(data)
+        })
+        .catch(error => {
+          console.error('Error cargando modelos:', error)
+          setModelos([])
+        })
+        .finally(() => {
+          setModelosLoading(false)
+        })
+    }
+    
     setShowEditModal(true)
   }
 
@@ -2834,22 +2851,30 @@ export default function Home() {
 
                   <div>
                     <label className="block text-slate-300 text-sm font-medium mb-2">Modelo</label>
-                    <input 
-                      type="text"
+                    <select 
                       className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       value={editForm.modelo}
                       onChange={e => setEditForm({...editForm, modelo: e.target.value})}
-                    />
+                    >
+                      <option value="">Seleccionar modelo...</option>
+                      {modelos.map(m => (
+                        <option key={m.modelo} value={m.modelo}>{m.modelo}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-slate-300 text-sm font-medium mb-2">Equipo</label>
-                    <input 
-                      type="text"
+                    <select 
                       className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       value={editForm.equipo}
                       onChange={e => setEditForm({...editForm, equipo: e.target.value})}
-                    />
+                    >
+                      <option value="">Seleccionar equipo...</option>
+                      {equipos.map(eq => (
+                        <option key={eq.equipo} value={eq.equipo}>{eq.equipo}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

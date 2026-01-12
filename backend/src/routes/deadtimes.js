@@ -704,30 +704,61 @@ router.put('/:id', async (req, res) => {
     return res.status(403).json({ error: 'No tienes permiso para actualizar tickets. Solo Ingenieros pueden hacerlo.' });
   }
 
-  // For simplicity allow updating a set of known fields
-  const fields = [];
-  const values = [];
-  const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','deadtime','piezas','hr','hc'];
-  allowed.forEach(k => {
-    if (k in body) {
-      fields.push(`${k} = ?`);
-      values.push(body[k]);
-    }
-  });
-
-  // mods
-  for (let i = 1; i <= 12; i++) {
-    const key = `mod${i}`;
-    if (key in body) {
-      fields.push(`${key} = ?`);
-      values.push(body[key] ? 1 : 0);
-    }
-  }
-
-  if (fields.length === 0) return res.status(400).json({ error: 'no fields' });
-
-  values.push(id);
   try {
+    // Fetch the current ticket to get rate and other info
+    const [currentRows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
+    if (!currentRows || currentRows.length === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    const currentTicket = currentRows[0];
+
+    // For simplicity allow updating a set of known fields
+    const fields = [];
+    const values = [];
+    const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','hr','hc'];
+    allowed.forEach(k => {
+      if (k in body) {
+        fields.push(`${k} = ?`);
+        values.push(body[k]);
+      }
+    });
+
+    // mods
+    for (let i = 1; i <= 12; i++) {
+      const key = `mod${i}`;
+      if (key in body) {
+        fields.push(`${key} = ?`);
+        values.push(body[key] ? 1 : 0);
+      }
+    }
+
+    // Si se actualiza hr o hc, calcular automáticamente piezas y deadtime
+    const hrValue = body.hr !== undefined ? body.hr : currentTicket.hr;
+    const hcValue = body.hc !== undefined ? body.hc : currentTicket.hc;
+    const rateValue = body.rate !== undefined ? Number(body.rate) : (currentTicket.rate || 0);
+
+    if (hrValue && hcValue && (body.hr !== undefined || body.hc !== undefined)) {
+      // Calcular minutos entre hr y hc
+      const hrDate = new Date(hrValue);
+      const hcDate = new Date(hcValue);
+      const minutosCalc = Math.max(0, Math.round((hcDate.getTime() - hrDate.getTime()) / 60000));
+      
+      // Calcular piezas = (rate / 60) * minutos
+      const piezasCalc = Math.round((rateValue / 60) * minutosCalc);
+      
+      // deadtime = minutos
+      const deadtimeCalc = minutosCalc;
+      
+      // Agregar estos campos al update
+      fields.push('piezas = ?');
+      values.push(piezasCalc);
+      fields.push('deadtime = ?');
+      values.push(deadtimeCalc);
+    }
+
+    if (fields.length === 0) return res.status(400).json({ error: 'no fields' });
+
+    values.push(id);
     await db.query(`UPDATE deadtimes SET ${fields.join(', ')} WHERE id = ?`, values);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
