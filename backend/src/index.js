@@ -5,6 +5,8 @@ const dotenv = require('dotenv');
 const deadtimes = require('./routes/deadtimes');
 const auth = require('./routes/auth');
 const produccion = require('./routes/produccion');
+const helmet = require('helmet');
+const path = require('path');
 
 dotenv.config();
 const app = express();
@@ -16,6 +18,31 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(bodyParser.json());
+
+// Add security headers
+app.use(helmet({
+  xssFilter: false, // Remove x-xss-protection header
+  hidePoweredBy: true, // Remove x-powered-by header
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  contentSecurityPolicy: false // Configure separately if needed
+}));
+
+// Add custom headers for security and performance
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // Default cache for dynamic content
+  next();
+});
+
+// Serve static assets with immutable cache-control
+app.use('/assets', (req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  next();
+}, express.static(path.join(__dirname, '../frontend/dist/assets')));
 
 app.use('/api/auth', auth);
 app.use('/api/deadtimes', deadtimes);
