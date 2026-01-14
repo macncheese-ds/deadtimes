@@ -24,6 +24,14 @@ export default function MachineAnalysis() {
     loadLineas()
   }, [])
 
+  // Limpiar modales al desmontar
+  useEffect(() => {
+    return () => {
+      setShowModal(false)
+      setSelectedTicket(null)
+    }
+  }, [])
+
   useEffect(() => {
     if (selectedMaquina) {
       loadTickets()

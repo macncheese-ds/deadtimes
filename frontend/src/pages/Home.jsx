@@ -19,8 +19,10 @@ import {
   finishTicket,
   getTicketsByEquipment
 } from '../api_deadtimes'
+import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
 import LoginModal from '../components/LoginModal'
 import ProduccionSection from '../components/ProduccionSection'
+import Configuration from './Configuration'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -73,6 +75,7 @@ export default function Home() {
   const [showClosed, setShowClosed] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showProduccion, setShowProduccion] = useState(false)
+  const [showConfiguration, setShowConfiguration] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [lineas, setLineas] = useState([])
@@ -154,6 +157,18 @@ export default function Home() {
   const [statsEquiposDetalle, setStatsEquiposDetalle] = useState([])
   const [tendencia, setTendencia] = useState([])
   const [clasificacion, setClasificacion] = useState([])
+  const [inactivityWarning, setInactivityWarning] = useState(false)
+
+  // Hook para detectar inactividad y cerrar sesión después de 2 minutos
+  useInactivityTimeout(() => {
+    // Logout: limpiar credenciales y cerrar sesiones
+    localStorage.removeItem('token')
+    setCurrentCredentials(null)
+    setShowConfiguration(false)
+    setInactivityWarning(true)
+    // Mostrar el aviso por 5 segundos
+    setTimeout(() => setInactivityWarning(false), 5000)
+  }, 2)
 
   useEffect(() => {
     loadInitialData()
@@ -1040,51 +1055,90 @@ export default function Home() {
   }
 
   function toggleNew() {
-    setShowNew(!showNew)
-    setShowOpen(false)
-    setShowClosed(false)
-    setShowAnalytics(false)
+    if (showNew) {
+      setShowNew(false)
+    } else {
+      setShowNew(true)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
+    }
     resetFilters()
   }
 
   function toggleOpen() {
-    if (!showOpen) {
+    if (showOpen) {
+      setShowOpen(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(true)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
       setStatus('open')
       loadTickets('open')
-      resetFilters()
     }
-    setShowOpen(!showOpen)
-    setShowNew(false)
-    setShowClosed(false)
-    setShowAnalytics(false)
+    resetFilters()
   }
 
   function toggleClosed() {
-    if (!showClosed) {
+    if (showClosed) {
+      setShowClosed(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(true)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
       setStatus('closed')
       loadTickets('closed')
-      resetFilters()
     }
-    setShowClosed(!showClosed)
-    setShowNew(false)
-    setShowOpen(false)
-    setShowAnalytics(false)
+    resetFilters()
   }
 
   function toggleAnalytics() {
-    setShowAnalytics(!showAnalytics)
-    setShowNew(false)
-    setShowOpen(false)
-    setShowClosed(false)
+    if (showAnalytics) {
+      setShowAnalytics(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(true)
+      setShowProduccion(false)
+      setShowConfiguration(false)
+    }
     resetFilters()
   }
 
   function toggleProduccion() {
-    setShowProduccion(!showProduccion)
-    setShowNew(false)
-    setShowOpen(false)
-    setShowClosed(false)
-    setShowAnalytics(false)
+    if (showProduccion) {
+      setShowProduccion(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(true)
+      setShowConfiguration(false)
+    }
+    resetFilters()
+  }
+
+  function toggleConfiguration() {
+    if (showConfiguration) {
+      setShowConfiguration(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(true)
+    }
     resetFilters()
   }
 
@@ -1104,6 +1158,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-900 p-3 sm:p-4 lg:p-6">
       <div className="max-w-[1920px] mx-auto">
+        {/* Inactivity Warning */}
+        {inactivityWarning && (
+          <div className="mb-4 p-4 bg-orange-900/30 border border-orange-600/50 text-orange-300 rounded-lg flex items-center gap-3 animate-fade-in">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M12 3a9 9 0 100 18 9 9 0 000-18z" />
+            </svg>
+            <span>Sesión cerrada por inactividad (2 minutos sin movimiento)</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-6 mb-4 animate-slide-up relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-slate-700"></div>
@@ -1131,7 +1195,7 @@ export default function Home() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4 mb-6">
           <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
             <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1162,9 +1226,16 @@ export default function Home() {
             </svg>
             <span>Producción</span>
           </button>
+          <button onClick={toggleConfiguration} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showConfiguration ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+            <svg className={`w-6 h-6 transition-transform duration-300 ${showConfiguration ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Configuración</span>
+          </button>
         </div>
 
-        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && (
+        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
@@ -2933,6 +3004,12 @@ export default function Home() {
           </div>
         </div>
       )}
+      
+        {showConfiguration && (
+          <Configuration 
+            onBack={() => setShowConfiguration(false)}
+          />
+        )}
       
       {/* Mensaje de éxito */}
       {showSuccessMessage && (

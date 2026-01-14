@@ -13,6 +13,14 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
     cargarDeadtimeNoJustificado();
   }, [linea, fecha, turno]);
 
+  // Limpiar modales al desmontar
+  useEffect(() => {
+    return () => {
+      setSelectedIntervalo(null)
+      setShowTicketsModal(false)
+    }
+  }, []);
+
   const cargarDeadtimeNoJustificado = async () => {
     setLoading(true);
     setError('');
@@ -117,15 +125,15 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
                   <td className="px-3 py-2 text-slate-300 font-medium">{int.hora_inicio}:00</td>
                   <td className="px-3 py-2 text-slate-300">{int.modelo || 'N/A'}</td>
                   <td className="px-3 py-2 text-right text-amber-400 font-semibold">
-                    {int.deadtime_minutos ? int.deadtime_minutos.toFixed(2) : '0.00'}
+                    {Number(int.deadtime_minutos || 0).toFixed(2)}
                   </td>
                   <td className="px-3 py-2 text-right text-blue-400">
-                    {int.minutos_justificados ? int.minutos_justificados.toFixed(2) : '0.00'}
+                    {Number(int.minutos_justificados || 0).toFixed(2)}
                   </td>
                   <td className={`px-3 py-2 text-right font-semibold ${
                     hasUnjustified ? 'text-red-400' : 'text-slate-400'
                   }`}>
-                    {tiempoNoJust.toFixed(2)}
+                    {Number(tiempoNoJust || 0).toFixed(2)}
                   </td>
                   <td className="px-3 py-2 text-center">
                     <button
@@ -175,7 +183,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
                         <p className="text-sm text-slate-400">{ticket.descr}</p>
                       </div>
                       <span className="bg-blue-900 text-blue-300 px-2 py-1 rounded text-xs font-medium">
-                        {ticket.minutos_justificados ? ticket.minutos_justificados.toFixed(2) : '0.00'} min
+                        {Number(ticket.minutos_justificados || 0).toFixed(2)} min
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm text-slate-300">

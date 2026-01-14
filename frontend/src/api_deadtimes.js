@@ -123,4 +123,26 @@ export const getTopTiempos = (maquina) => {
   return api.get(`/deadtimes/analisis/top-tiempos${query ? '?' + query : ''}`).then(r => r.data);
 };
 
+// ============================================================================
+// CONFIGURACIÓN - EQUIPOS, LÍNEAS, MODELOS
+// ============================================================================
+
+// EQUIPOS
+export const getConfigEquipos = () => api.get('/config/equipos').then(r => r.data.data);
+export const createConfigEquipo = (payload) => api.post('/config/equipos', payload).then(r => r.data);
+export const updateConfigEquipo = (id, payload) => api.put(`/config/equipos/${id}`, payload).then(r => r.data);
+export const deleteConfigEquipo = (id, payload) => api.delete(`/config/equipos/${id}`, { data: payload }).then(r => r.data);
+
+// LÍNEAS
+export const getConfigLineas = () => api.get('/config/lineas').then(r => r.data.data);
+export const createConfigLinea = (payload) => api.post('/config/lineas', payload).then(r => r.data);
+export const updateConfigLinea = (id, payload) => api.put(`/config/lineas/${id}`, payload).then(r => r.data);
+export const deleteConfigLinea = (id, payload) => api.delete(`/config/lineas/${id}`, { data: payload }).then(r => r.data);
+
+// MODELOS
+export const getConfigModelos = () => api.get('/config/modelos').then(r => r.data.data);
+export const createConfigModelo = (payload) => api.post('/config/modelos', payload).then(r => r.data);
+export const updateConfigModelo = (id, payload) => api.put(`/config/modelos/${id}`, payload).then(r => r.data);
+export const deleteConfigModelo = (id, payload) => api.delete(`/config/modelos/${id}`, { data: payload }).then(r => r.data);
+
 export default api;

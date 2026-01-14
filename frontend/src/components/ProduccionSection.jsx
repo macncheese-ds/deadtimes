@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getLineas } from '../api_deadtimes';
 import ProduccionEdicion from './ProduccionEdicion';
 import ProduccionReview from './ProduccionReview';
@@ -15,6 +15,21 @@ export default function ProduccionSection({ onClose }) {
   React.useEffect(() => {
     cargarLineas();
   }, []);
+
+  // Limpiar vistas al desmontar el componente
+  useEffect(() => {
+    return () => {
+      setView(null)
+    }
+  }, []);
+
+  // Crear un wrapper para onClose que limpie los estados
+  const handleClose = () => {
+    setView(null)
+    setSelectedLinea('')
+    setSelectedTurno('1')
+    onClose()
+  }
 
   const cargarLineas = async () => {
     setLineasLoading(true);

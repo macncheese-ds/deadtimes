@@ -415,9 +415,9 @@ router.get('/unjustified', async (req, res) => {
         pi.turno,
         pi.hora_inicio,
         pi.modelo,
-        pi.deadtime_minutos,
+        COALESCE(pi.deadtime_minutos, 0) as deadtime_minutos,
         COALESCE(SUM(tpr.minutos_justificados), 0) AS minutos_justificados,
-        (pi.deadtime_minutos - COALESCE(SUM(tpr.minutos_justificados), 0)) AS tiempo_no_justificado
+        (COALESCE(pi.deadtime_minutos, 0) - COALESCE(SUM(tpr.minutos_justificados), 0)) AS tiempo_no_justificado
       FROM produccion_intervalos pi
       LEFT JOIN ticket_produccion_relacion tpr ON pi.id = tpr.intervalo_id
       WHERE pi.linea = ? AND pi.fecha = ? AND pi.turno = ?

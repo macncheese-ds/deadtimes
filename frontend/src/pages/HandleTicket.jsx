@@ -42,6 +42,14 @@ export default function HandleTicket() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [ticket, isSaving])
 
+  // Limpiar modales al desmontar
+  useEffect(() => {
+    return () => {
+      setShowCredentialsModal(false)
+      setEditMode(false)
+    }
+  }, [])
+
   function load() { getTicket(id).then(setTicket).catch(console.error) }
 
   async function handleStart() {

@@ -9,6 +9,7 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
   const [loginBusy, setLoginBusy] = useState(false);
   const [editingField, setEditingField] = useState(null); // { intervaloId, campo, valor }
   const [totales, setTotales] = useState({});
+  const [initializingIntervalos, setInitializingIntervalos] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3107/api';
 
   // Cargar intervalos
@@ -16,18 +17,19 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
     cargarIntervalos();
   }, [linea, fecha, turno]);
 
+  // Limpiar modales al desmontar
+  useEffect(() => {
+    return () => {
+      setShowLoginModal(false)
+      setEditingField(null)
+    }
+  }, []);
+
   const cargarIntervalos = async () => {
     setLoading(true);
     setError('');
     try {
-      // Primero crear los intervalos si no existen
-      await fetch(`${apiUrl}/produccion/intervalos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linea, fecha, turno: parseInt(turno) })
-      });
-
-      // Luego cargar los intervalos
+      // Cargar los intervalos existentes (sin crear automáticamente)
       const response = await fetch(
         `${apiUrl}/produccion/intervalos?linea=${encodeURIComponent(linea)}&fecha=${fecha}&turno=${turno}`
       );
@@ -41,6 +43,27 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInitializeIntervalos = async () => {
+    setInitializingIntervalos(true);
+    try {
+      const response = await fetch(`${apiUrl}/produccion/intervalos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ linea, fecha, turno: parseInt(turno) })
+      });
+
+      if (!response.ok) throw new Error('Error inicializando intervalos');
+
+      // Recargar después de inicializar
+      await cargarIntervalos();
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
+    } finally {
+      setInitializingIntervalos(false);
     }
   };
 
@@ -141,6 +164,20 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
         </div>
       )}
 
+      {/* Mensaje si no hay intervalos */}
+      {!loading && intervalos.length === 0 && (
+        <div className="bg-blue-900/30 border border-blue-600 text-blue-300 px-4 py-4 rounded mb-4">
+          <p className="mb-3">No hay intervalos registrados para esta línea, fecha y turno.</p>
+          <button
+            onClick={handleInitializeIntervalos}
+            disabled={initializingIntervalos}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded font-medium"
+          >
+            {initializingIntervalos ? 'Inicializando...' : 'Inicializar Intervalos'}
+          </button>
+        </div>
+      )}
+
       {/* Tabla de Intervalos */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
@@ -193,7 +230,7 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
                 </td>
                 <td className="px-3 py-2 text-right text-slate-300">{int.delta}</td>
                 <td className="px-3 py-2 text-right text-amber-300 font-semibold">
-                  {int.deadtime_minutos ? int.deadtime_minutos.toFixed(2) : '0.00'}
+                  {Number(int.deadtime_minutos || 0).toFixed(2)}
                 </td>
                 <td className="px-3 py-2 text-right text-slate-300">
                   {int.porcentaje_cumplimiento}%
@@ -221,13 +258,13 @@ export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
         <div>
           <p className="text-slate-400 text-sm">Deadtime Total</p>
           <p className="text-amber-400 font-bold text-lg">
-            {totales.deadtime_total ? totales.deadtime_total.toFixed(2) : '0.00'} min
+            {Number(totales.deadtime_total || 0).toFixed(2)} min
           </p>
         </div>
         <div>
           <p className="text-slate-400 text-sm">Justificado</p>
           <p className="text-blue-400 font-bold text-lg">
-            {totales.justificado_total ? totales.justificado_total.toFixed(2) : '0.00'} min
+            {Number(totales.justificado_total || 0).toFixed(2)} min
           </p>
         </div>
         <div>
