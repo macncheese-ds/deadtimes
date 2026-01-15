@@ -127,24 +127,39 @@ router.get('/intervalos', async (req, res) => {
       [linea, fecha, parseInt(turno, 10)]
     );
 
-    // Calcular totales
+    // Convert DECIMAL strings to proper types for all rows
+    const normalizedRows = rows.map(r => ({
+      ...r,
+      rate: parseInt(r.rate) || 0,
+      rate_acumulado: parseInt(r.rate_acumulado) || 0,
+      produccion: parseInt(r.produccion) || 0,
+      produccion_acumulada: parseInt(r.produccion_acumulada) || 0,
+      scrap: parseInt(r.scrap) || 0,
+      delta: parseInt(r.delta) || 0,
+      deadtime_minutos: parseFloat(r.deadtime_minutos) || 0,
+      porcentaje_cumplimiento: parseFloat(r.porcentaje_cumplimiento) || 0,
+      justificado_minutos: parseFloat(r.justificado_minutos) || 0,
+      tiempo_no_justificado: parseFloat(r.tiempo_no_justificado) || 0
+    }));
+
+    // Calcular totales - All values now properly typed
     const totales = {
-      rate_total: rows.reduce((sum, r) => sum + (r.rate || 0), 0),
-      produccion_total: rows.reduce((sum, r) => sum + (r.produccion || 0), 0),
-      scrap_total: rows.reduce((sum, r) => sum + (r.scrap || 0), 0),
-      deadtime_total: rows.reduce((sum, r) => sum + (r.deadtime_minutos || 0), 0),
-      justificado_total: rows.reduce((sum, r) => sum + (r.justificado_minutos || 0), 0),
-      no_justificado_total: rows.reduce((sum, r) => sum + (r.tiempo_no_justificado || 0), 0)
+      rate_total: normalizedRows.reduce((sum, r) => sum + (r.rate || 0), 0),
+      produccion_total: normalizedRows.reduce((sum, r) => sum + (r.produccion || 0), 0),
+      scrap_total: normalizedRows.reduce((sum, r) => sum + (r.scrap || 0), 0),
+      deadtime_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.deadtime_minutos || 0), 0).toFixed(2)),
+      justificado_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.justificado_minutos || 0), 0).toFixed(2)),
+      no_justificado_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.tiempo_no_justificado || 0), 0).toFixed(2))
     };
 
     // Calcular porcentaje de cumplimiento general
     totales.porcentaje_cumplimiento = totales.rate_total > 0 
-      ? ((totales.produccion_total / totales.rate_total) * 100).toFixed(2)
+      ? parseFloat(((totales.produccion_total / totales.rate_total) * 100).toFixed(2))
       : 0;
 
     res.json({
       success: true,
-      data: rows,
+      data: normalizedRows,
       totales
     });
   } catch (error) {
