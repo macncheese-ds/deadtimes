@@ -164,10 +164,10 @@ export default function ProduccionSection({ onClose }) {
       {/* Información */}
       <div className="mt-6 p-4 bg-slate-800/50 border border-slate-700/50 rounded-lg text-slate-300 text-sm space-y-2">
         <p>
-          <span className="font-semibold text-slate-200">📊 Edición:</span> Carga tabla de intervalos (1h) para registrar producción y scrap. Requiere credenciales.
+          <span className="font-semibold text-slate-200"> Edición:</span> Carga tabla de intervalos (1h) para registrar producción y scrap. Requiere credenciales.
         </p>
         <p>
-          <span className="font-semibold text-slate-200">👁️ Review:</span> Visualiza deadtime no justificado. Haz click en un intervalo para ver tickets relacionados.
+          <span className="font-semibold text-slate-200"> Review:</span> Visualiza deadtime no justificado. Haz click en un intervalo para ver tickets relacionados.
         </p>
       </div>
     </div>

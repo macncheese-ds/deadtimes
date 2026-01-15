@@ -160,7 +160,8 @@ router.get('/intervalos', async (req, res) => {
 // POST /api/produccion/intervalos
 // Crear intervalos para una línea y turno (se ejecuta al seleccionar línea+turno)
 // Body: { linea, fecha, turno }
-// Crea 12 intervalos (Turno 1: 8-20, Turno 2: 20-8) con modelo/rate inicial
+// Crea 12 intervalos VACÍOS (sin rellenar automáticamente)
+// El operador debe llenarlos manualmente según avanza el turno
 // ============================================================================
 router.post('/intervalos', async (req, res) => {
   try {
@@ -176,29 +177,20 @@ router.post('/intervalos', async (req, res) => {
     // Determinar rango de horas según turno
     const horas = turno == 1 ? [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] : [20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7];
 
-    // Obtener modelo por defecto para la línea
-    const [modelos] = await db.query(
-      'SELECT modelo, producto, rate FROM modelos WHERE linea = ? LIMIT 1',
-      [linea]
-    );
-
-    const modeloDefault = modelos && modelos.length > 0 ? modelos[0] : { modelo: null, producto: null, rate: 0 };
-
-    // Insertar 12 intervalos
+    // Insertar 12 intervalos VACÍOS (sin modelo, sin rate, sin producción)
     for (let i = 0; i < horas.length; i++) {
       const hora = horas[i];
-      const rateAcumulado = (i + 1) * modeloDefault.rate; // suma acumulada
 
       await db.query(
         `INSERT INTO produccion_intervalos 
-         (linea, fecha, turno, hora_inicio, modelo, producto, rate, rate_acumulado)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         (linea, fecha, turno, hora_inicio, modelo, producto, rate, rate_acumulado, produccion, produccion_acumulada, scrap, delta, deadtime_minutos, porcentaje_cumplimiento)
+         VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0)
          ON DUPLICATE KEY UPDATE
-           modelo = VALUES(modelo),
-           producto = VALUES(producto),
-           rate = VALUES(rate),
-           rate_acumulado = VALUES(rate_acumulado)`,
-        [linea, fecha, turno, hora, modeloDefault.modelo, modeloDefault.producto, modeloDefault.rate, rateAcumulado]
+           modelo = IFNULL(modelo, NULL),
+           producto = IFNULL(producto, NULL),
+           rate = IFNULL(rate, 0),
+           rate_acumulado = IFNULL(rate_acumulado, 0)`,
+        [linea, fecha, turno, hora]
       );
     }
 
@@ -235,7 +227,20 @@ router.put('/intervalos/:id', async (req, res) => {
     }
 
     // Validar credenciales (contra credenciales.users)
-    const user = await validarCredenciales(numEmpleado, password);
+    // Permitir usuario genérico 0000/1111 para ediciones rápidas sin login
+    let user = null;
+    if (numEmpleado === '0000' && password === '1111') {
+      // Usuario genérico para ediciones rápidas
+      user = {
+        num_empleado: '0000',
+        nombre: 'Sistema',
+        editor: 1,
+        rol: 'operador'
+      };
+    } else {
+      user = await validarCredenciales(numEmpleado, password);
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -484,7 +489,7 @@ router.get('/related-tickets/:intervaloId', async (req, res) => {
 // GET /api/produccion/equipos - obtener todos los equipos
 router.get('/equipos', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM equipos ORDER BY nombre');
+    const [rows] = await db.query('SELECT * FROM equipos ORDER BY id ASC');
     res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -533,7 +538,7 @@ router.delete('/equipos/:id', async (req, res) => {
 // GET /api/produccion/lineas - obtener todas las líneas
 router.get('/lineas', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT * FROM lineas ORDER BY nombre');
+    const [rows] = await db.query('SELECT * FROM lineas ORDER BY id ASC');
     res.json({ success: true, data: rows });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -579,27 +584,17 @@ router.delete('/lineas/:id', async (req, res) => {
   }
 });
 
-// GET /api/produccion/modelos - obtener todos los modelos
-router.get('/modelos', async (req, res) => {
-  try {
-    const [rows] = await db.query('SELECT * FROM modelos ORDER BY nombre');
-    res.json({ success: true, data: rows });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // POST /api/produccion/modelos - crear nuevo modelo
 router.post('/modelos', async (req, res) => {
-  const { nombre, producto, rate, linea } = req.body;
-  if (!nombre || !rate) return res.status(400).json({ error: 'Nombre y rate requeridos' });
+  const { modelo, producto, rate, linea } = req.body;
+  if (!modelo || !rate) return res.status(400).json({ error: 'Modelo y rate requeridos' });
 
   try {
     const [result] = await db.query(
-      'INSERT INTO modelos (nombre, producto, rate, linea) VALUES (?, ?, ?, ?)',
-      [nombre, producto, rate, linea]
+      'INSERT INTO modelos (modelo, producto, rate, linea) VALUES (?, ?, ?, ?)',
+      [modelo, producto, rate, linea]
     );
-    res.json({ success: true, data: { id: result.insertId, nombre, producto, rate, linea } });
+    res.json({ success: true, data: { id: result.insertId, modelo, producto, rate, linea } });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -608,15 +603,15 @@ router.post('/modelos', async (req, res) => {
 // PUT /api/produccion/modelos/:id - actualizar modelo
 router.put('/modelos/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre, producto, rate, linea } = req.body;
-  if (!nombre || !rate) return res.status(400).json({ error: 'Nombre y rate requeridos' });
+  const { modelo, producto, rate, linea } = req.body;
+  if (!modelo || !rate) return res.status(400).json({ error: 'Modelo y rate requeridos' });
 
   try {
     await db.query(
-      'UPDATE modelos SET nombre = ?, producto = ?, rate = ?, linea = ? WHERE id = ?',
-      [nombre, producto, rate, linea, id]
+      'UPDATE modelos SET modelo = ?, producto = ?, rate = ?, linea = ? WHERE id = ?',
+      [modelo, producto, rate, linea, id]
     );
-    res.json({ success: true, data: { id, nombre, producto, rate, linea } });
+    res.json({ success: true, data: { id, modelo, producto, rate, linea } });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -734,6 +729,40 @@ router.put('/deadtimes/:id', async (req, res) => {
     res.json({ success: true, message: 'Ticket actualizado exitosamente' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ============================================================================
+// GET /api/modelos
+// Obtener lista de modelos disponibles para una línea
+// Query params: linea
+// ============================================================================
+router.get('/modelos', async (req, res) => {
+  try {
+    const { linea } = req.query;
+
+    if (!linea) {
+      return res.status(400).json({
+        success: false,
+        error: 'Parámetro requerido: linea'
+      });
+    }
+
+    const [rows] = await db.query(
+      `SELECT id, linea, modelo, producto, rate FROM modelos WHERE linea = ? ORDER BY modelo ASC`,
+      [linea]
+    );
+
+    res.json({
+      success: true,
+      data: rows || []
+    });
+  } catch (error) {
+    console.error('Error en GET /modelos:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
