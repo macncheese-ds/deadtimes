@@ -145,4 +145,38 @@ export const createConfigModelo = (payload) => api.post('/config/modelos', paylo
 export const updateConfigModelo = (id, payload) => api.put(`/config/modelos/${id}`, payload).then(r => r.data);
 export const deleteConfigModelo = (id, payload) => api.delete(`/config/modelos/${id}`, { data: payload }).then(r => r.data);
 
+// ============================================================================
+// DISPLAY MODES - MODOS DE VISUALIZACIÓN
+// ============================================================================
+
+// Obtener tickets activos para visualización
+export const getDisplayTickets = (linea) => {
+  const timestamp = new Date().getTime();
+  return api.get(`/deadtimes/display/${encodeURIComponent(linea)}?_t=${timestamp}`).then(r => r.data);
+};
+
+// ============================================================================
+// ESTADOS - MANTENIMIENTO Y CAMBIO DE MODELO
+// ============================================================================
+
+// Obtener estado de una línea
+export const getEstado = (linea) => {
+  return api.get(`/estados/${encodeURIComponent(linea)}`).then(r => r.data);
+};
+
+// Activar/Desactivar mantenimiento
+export const setMantenimiento = (linea, activo) => {
+  return api.put(`/estados/${encodeURIComponent(linea)}/mantenimiento`, { activo }).then(r => r.data);
+};
+
+// Activar/Desactivar cambio de modelo
+export const setCambioModelo = (linea, activo) => {
+  return api.put(`/estados/${encodeURIComponent(linea)}/cambio-modelo`, { activo }).then(r => r.data);
+};
+
+// Resetear todos los estados de una línea
+export const resetEstados = (linea) => {
+  return api.put(`/estados/${encodeURIComponent(linea)}/reset`).then(r => r.data);
+};
+
 export default api;

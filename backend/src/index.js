@@ -6,6 +6,7 @@ const deadtimes = require('./routes/deadtimes');
 const auth = require('./routes/auth');
 const produccion = require('./routes/produccion');
 const configuracion = require('./routes/configuracion');
+const estados = require('./routes/estados');
 const helmet = require('helmet');
 const path = require('path');
 
@@ -49,6 +50,7 @@ app.use('/api/auth', auth);
 app.use('/api/deadtimes', deadtimes);
 app.use('/api/produccion', produccion);
 app.use('/api/config', configuracion);
+app.use('/api/estados', estados);
 
 const PORT = process.env.PORT || 3107;
 app.listen(PORT, '0.0.0.0', () => console.log(`Deadtimes API on ${PORT}`));

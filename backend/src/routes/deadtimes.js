@@ -852,4 +852,49 @@ router.get('/analisis/top-tiempos', async (req, res) => {
   }
 });
 
+// ============================================================================
+// DISPLAY MODE - TICKETS ACTIVOS PARA VISUALIZACIÓN
+// ============================================================================
+
+// GET /api/deadtimes/display/:linea - obtener tickets activos de una línea
+router.get('/display/:linea', async (req, res) => {
+  try {
+    const { linea } = req.params;
+    
+    // Obtener solo tickets activos (done = 0) de esta línea
+    const [tickets] = await db.query(`
+      SELECT 
+        id,
+        linea,
+        equipo,
+        modelo,
+        descr,
+        clasificacion,
+        hr,
+        hc,
+        piezas,
+        rate,
+        deadtime,
+        TIMESTAMPDIFF(MINUTE, hr, NOW()) AS duracion_minutos,
+        turno
+      FROM deadtimes
+      WHERE linea = ? AND done = 0
+      ORDER BY hr DESC
+    `, [linea]);
+    
+    res.json({
+      success: true,
+      linea: linea,
+      ticketsActivos: tickets,
+      totalTickets: tickets.length
+    });
+  } catch (err) {
+    console.error('Error obteniendo tickets de display:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;

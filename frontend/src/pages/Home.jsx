@@ -17,12 +17,16 @@ import {
   getTicket,
   startTicket,
   finishTicket,
-  getTicketsByEquipment
+  getTicketsByEquipment,
+  getEstado,
+  setMantenimiento,
+  setCambioModelo
 } from '../api_deadtimes'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
 import LoginModal from '../components/LoginModal'
 import ProduccionSection from '../components/ProduccionSection'
 import Configuration from './Configuration'
+import DisplayVisualization from '../components/DisplayVisualization'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -76,6 +80,13 @@ export default function Home() {
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showProduccion, setShowProduccion] = useState(false)
   const [showConfiguration, setShowConfiguration] = useState(false)
+  const [showDisplay, setShowDisplay] = useState(false)
+  const [showToolsMenu, setShowToolsMenu] = useState(false)
+  const [displayLineaSelected, setDisplayLineaSelected] = useState('')
+  const [mantenimientoActivo, setMantenimientoActivo] = useState({})
+  const [cambioModeloActivo, setCambioModeloActivo] = useState({})
+  const [showMantenimiento, setShowMantenimiento] = useState(false)
+  const [showCambioModelo, setShowCambioModelo] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [lineas, setLineas] = useState([])
@@ -1064,6 +1075,8 @@ export default function Home() {
       setShowAnalytics(false)
       setShowProduccion(false)
       setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
     }
     resetFilters()
   }
@@ -1078,6 +1091,8 @@ export default function Home() {
       setShowAnalytics(false)
       setShowProduccion(false)
       setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
       setStatus('open')
       loadTickets('open')
     }
@@ -1094,6 +1109,8 @@ export default function Home() {
       setShowAnalytics(false)
       setShowProduccion(false)
       setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
       setStatus('closed')
       loadTickets('closed')
     }
@@ -1110,6 +1127,8 @@ export default function Home() {
       setShowAnalytics(true)
       setShowProduccion(false)
       setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
     }
     resetFilters()
   }
@@ -1124,6 +1143,8 @@ export default function Home() {
       setShowAnalytics(false)
       setShowProduccion(true)
       setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
     }
     resetFilters()
   }
@@ -1138,8 +1159,83 @@ export default function Home() {
       setShowAnalytics(false)
       setShowProduccion(false)
       setShowConfiguration(true)
+      setShowDisplay(false)
+      setShowToolsMenu(false)
+      setShowMantenimiento(false)
+      setShowCambioModelo(false)
     }
     resetFilters()
+  }
+
+  function toggleMantenimiento() {
+    if (showMantenimiento) {
+      setShowMantenimiento(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowMantenimiento(true)
+      setShowCambioModelo(false)
+    }
+    resetFilters()
+  }
+
+  function toggleCambioModelo() {
+    if (showCambioModelo) {
+      setShowCambioModelo(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowMantenimiento(false)
+      setShowCambioModelo(true)
+    }
+    resetFilters()
+  }
+
+  // Handlers para manejar cambios de estado en BD
+  async function handleMantenimientoToggle(linea, currentState) {
+    try {
+      const newState = !currentState;
+      const response = await setMantenimiento(linea, newState);
+      if (response.success) {
+        // Actualizar estado local
+        setMantenimientoActivo(prev => ({
+          ...prev,
+          [linea]: newState
+        }));
+      } else {
+        console.error('Error actualizando mantenimiento:', response.error);
+      }
+    } catch (error) {
+      console.error('Error en handleMantenimientoToggle:', error);
+    }
+  }
+
+  async function handleCambioModeloToggle(linea, currentState) {
+    try {
+      const newState = !currentState;
+      const response = await setCambioModelo(linea, newState);
+      if (response.success) {
+        // Actualizar estado local
+        setCambioModeloActivo(prev => ({
+          ...prev,
+          [linea]: newState
+        }));
+      } else {
+        console.error('Error actualizando cambio de modelo:', response.error);
+      }
+    } catch (error) {
+      console.error('Error en handleCambioModeloToggle:', error);
+    }
   }
 
   const inputClass = (value) => `border p-3 rounded-lg text-sm transition-all ${value ? 'bg-slate-700 border-slate-500 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`
@@ -1195,47 +1291,128 @@ export default function Home() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4 mb-6">
-          <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            <span>Nuevo Ticket</span>
-          </button>
-          <button onClick={toggleOpen} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showOpen ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showOpen ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Abiertos</span>
-          </button>
-          <button onClick={toggleClosed} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showClosed ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showClosed ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Cerrados</span>
-          </button>
-          <button onClick={toggleAnalytics} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showAnalytics ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showAnalytics ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <span>Analytics</span>
-          </button>
-          <button onClick={toggleProduccion} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showProduccion ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showProduccion ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>Producción</span>
-          </button>
-          <button onClick={toggleConfiguration} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showConfiguration ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-            <svg className={`w-6 h-6 transition-transform duration-300 ${showConfiguration ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>Configuración</span>
-          </button>
+        <div className="space-y-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+              <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span>Nuevo Ticket</span>
+            </button>
+            <button onClick={toggleOpen} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showOpen ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+              <svg className={`w-6 h-6 transition-transform duration-300 ${showOpen ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Abiertos</span>
+            </button>
+            <button onClick={toggleClosed} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showClosed ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+              <svg className={`w-6 h-6 transition-transform duration-300 ${showClosed ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Cerrados</span>
+            </button>
+            <button onClick={toggleProduccion} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showProduccion ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+              <svg className={`w-6 h-6 transition-transform duration-300 ${showProduccion ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Producción</span>
+            </button>
+          </div>
+
+          {/* Collapsible Tools Menu */}
+          <div className="rounded-xl border border-slate-700 bg-slate-800/30 overflow-hidden">
+            <button 
+              onClick={() => setShowToolsMenu(!showToolsMenu)}
+              className="w-full font-semibold py-3 px-5 flex items-center justify-between text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all duration-300"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                <span>Herramientas</span>
+              </div>
+              <svg className={`w-5 h-5 transition-transform duration-300 ${showToolsMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </button>
+
+            {showToolsMenu && (
+              <div className="border-t border-slate-700 grid grid-cols-1 sm:grid-cols-5 gap-2 p-3">
+                <button onClick={() => {
+                  setShowConfiguration(true)
+                  setShowNew(false)
+                  setShowOpen(false)
+                  setShowClosed(false)
+                  setShowAnalytics(false)
+                  setShowProduccion(false)
+                  setShowDisplay(false)
+                  setShowMantenimiento(false)
+                  setShowCambioModelo(false)
+                  resetFilters()
+                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showConfiguration ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showConfiguration ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Configuración</span>
+                </button>
+
+                <button onClick={() => {
+                  setShowAnalytics(true)
+                  setShowNew(false)
+                  setShowOpen(false)
+                  setShowClosed(false)
+                  setShowConfiguration(false)
+                  setShowProduccion(false)
+                  setShowDisplay(false)
+                  setShowMantenimiento(false)
+                  setShowCambioModelo(false)
+                  resetFilters()
+                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showAnalytics ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showAnalytics ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Analytics</span>
+                </button>
+
+                <button onClick={() => {
+                  setShowDisplay(true)
+                  setShowNew(false)
+                  setShowOpen(false)
+                  setShowClosed(false)
+                  setShowAnalytics(false)
+                  setShowConfiguration(false)
+                  setShowProduccion(false)
+                  setShowMantenimiento(false)
+                  setShowCambioModelo(false)
+                  resetFilters()
+                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showDisplay ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showDisplay ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Display</span>
+                </button>
+
+                <button onClick={() => toggleMantenimiento()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showMantenimiento ? 'bg-blue-700 border-blue-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showMantenimiento ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Mantenimiento</span>
+                </button>
+
+                <button onClick={() => toggleCambioModelo()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showCambioModelo ? 'bg-amber-700 border-amber-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showCambioModelo ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>Cambio Modelo</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && (
+        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showCambioModelo && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
@@ -2609,6 +2786,67 @@ export default function Home() {
         {showProduccion && (
           <ProduccionSection onClose={() => { setShowProduccion(false); resetFilters() }} />
         )}
+
+        {showDisplay && !displayLineaSelected && (
+          <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-white">Modo Visualización</h2>
+              </div>
+              <button onClick={() => setShowDisplay(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-slate-300 text-sm">Selecciona una línea para mostrar el modo visualización:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {lineas.map(linea => (
+                  <button
+                    key={linea.id}
+                    onClick={() => setDisplayLineaSelected(linea.linea)}
+                    className="bg-slate-800/50 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group"
+                  >
+                    <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Línea {linea.linea}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showDisplay && displayLineaSelected && (
+          <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
+            <div className="absolute top-4 right-4 z-50">
+              <button 
+                onClick={() => {
+                  setShowDisplay(false)
+                  setDisplayLineaSelected('')
+                }}
+                className="w-10 h-10 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1">
+              <DisplayVisualization linea={displayLineaSelected} mantenimientoActivo={mantenimientoActivo} cambioModeloActivo={cambioModeloActivo} />
+            </div>
+          </div>
+        )}
+
+
       </div>
 
       <LoginModal visible={showCredentialsModal} onClose={() => setShowCredentialsModal(false)} onConfirm={handleCredentialsConfirm} busy={credentialsBusy} />
@@ -3009,6 +3247,100 @@ export default function Home() {
           <Configuration 
             onBack={() => setShowConfiguration(false)}
           />
+        )}
+        
+        {showMantenimiento && (
+          <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-900/50 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M6.25 3h11.5A2.25 2.25 0 0120 5.25v13.5A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75V5.25A2.25 2.25 0 015.25 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-white">Mantenimiento</h2>
+              </div>
+              <button onClick={() => setShowMantenimiento(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-slate-300 text-sm">Selecciona las líneas en mantenimiento:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {lineas.map(linea => (
+                  <button
+                    key={`mant-${linea.id}`}
+                    onClick={() => handleMantenimientoToggle(linea.linea, mantenimientoActivo[linea.linea])}
+                    className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${
+                      mantenimientoActivo[linea.linea]
+                        ? 'bg-blue-900/40 border-blue-500 text-blue-200'
+                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                    }`}
+                  >
+                    <svg className={`w-5 h-5 transition-colors ${
+                      mantenimientoActivo[linea.linea] ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Línea {linea.linea}</span>
+                    {mantenimientoActivo[linea.linea] && (
+                      <span className="text-xs bg-blue-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {showCambioModelo && (
+          <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-900/50 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-white">Cambio de Modelo</h2>
+              </div>
+              <button onClick={() => setShowCambioModelo(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-slate-300 text-sm">Selecciona las líneas en cambio de modelo:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {lineas.map(linea => (
+                  <button
+                    key={`cambio-${linea.id}`}
+                    onClick={() => handleCambioModeloToggle(linea.linea, cambioModeloActivo[linea.linea])}
+                    className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${
+                      cambioModeloActivo[linea.linea]
+                        ? 'bg-amber-900/40 border-amber-500 text-amber-200'
+                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                    }`}
+                  >
+                    <svg className={`w-5 h-5 transition-colors ${
+                      cambioModeloActivo[linea.linea] ? 'text-amber-400' : 'text-slate-400 group-hover:text-slate-200'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Línea {linea.linea}</span>
+                    {cambioModeloActivo[linea.linea] && (
+                      <span className="text-xs bg-amber-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       
       {/* Mensaje de éxito */}

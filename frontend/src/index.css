@@ -50,12 +50,82 @@ body {
   to { opacity: 1; }
 }
 
+@keyframes pulseRed {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseBlue {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseOrange {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .animate-slide-up {
   animation: slideUp 0.3s ease-out forwards;
 }
 
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out forwards;
+}
+
+.animate-pulse-red {
+  animation: pulseRed 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-blue {
+  animation: pulseBlue 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-orange {
+  animation: pulseOrange 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth fade-in animations */
+@keyframes fadeInSmooth {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeOutSmooth {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+
+.animate-fade-in-smooth {
+  animation: fadeInSmooth 0.4s ease-out forwards;
+}
+
+.animate-fade-out-smooth {
+  animation: fadeOutSmooth 0.3s ease-in forwards;
 }
 
 /* Card styles */

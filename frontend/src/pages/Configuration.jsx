@@ -378,6 +378,126 @@ export default function Configuration({ onBack }) {
     }
   }
 
+  
+  module.exports = Configuration
+
+  const handleAddDisplayMode = async () => {
+    if (!newDisplayMode.linea.trim()) {
+      setDisplayModeMessage('Por favor ingresa el nombre de la línea')
+      return
+    }
+
+    try {
+      const payload = {
+        linea: newDisplayMode.linea.trim(),
+        descripcion: newDisplayMode.descripcion.trim() || '',
+        allowed_ips: newDisplayMode.allowed_ips,
+        activo: true
+      }
+      if (currentCredentials) {
+        payload.numEmpleado = currentCredentials.num_empleado
+        payload.password = currentCredentials.password
+      }
+
+      const result = await createDisplayMode(payload)
+      setDisplayModes([...displayModes, payload].sort((a, b) => a.linea.localeCompare(b.linea)))
+      setNewDisplayMode({ linea: '', descripcion: '', allowed_ips: [] })
+      setNewIPInput('')
+      setDisplayModeMessage('Modo de visualización creado exitosamente')
+      setTimeout(() => setDisplayModeMessage(''), 3000)
+    } catch (err) {
+      setDisplayModeMessage('Error al crear modo: ' + (err.message || 'Error desconocido'))
+    }
+  }
+
+  const handleEditDisplayMode = (mode) => {
+    setEditingDisplayMode(mode.id)
+    setEditingDisplayModeData({ ...mode })
+  }
+
+  const handleSaveDisplayMode = async () => {
+    if (!editingDisplayModeData.linea.trim()) {
+      setDisplayModeMessage('Por favor ingresa el nombre de la línea')
+      return
+    }
+
+    try {
+      const payload = {
+        linea: editingDisplayModeData.linea.trim(),
+        descripcion: editingDisplayModeData.descripcion.trim() || '',
+        allowed_ips: editingDisplayModeData.allowed_ips,
+        activo: editingDisplayModeData.activo !== false
+      }
+      if (currentCredentials) {
+        payload.numEmpleado = currentCredentials.num_empleado
+        payload.password = currentCredentials.password
+      }
+
+      await updateDisplayMode(editingDisplayMode, payload)
+      setDisplayModes(displayModes.map(m => m.id === editingDisplayMode ? { ...payload, id: editingDisplayMode } : m).sort((a, b) => a.linea.localeCompare(b.linea)))
+      setEditingDisplayMode(null)
+      setEditingDisplayModeData(null)
+      setDisplayModeMessage('Modo de visualización actualizado exitosamente')
+      setTimeout(() => setDisplayModeMessage(''), 3000)
+    } catch (err) {
+      setDisplayModeMessage('Error al actualizar modo: ' + (err.message || 'Error desconocido'))
+    }
+  }
+
+  const handleDeleteDisplayMode = async (id) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este modo de visualización?')) return
+
+    try {
+      const payload = {}
+      if (currentCredentials) {
+        payload.numEmpleado = currentCredentials.num_empleado
+        payload.password = currentCredentials.password
+      }
+
+      await deleteDisplayMode(id, payload)
+      setDisplayModes(displayModes.filter(m => m.id !== id))
+      setDisplayModeMessage('Modo de visualización eliminado exitosamente')
+      setTimeout(() => setDisplayModeMessage(''), 3000)
+    } catch (err) {
+      setDisplayModeMessage('Error al eliminar modo: ' + (err.message || 'Error desconocido'))
+    }
+  }
+
+  const addIPToNewMode = () => {
+    if (newIPInput.trim()) {
+      if (!newDisplayMode.allowed_ips.includes(newIPInput.trim())) {
+        setNewDisplayMode({
+          ...newDisplayMode,
+          allowed_ips: [...newDisplayMode.allowed_ips, newIPInput.trim()]
+        })
+      }
+      setNewIPInput('')
+    }
+  }
+
+  const removeIPFromNewMode = (ipToRemove) => {
+    setNewDisplayMode({
+      ...newDisplayMode,
+      allowed_ips: newDisplayMode.allowed_ips.filter(ip => ip !== ipToRemove)
+    })
+  }
+
+  const addIPToEditMode = (ip) => {
+    if (ip.trim() && !editingDisplayModeData.allowed_ips.includes(ip.trim())) {
+      setEditingDisplayModeData({
+        ...editingDisplayModeData,
+        allowed_ips: [...editingDisplayModeData.allowed_ips, ip.trim()]
+      })
+    }
+  }
+
+  const removeIPFromEditMode = (ipToRemove) => {
+    setEditingDisplayModeData({
+      ...editingDisplayModeData,
+      allowed_ips: editingDisplayModeData.allowed_ips.filter(ip => ip !== ipToRemove)
+    })
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 p-6">
       <LoginModal
