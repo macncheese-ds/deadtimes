@@ -562,6 +562,134 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ============================================================================
+// MTTR/MTBF ROUTES - MUST BE BEFORE CATCH-ALL /:id ROUTE
+// ============================================================================
+
+// GET /api/deadtimes/mttr-mtbf - Calculate MTTR/MTBF on-the-fly from deadtimes
+router.get('/mttr-mtbf', async (req, res) => {
+  try {
+    const { machine, period = 'weekly', startDate, endDate } = req.query;
+    
+    // ALWAYS use startDate/endDate when provided
+    let whereClause = '';
+    let queryParams = [];
+    
+    if (startDate && endDate) {
+      whereClause = ' AND DATE(hr) >= ? AND DATE(hr) <= ?';
+      queryParams.push(startDate, endDate);
+    } else if (period === 'monthly') {
+      // Fallback: last 6 months
+      whereClause = ' AND hr >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)';
+    } else {
+      // Fallback: last 8 weeks
+      whereClause = ' AND hr >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)';
+    }
+    
+    // Get all unique machines from deadtimes (excluding "Otros")
+    const [machines] = await db.query(`
+      SELECT DISTINCT equipo as machine 
+      FROM deadtimes 
+      WHERE done = 1 AND equipo != 'Otros' AND equipo IS NOT NULL AND equipo != ''
+      ORDER BY equipo
+    `);
+    
+    // Period-based parameters
+    const isMonthlyPeriod = period === 'monthly';
+    const available_time = isMonthlyPeriod ? 528 : 132; // 528 hours per month (4 weeks), 132 per week
+    const mttr_target = isMonthlyPeriod ? 3.6 : 0.8;
+    const mtbf_target = isMonthlyPeriod ? 48 : 12;
+    
+    // Group by month for monthly period, otherwise by week
+    const groupByClause = isMonthlyPeriod 
+      ? 'DATE_FORMAT(DATE(hr), \'%Y-%m-01\')' 
+      : 'DATE_SUB(DATE(hr), INTERVAL (DAYOFWEEK(DATE(hr)) + 5) % 7 DAY)';
+    
+    const results = [];
+    
+    // Calculate data for each machine
+    for (const { machine: mch } of machines) {
+      // Skip if filtering by machine and this isn't it
+      if (machine && machine !== 'all' && machine !== '' && mch !== machine) continue;
+      
+      // Get data grouped by period
+      let query = `
+        SELECT 
+          ${groupByClause} as period_key,
+          COUNT(*) as incident_count,
+          COALESCE(SUM(TIMESTAMPDIFF(MINUTE, hr, COALESCE(hc, NOW()))), 0) as total_downtime_minutes
+        FROM deadtimes
+        WHERE equipo = ? AND done = 1
+      `;
+      
+      let params = [mch];
+      params.push(...queryParams);
+      
+      query += whereClause + ` GROUP BY period_key ORDER BY period_key ASC`;
+      
+      const [periodData] = await db.query(query, params);
+      
+      // Calculate MTTR/MTBF for each period
+      for (const data of periodData) {
+        const total_downtime = data.total_downtime_minutes / 60; // convert to hours
+        const mttr = data.incident_count > 0 ? total_downtime / data.incident_count : 0;
+        const mtbf = data.incident_count > 0 ? available_time / data.incident_count : available_time;
+        
+        let periodStart, periodEnd;
+        if (isMonthlyPeriod) {
+          // For monthly: first day to last day of month
+          periodStart = new Date(data.period_key);
+          periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0);
+        } else {
+          // For weekly: Monday + 6 days = Sunday
+          periodStart = new Date(data.period_key);
+          periodEnd = new Date(periodStart);
+          periodEnd.setDate(periodEnd.getDate() + 6);
+        }
+        
+        results.push({
+          machine: mch,
+          period_key: periodStart.toISOString().split('T')[0],
+          period_end_date: periodEnd.toISOString().split('T')[0],
+          incident_count: data.incident_count,
+          total_downtime: parseFloat(total_downtime.toFixed(2)),
+          available_time: available_time,
+          mttr_target: mttr_target,
+          mttr: parseFloat(mttr.toFixed(2)),
+          mtbf_target: mtbf_target,
+          mtbf: parseFloat(mtbf.toFixed(2)),
+          period_type: isMonthlyPeriod ? 'monthly' : 'weekly'
+        });
+      }
+    }
+    
+    // Sort by period descending
+    results.sort((a, b) => new Date(b.period_key) - new Date(a.period_key));
+    
+    res.json(results);
+  } catch (error) {
+    console.error('Error obteniendo datos MTTR/MTBF:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// GET /api/deadtimes/mttr-mtbf/machines - obtener lista de máquinas (excluye "Otros")
+router.get('/mttr-mtbf/machines', async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT DISTINCT equipo as machine 
+      FROM deadtimes 
+      WHERE done = 1 AND equipo != 'Otros' AND equipo IS NOT NULL AND equipo != ''
+      ORDER BY equipo
+    `);
+    const machines = rows.map(row => row.machine);
+    res.json(machines);
+  } catch (error) {
+    console.error('Error obteniendo máquinas MTTR/MTBF:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Get single
 router.get('/:id', async (req, res) => {
   const id = req.params.id;
@@ -898,3 +1026,4 @@ router.get('/display/:linea', async (req, res) => {
 });
 
 module.exports = router;
+

@@ -99,6 +99,16 @@ export const login = async (employee_input, password) => {
   return data;
 };
 
+// MTTR/MTBF functions
+export const getMttrMtbf = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/deadtimes/mttr-mtbf?${query}`).then(r => r.data);
+};
+
+export const createMttrMtbf = (payload) => api.post('/deadtimes/mttr-mtbf', payload).then(r => r.data);
+
+export const getMttrMtbfMachines = () => api.get('/deadtimes/mttr-mtbf/machines').then(r => r.data);
+
 export const lookupUser = async (employeeInput) => {
   try {
     const { data } = await api.get(`/auth/lookup/${encodeURIComponent(employeeInput)}`);

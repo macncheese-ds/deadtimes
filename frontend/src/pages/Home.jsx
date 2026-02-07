@@ -20,7 +20,8 @@ import {
   getTicketsByEquipment,
   getEstado,
   setMantenimiento,
-  setCambioModelo
+  setCambioModelo,
+  getMttrMtbf
 } from '../api_deadtimes'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
 import LoginModal from '../components/LoginModal'
@@ -29,7 +30,7 @@ import Configuration from './Configuration'
 import DisplayVisualization from '../components/DisplayVisualization'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine
 } from 'recharts'
 import * as XLSX from 'xlsx'
 
@@ -152,7 +153,7 @@ export default function Home() {
   const [handleCredentialsBusy, setHandleCredentialsBusy] = useState(false)
   
   // Estados para Análisis de Máquinas (integrado en Analytics)
-  const [analyticsTab, setAnalyticsTab] = useState('general') // 'general' | 'maquinas' | 'horas'
+  const [analyticsTab, setAnalyticsTab] = useState('general') // 'general' | 'maquinas' | 'horas' | 'mttr'
   const [machineEquipo, setMachineEquipo] = useState('')
   const [machineLinea, setMachineLinea] = useState('')
   const [machineTickets, setMachineTickets] = useState([])
@@ -169,6 +170,16 @@ export default function Home() {
   const [tendencia, setTendencia] = useState([])
   const [clasificacion, setClasificacion] = useState([])
   const [inactivityWarning, setInactivityWarning] = useState(false)
+  
+  // Estados para MTTR/MTBF
+  const [mttrMtbfData, setMttrMtbfData] = useState([])
+  const [mttrMachines, setMttrMachines] = useState([])
+  const [selectedMttrMachine, setSelectedMttrMachine] = useState('')
+  const [mttrPeriod, setMttrPeriod] = useState('weekly')
+  const [mttrLoading, setMttrLoading] = useState(false)
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(0) // 0 = current week, -1 = previous, etc.
+  const [currentMonthOffset, setCurrentMonthOffset] = useState(0) // 0 = current month, -1 = previous, etc.
+  const [currentYearOffset, setCurrentYearOffset] = useState(0) // 0 = current year, -1 = previous, etc.
 
   // Hook para detectar inactividad y cerrar sesión después de 2 minutos
   useInactivityTimeout(() => {
@@ -208,6 +219,23 @@ export default function Home() {
       loadAnalyticsStats()
     }
   }, [showAnalytics, selectedLinea, dateRange, customStartDate, customEndDate, lineas.length])
+
+  useEffect(() => {
+    // Load MTTR/MTBF data when tab is active
+    if (showAnalytics && analyticsTab === 'mttr') {
+      loadMttrMtbfData();
+    }
+  }, [showAnalytics, analyticsTab, mttrPeriod, selectedMttrMachine, currentWeekOffset, currentMonthOffset, currentYearOffset, customStartDate, customEndDate]);
+
+  // Load machines list for MTTR filter
+  useEffect(() => {
+    if (showAnalytics && analyticsTab === 'mttr' && mttrMachines.length === 0) {
+      getMttrMtbf({ period: 'weekly' }).then(data => {
+        const machines = [...new Set(data.map(d => d.machine))].sort();
+        setMttrMachines(machines);
+      }).catch(console.error);
+    }
+  }, [showAnalytics, analyticsTab]);
 
   async function loadInitialData() {
     setInitialLoading(true)
@@ -398,6 +426,257 @@ export default function Home() {
     } finally {
       setRefreshing(false)
     }
+  }
+
+  async function loadMttrMtbfData() {
+    setMttrLoading(true)
+    try {
+      const params = { period: mttrPeriod }
+      
+      // Add machine filter if selected
+      if (selectedMttrMachine) {
+        params.machine = selectedMttrMachine
+      }
+      
+      // Calculate date range based on period and offset
+      if (mttrPeriod === 'weekly') {
+        // Get Monday of the target week (using ISO weeks: Monday = 1, Sunday = 7)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        
+        // Move to target week
+        const targetDate = new Date(today)
+        targetDate.setDate(today.getDate() + (currentWeekOffset * 7))
+        
+        // Find Monday of that week (getDay(): 0=Sunday, 1=Monday, ..., 6=Saturday)
+        const dayOfWeek = targetDate.getDay()
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Sunday=6 days back, else (day-1)
+        
+        const mondayDate = new Date(targetDate)
+        mondayDate.setDate(targetDate.getDate() - daysToSubtract)
+        
+        const sundayDate = new Date(mondayDate)
+        sundayDate.setDate(mondayDate.getDate() + 6)
+        
+        params.startDate = mondayDate.toISOString().split('T')[0]
+        params.endDate = sundayDate.toISOString().split('T')[0]
+        
+      } else if (mttrPeriod === 'monthly') {
+        // Get first and last day of target month
+        const today = new Date()
+        const targetDate = new Date(today.getFullYear(), today.getMonth() + currentMonthOffset, 1)
+        params.startDate = targetDate.toISOString().split('T')[0]
+        
+        const lastDayOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0)
+        params.endDate = lastDayOfMonth.toISOString().split('T')[0]
+        
+      } else if (mttrPeriod === 'annual') {
+        // Get first and last day of target year
+        const today = new Date()
+        const targetYear = today.getFullYear() + currentYearOffset
+        params.startDate = `${targetYear}-01-01`
+        params.endDate = `${targetYear}-12-31`
+        
+      } else if (mttrPeriod === 'custom' && customStartDate && customEndDate) {
+        params.startDate = customStartDate
+        params.endDate = customEndDate
+      }
+      
+      const data = await getMttrMtbf(params)
+      setMttrMtbfData(data)
+    } catch (error) {
+      console.error('Error loading MTTR/MTBF data:', error)
+      setMttrMtbfData([])
+    } finally {
+      setMttrLoading(false)
+    }
+  }
+  function prepareMttrMtbfData() {
+    if (!Array.isArray(mttrMtbfData) || mttrMtbfData.length === 0) return [];
+    
+    // Targets always weekly (data is always grouped by week)
+    const targets = { mttr: 0.8, mtbf: 12 };
+    
+    // Group by week (period_key)
+    const grouped = {}
+    
+    mttrMtbfData.forEach(item => {
+      const weekKey = item.period_key;
+      
+      if (!grouped[weekKey]) {
+        // Format week label as "DD/MM - DD/MM"
+        const startDate = new Date(item.period_key + 'T00:00:00');
+        const endDate = new Date(item.period_end_date + 'T00:00:00');
+        
+        const startStr = startDate.toLocaleDateString('es', { day: 'numeric', month: 'numeric' });
+        const endStr = endDate.toLocaleDateString('es', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        
+        grouped[weekKey] = {
+          weekKey: weekKey,
+          weekLabel: `${startStr} - ${endStr}`,
+          startDate: item.period_key,
+          endDate: item.period_end_date,
+          equipment: []
+        }
+      }
+      
+      grouped[weekKey].equipment.push({
+        name: item.machine,
+        mttr: parseFloat(item.mttr) || 0,
+        mtbf: parseFloat(item.mtbf) || 0,
+        mttr_target: targets.mttr,
+        mtbf_target: targets.mtbf,
+        incidents: item.incident_count || 0,
+        downtime: item.total_downtime || 0
+      })
+    })
+    
+    // Convert to array and sort by date
+    return Object.values(grouped)
+      .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+  }
+
+  // For WEEKLY view: X-axis = equipment names, one bar per machine
+  function prepareWeeklyChartData() {
+    const weeks = prepareMttrMtbfData();
+    if (weeks.length === 0) return { mttr: [], mtbf: [], machines: [] };
+    
+    // Aggregate raw values across all weeks for each machine
+    const machineData = {};
+    const availableTimeWeekly = 132; // hours per week
+    
+    weeks.forEach(week => {
+      week.equipment.forEach(eq => {
+        if (!machineData[eq.name]) {
+          machineData[eq.name] = {
+            machine: eq.name,
+            totalDowntime: 0,  // Sum of raw downtime hours
+            totalIncidents: 0  // Sum of raw incident count
+          };
+        }
+        machineData[eq.name].totalDowntime += eq.downtime || 0;
+        machineData[eq.name].totalIncidents += eq.incidents || 0;
+      });
+    });
+    
+    const machines = Object.keys(machineData).sort();
+    
+    // Create chart data - calculate MTTR/MTBF from raw values
+    // MTTR = Total downtime / Total events
+    // MTBF = Available time / Total events
+    const mttrData = machines.map(m => ({
+      name: m,
+      MTTR: machineData[m].totalIncidents > 0 
+        ? parseFloat((machineData[m].totalDowntime / machineData[m].totalIncidents).toFixed(2))
+        : 0,
+      Incidentes: machineData[m].totalIncidents
+    }));
+    
+    const mtbfData = machines.map(m => ({
+      name: m,
+      MTBF: machineData[m].totalIncidents > 0 
+        ? parseFloat((availableTimeWeekly / machineData[m].totalIncidents).toFixed(2))
+        : availableTimeWeekly
+    }));
+    
+    return { mttr: mttrData, mtbf: mtbfData, machines };
+  }
+
+  // For MONTHLY view: X-axis = weeks within the month
+  function prepareMonthlyChartData() {
+    if (!mttrMtbfData || mttrMtbfData.length === 0) return { mttr: [], mtbf: [] };
+    
+    // For monthly period: aggregate raw values then calculate MTTR/MTBF
+    // MTTR = Total downtime / Total events
+    // MTBF = Available time (528h) / Total events
+    if (mttrPeriod === 'monthly') {
+      // Group by month - sum raw values across all machines
+      const monthsMap = new Map();
+      
+      mttrMtbfData.forEach(item => {
+        const monthKey = item.period_key.substring(0, 7); // YYYY-MM
+        if (!monthsMap.has(monthKey)) {
+          monthsMap.set(monthKey, { totalDowntime: 0, totalEvents: 0 });
+        }
+        const month = monthsMap.get(monthKey);
+        month.totalDowntime += item.total_downtime || 0; // Sum raw downtime hours
+        month.totalEvents += item.incident_count || 0;   // Sum raw event count
+      });
+      
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const sortedMonths = Array.from(monthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+      const availableTime = 528; // hours per month
+      
+      const mttrData = sortedMonths.map(([monthKey, data]) => {
+        const [year, month] = monthKey.split('-');
+        const monthName = monthNames[parseInt(month) - 1];
+        // MTTR = Total downtime / Total events
+        const mttr = data.totalEvents > 0 ? data.totalDowntime / data.totalEvents : 0;
+        return {
+          week: `${monthName} ${year}`,
+          'Promedio MTTR': parseFloat(mttr.toFixed(2))
+        };
+      });
+      
+      const mtbfData = sortedMonths.map(([monthKey, data]) => {
+        const [year, month] = monthKey.split('-');
+        const monthName = monthNames[parseInt(month) - 1];
+        // MTBF = Available time / Total events
+        const mtbf = data.totalEvents > 0 ? availableTime / data.totalEvents : availableTime;
+        return {
+          week: `${monthName} ${year}`,
+          'Promedio MTBF': parseFloat(mtbf.toFixed(2))
+        };
+      });
+      
+      return { mttr: mttrData, mtbf: mtbfData };
+    }
+    
+    // For annual period: aggregate by week using raw values
+    // Group by week, sum raw values, then calculate MTTR/MTBF
+    const weeksMap = new Map();
+    const availableTimeWeekly = 132; // hours per week
+    
+    mttrMtbfData.forEach(item => {
+      const weekKey = item.period_key;
+      if (!weeksMap.has(weekKey)) {
+        const startDate = new Date(item.period_key + 'T00:00:00');
+        const endDate = new Date(item.period_end_date + 'T00:00:00');
+        const startStr = startDate.toLocaleDateString('es', { day: 'numeric', month: 'numeric' });
+        const endStr = endDate.toLocaleDateString('es', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        
+        weeksMap.set(weekKey, { 
+          weekLabel: `${startStr} - ${endStr}`,
+          totalDowntime: 0, 
+          totalEvents: 0 
+        });
+      }
+      const week = weeksMap.get(weekKey);
+      week.totalDowntime += item.total_downtime || 0;
+      week.totalEvents += item.incident_count || 0;
+    });
+    
+    const sortedWeeks = Array.from(weeksMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    const mttrData = sortedWeeks.map(([weekKey, data]) => {
+      // MTTR = Total downtime / Total events
+      const mttr = data.totalEvents > 0 ? data.totalDowntime / data.totalEvents : 0;
+      return {
+        week: data.weekLabel,
+        'Promedio MTTR': parseFloat(mttr.toFixed(2))
+      };
+    });
+    
+    const mtbfData = sortedWeeks.map(([weekKey, data]) => {
+      // MTBF = Available time / Total events
+      const mtbf = data.totalEvents > 0 ? availableTimeWeekly / data.totalEvents : availableTimeWeekly;
+      return {
+        week: data.weekLabel,
+        'Promedio MTBF': parseFloat(mtbf.toFixed(2))
+      };
+    });
+    
+    return { mttr: mttrData, mtbf: mtbfData };
   }
 
   async function loadTickets(statusToLoad = status) {
@@ -2022,6 +2301,17 @@ export default function Home() {
                       Por Maquina
                     </span>
                   </button>
+                  <button 
+                    onClick={() => setAnalyticsTab('mttr')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'mttr' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      MTTR/MTBF
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2779,6 +3069,579 @@ export default function Home() {
                   </div>
                 )}
               </>
+            )}
+
+            {/* MTTR/MTBF TAB */}
+            {analyticsTab === 'mttr' && (
+              <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  MTTR/MTBF - Análisis de Confiabilidad
+                </h2>
+                
+                {/* Filters and Navigation for MTTR/MTBF */}
+                <div className="grid grid-cols-1 gap-4 mb-6">
+                  {/* Period Selector and Navigation Combined */}
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Período:
+                      </label>
+                      <select
+                        value={mttrPeriod}
+                        onChange={(e) => {
+                          setMttrPeriod(e.target.value)
+                          setCurrentWeekOffset(0)
+                          setCurrentMonthOffset(0)
+                          setCurrentYearOffset(0)
+                        }}
+                        className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="weekly">Semanal</option>
+                        <option value="monthly">Mensual</option>
+                        <option value="annual">Anual</option>
+                        <option value="custom">Personalizado</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Máquina:
+                      </label>
+                      <select
+                        value={selectedMttrMachine}
+                        onChange={(e) => setSelectedMttrMachine(e.target.value)}
+                        className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Todas las Máquinas</option>
+                        {mttrMachines.map((machine) => (
+                          <option key={machine} value={machine}>{machine}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {mttrPeriod === 'custom' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-300 mb-2">Desde:</label>
+                          <input 
+                            type="date"
+                            className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-300 mb-2">Hasta:</label>
+                          <input 
+                            type="date"
+                            className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                          />
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Navigation Buttons */}
+                    {mttrPeriod !== 'custom' && (
+                      <div className="flex items-end gap-2">
+                        <button
+                          onClick={() => {
+                            if (mttrPeriod === 'weekly') setCurrentWeekOffset(currentWeekOffset - 1)
+                            else if (mttrPeriod === 'monthly') setCurrentMonthOffset(currentMonthOffset - 1)
+                            else if (mttrPeriod === 'annual') setCurrentYearOffset(currentYearOffset - 1)
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                        >
+                          ← Anterior
+                        </button>
+                        
+                        <div className="text-center px-4 py-2 bg-slate-700/50 rounded-lg min-w-[180px]">
+                          {mttrPeriod === 'weekly' && (
+                            (() => {
+                              const today = new Date()
+                              const targetDate = new Date(today)
+                              targetDate.setDate(targetDate.getDate() + (currentWeekOffset * 7))
+                              const dayOfWeek = targetDate.getDay()
+                              const diff = targetDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+                              const mondayDate = new Date(targetDate)
+                              mondayDate.setDate(diff)
+                              const sundayDate = new Date(mondayDate)
+                              sundayDate.setDate(sundayDate.getDate() + 6)
+                              
+                              return (
+                                <div>
+                                  <p className="text-slate-200 text-sm font-medium">
+                                    {mondayDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} - {sundayDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </p>
+                                </div>
+                              )
+                            })()
+                          )}
+                          
+                          {mttrPeriod === 'monthly' && (
+                            (() => {
+                              const today = new Date()
+                              const targetDate = new Date(today.getFullYear(), today.getMonth() + currentMonthOffset, 1)
+                              const monthName = targetDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
+                              
+                              return (
+                                <p className="text-slate-200 text-sm font-medium capitalize">{monthName}</p>
+                              )
+                            })()
+                          )}
+
+                          {mttrPeriod === 'annual' && (
+                            (() => {
+                              const today = new Date()
+                              const targetYear = today.getFullYear() + currentYearOffset
+                              
+                              return (
+                                <p className="text-slate-200 text-sm font-medium">{targetYear}</p>
+                              )
+                            })()
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            if (mttrPeriod === 'weekly') setCurrentWeekOffset(currentWeekOffset + 1)
+                            else if (mttrPeriod === 'monthly') setCurrentMonthOffset(currentMonthOffset + 1)
+                            else if (mttrPeriod === 'annual') setCurrentYearOffset(currentYearOffset + 1)
+                          }}
+                          disabled={(mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)}
+                          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition ${
+                            (mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)
+                              ? 'bg-slate-600 text-slate-400 cursor-not-allowed' 
+                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                          }`}
+                        >
+                          Siguiente →
+                        </button>
+                        
+                        {(currentWeekOffset !== 0 || currentMonthOffset !== 0 || currentYearOffset !== 0) && (
+                          <button
+                            onClick={() => {
+                              setCurrentWeekOffset(0)
+                              setCurrentMonthOffset(0)
+                              setCurrentYearOffset(0)
+                            }}
+                            className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                          >
+                            Actual
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* MTTR/MTBF Chart */}
+                {mttrLoading ? (
+                  <div className="flex items-center justify-center h-80">
+                    <div className="text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-slate-400 mb-3"></div>
+                      <p className="text-slate-400">Cargando datos MTTR/MTBF...</p>
+                    </div>
+                  </div>
+                ) : mttrMtbfData && mttrMtbfData.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-6">
+                      {/* MTTR Chart */}
+                      <div>
+                        <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                          MTTR (Mean Time To Repair) - {mttrPeriod === 'annual' ? 'Por Semanas del Año' : mttrPeriod === 'monthly' ? 'Por Mes' : 'Por Equipos'}
+                          <span className="text-sm text-slate-400 ml-2">Target: {mttrPeriod === 'monthly' ? '3.6' : '0.8'}h (menor es mejor)</span>
+                        </h3>
+                        <div className="h-[500px] w-full">
+                          {mttrPeriod === 'weekly' ? (
+                            // Weekly view: Equipment on X-axis
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={prepareWeeklyChartData().mttr}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis 
+                                  dataKey="name" 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                  label={{ value: 'Horas', angle: -90, position: 'insideLeft' }}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                                  formatter={(value, name) => [typeof value === 'number' ? value.toFixed(2) + 'h' : value, name]}
+                                />
+                                <Legend />
+                                <ReferenceLine y={0.8} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Target: 0.8h', position: 'right', fill: '#ef4444', fontSize: 12, fontWeight: 'bold' }} />
+                                <Bar dataKey="MTTR" fill="#ef4444" name="MTTR (hrs)" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            // Monthly/Annual view: Weeks on X-axis
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={prepareMonthlyChartData().mttr}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis 
+                                  dataKey="week" 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 9 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                  interval={0}
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                  label={{ value: 'Horas', angle: -90, position: 'insideLeft' }}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                                  formatter={(value, name) => [typeof value === 'number' ? value.toFixed(2) + 'h' : value, name]}
+                                />
+                                <Legend />
+                                <ReferenceLine y={mttrPeriod === 'monthly' ? 3.6 : 0.8} stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} label={{ value: `Target: ${mttrPeriod === 'monthly' ? '3.6' : '0.8'}h`, position: 'right', fill: '#ef4444', fontSize: 12, fontWeight: 'bold' }} />
+                                <Bar dataKey="Promedio MTTR" fill="#ef4444" name="Promedio MTTR (hrs)" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* MTBF Chart */}
+                      <div>
+                        <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                          <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                          MTBF (Mean Time Between Failures) - {mttrPeriod === 'annual' ? 'Por Semanas del Año' : mttrPeriod === 'monthly' ? 'Por Mes' : 'Por Equipos'}
+                          <span className="text-sm text-slate-400 ml-2">Target: {mttrPeriod === 'monthly' ? '48' : '12'}h (mayor es mejor)</span>
+                        </h3>
+                        <div className="h-[500px] w-full">
+                          {mttrPeriod === 'weekly' ? (
+                            // Weekly view: Equipment on X-axis
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={prepareWeeklyChartData().mtbf}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis 
+                                  dataKey="name" 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                  label={{ value: 'Horas', angle: -90, position: 'insideLeft' }}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                                  formatter={(value) => [typeof value === 'number' ? value.toFixed(2) + 'h' : value, 'MTBF']}
+                                />
+                                <Legend />
+                                <ReferenceLine y={12} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: 'Target: 12h', position: 'right', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
+                                <Bar dataKey="MTBF" fill="#10b981" name="MTBF (hrs)" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          ) : (
+                            // Monthly/Annual view: Weeks on X-axis
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={prepareMonthlyChartData().mtbf}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                                <XAxis 
+                                  dataKey="week" 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 9 }}
+                                  angle={-45}
+                                  textAnchor="end"
+                                  height={80}
+                                  interval={0}
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8" 
+                                  tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                  label={{ value: 'Horas', angle: -90, position: 'insideLeft' }}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                                  formatter={(value) => [typeof value === 'number' ? value.toFixed(2) + 'h' : value, 'Promedio MTBF']}
+                                />
+                                <Legend />
+                                <ReferenceLine y={mttrPeriod === 'monthly' ? 48 : 12} stroke="#10b981" strokeDasharray="5 5" strokeWidth={2} label={{ value: `Target: ${mttrPeriod === 'monthly' ? '48' : '12'}h`, position: 'right', fill: '#10b981', fontSize: 12, fontWeight: 'bold' }} />
+                                <Bar dataKey="Promedio MTBF" fill="#10b981" name="Promedio MTBF (hrs)" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Debug: Full Data Details */}
+                    <div className="mt-6 bg-slate-700/30 border border-slate-600 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-slate-200 mb-4">Datos Detallados (Debug)</h3>
+                      
+                      {mttrPeriod === 'monthly' ? (
+                        // Monthly view: Show aggregated data per month
+                        (() => {
+                          const monthsMap = new Map();
+                          mttrMtbfData.forEach(item => {
+                            const monthKey = item.period_key.substring(0, 7);
+                            if (!monthsMap.has(monthKey)) {
+                              monthsMap.set(monthKey, { totalDowntime: 0, totalEvents: 0, machines: [] });
+                            }
+                            const month = monthsMap.get(monthKey);
+                            month.totalDowntime += item.total_downtime || 0;
+                            month.totalEvents += item.incident_count || 0;
+                            month.machines.push({
+                              machine: item.machine,
+                              downtime: item.total_downtime,
+                              events: item.incident_count
+                            });
+                          });
+                          const availableTime = 528;
+                          const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                          
+                          return Array.from(monthsMap.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([monthKey, data]) => {
+                            const [year, month] = monthKey.split('-');
+                            const monthName = monthNames[parseInt(month) - 1];
+                            const mttr = data.totalEvents > 0 ? data.totalDowntime / data.totalEvents : 0;
+                            const mtbf = data.totalEvents > 0 ? availableTime / data.totalEvents : availableTime;
+                            
+                            return (
+                              <div key={monthKey} className="mb-6 last:mb-0">
+                                <h4 className="text-md font-semibold text-cyan-400 mb-2">{monthName} {year}</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-sm">
+                                  <div className="bg-slate-800 p-2 rounded">
+                                    <p className="text-slate-400 text-xs">Total Downtime</p>
+                                    <p className="text-white font-bold">{data.totalDowntime.toFixed(2)}h</p>
+                                  </div>
+                                  <div className="bg-slate-800 p-2 rounded">
+                                    <p className="text-slate-400 text-xs">Total Eventos</p>
+                                    <p className="text-white font-bold">{data.totalEvents}</p>
+                                  </div>
+                                  <div className="bg-slate-800 p-2 rounded">
+                                    <p className="text-slate-400 text-xs">Tiempo Disponible</p>
+                                    <p className="text-white font-bold">{availableTime}h</p>
+                                  </div>
+                                  <div className="bg-slate-800 p-2 rounded">
+                                    <p className="text-slate-400 text-xs">Máquinas con datos</p>
+                                    <p className="text-white font-bold">{data.machines.length}</p>
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                                  <div className="bg-red-900/30 border border-red-700 p-2 rounded">
+                                    <p className="text-red-300 text-xs">MTTR = Total Downtime / Total Eventos</p>
+                                    <p className="text-red-400 font-bold">{data.totalDowntime.toFixed(2)} / {data.totalEvents} = {mttr.toFixed(2)}h</p>
+                                    <p className="text-slate-400 text-xs mt-1">Target: 3.6h</p>
+                                  </div>
+                                  <div className="bg-emerald-900/30 border border-emerald-700 p-2 rounded">
+                                    <p className="text-emerald-300 text-xs">MTBF = Tiempo Disponible / Total Eventos</p>
+                                    <p className="text-emerald-400 font-bold">{availableTime} / {data.totalEvents} = {mtbf.toFixed(2)}h</p>
+                                    <p className="text-slate-400 text-xs mt-1">Target: 48h</p>
+                                  </div>
+                                </div>
+                                <details className="text-xs">
+                                  <summary className="text-slate-400 cursor-pointer hover:text-slate-300">Ver datos por máquina ({data.machines.length})</summary>
+                                  <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                                    {data.machines.map((m, i) => (
+                                      <div key={i} className="bg-slate-800/50 p-2 rounded text-slate-300">
+                                        <p className="font-medium text-slate-200">{m.machine}</p>
+                                        <p>Downtime: {m.downtime?.toFixed(2) || 0}h</p>
+                                        <p>Eventos: {m.events || 0}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            );
+                          });
+                        })()
+                      ) : mttrPeriod === 'weekly' ? (
+                        // Weekly view: Show data per machine
+                        (() => {
+                          const machineData = {};
+                          const availableTime = 132;
+                          
+                          mttrMtbfData.forEach(item => {
+                            if (!machineData[item.machine]) {
+                              machineData[item.machine] = { totalDowntime: 0, totalEvents: 0 };
+                            }
+                            machineData[item.machine].totalDowntime += item.total_downtime || 0;
+                            machineData[item.machine].totalEvents += item.incident_count || 0;
+                          });
+                          
+                          const machines = Object.keys(machineData).sort();
+                          const totalDowntime = machines.reduce((sum, m) => sum + machineData[m].totalDowntime, 0);
+                          const totalEvents = machines.reduce((sum, m) => sum + machineData[m].totalEvents, 0);
+                          
+                          return (
+                            <div>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-sm">
+                                <div className="bg-slate-800 p-2 rounded">
+                                  <p className="text-slate-400 text-xs">Tiempo Disponible (semanal)</p>
+                                  <p className="text-white font-bold">{availableTime}h</p>
+                                </div>
+                                <div className="bg-slate-800 p-2 rounded">
+                                  <p className="text-slate-400 text-xs">Total Downtime (todas las máquinas)</p>
+                                  <p className="text-white font-bold">{totalDowntime.toFixed(2)}h</p>
+                                </div>
+                                <div className="bg-slate-800 p-2 rounded">
+                                  <p className="text-slate-400 text-xs">Total Eventos (todas las máquinas)</p>
+                                  <p className="text-white font-bold">{totalEvents}</p>
+                                </div>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                  <thead>
+                                    <tr className="border-b border-slate-600">
+                                      <th className="text-left text-slate-400 p-2">Máquina</th>
+                                      <th className="text-right text-slate-400 p-2">Downtime (h)</th>
+                                      <th className="text-right text-slate-400 p-2">Eventos</th>
+                                      <th className="text-right text-red-400 p-2">MTTR (h)</th>
+                                      <th className="text-right text-slate-400 p-2">Fórmula MTTR</th>
+                                      <th className="text-right text-emerald-400 p-2">MTBF (h)</th>
+                                      <th className="text-right text-slate-400 p-2">Fórmula MTBF</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {machines.map(m => {
+                                      const d = machineData[m];
+                                      const mttr = d.totalEvents > 0 ? d.totalDowntime / d.totalEvents : 0;
+                                      const mtbf = d.totalEvents > 0 ? availableTime / d.totalEvents : availableTime;
+                                      return (
+                                        <tr key={m} className="border-b border-slate-700">
+                                          <td className="text-slate-200 p-2">{m}</td>
+                                          <td className="text-right text-slate-300 p-2">{d.totalDowntime.toFixed(2)}</td>
+                                          <td className="text-right text-slate-300 p-2">{d.totalEvents}</td>
+                                          <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
+                                          <td className="text-right text-slate-500 p-2">{d.totalDowntime.toFixed(2)} / {d.totalEvents}</td>
+                                          <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
+                                          <td className="text-right text-slate-500 p-2">{availableTime} / {d.totalEvents}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              <p className="text-slate-400 text-xs mt-3">Target MTTR: 0.8h | Target MTBF: 12h</p>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        // Annual view: Show data per week
+                        (() => {
+                          const weeksMap = new Map();
+                          const availableTime = 132;
+                          
+                          mttrMtbfData.forEach(item => {
+                            const weekKey = item.period_key;
+                            if (!weeksMap.has(weekKey)) {
+                              weeksMap.set(weekKey, { 
+                                periodEnd: item.period_end_date,
+                                totalDowntime: 0, 
+                                totalEvents: 0 
+                              });
+                            }
+                            const week = weeksMap.get(weekKey);
+                            week.totalDowntime += item.total_downtime || 0;
+                            week.totalEvents += item.incident_count || 0;
+                          });
+                          
+                          const sortedWeeks = Array.from(weeksMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+                          
+                          return (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b border-slate-600">
+                                    <th className="text-left text-slate-400 p-2">Semana</th>
+                                    <th className="text-right text-slate-400 p-2">Downtime Total (h)</th>
+                                    <th className="text-right text-slate-400 p-2">Eventos Total</th>
+                                    <th className="text-right text-red-400 p-2">MTTR (h)</th>
+                                    <th className="text-right text-slate-400 p-2">Fórmula</th>
+                                    <th className="text-right text-emerald-400 p-2">MTBF (h)</th>
+                                    <th className="text-right text-slate-400 p-2">Fórmula</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sortedWeeks.map(([weekKey, data]) => {
+                                    const startDate = new Date(weekKey + 'T00:00:00');
+                                    const endDate = new Date(data.periodEnd + 'T00:00:00');
+                                    const label = `${startDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('es', { day: 'numeric', month: 'short' })}`;
+                                    const mttr = data.totalEvents > 0 ? data.totalDowntime / data.totalEvents : 0;
+                                    const mtbf = data.totalEvents > 0 ? availableTime / data.totalEvents : availableTime;
+                                    return (
+                                      <tr key={weekKey} className="border-b border-slate-700">
+                                        <td className="text-slate-200 p-2">{label}</td>
+                                        <td className="text-right text-slate-300 p-2">{data.totalDowntime.toFixed(2)}</td>
+                                        <td className="text-right text-slate-300 p-2">{data.totalEvents}</td>
+                                        <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
+                                        <td className="text-right text-slate-500 p-2">{data.totalDowntime.toFixed(2)} / {data.totalEvents}</td>
+                                        <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
+                                        <td className="text-right text-slate-500 p-2">{availableTime} / {data.totalEvents}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                              <p className="text-slate-400 text-xs mt-3">Tiempo disponible por semana: {availableTime}h | Target MTTR: 0.8h | Target MTBF: 12h</p>
+                            </div>
+                          );
+                        })()
+                      )}
+                    </div>
+
+                    {/* Summary Statistics - Only for weekly view */}
+                    {mttrPeriod === 'weekly' && prepareWeeklyChartData().mttr.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-medium text-slate-200 mb-4">Resumen por Equipo</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {prepareWeeklyChartData().mttr.map((eq, idx) => {
+                            const mtbfData = prepareWeeklyChartData().mtbf.find(m => m.name === eq.name);
+                            return (
+                              <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
+                                <p className="text-slate-300 text-sm font-medium mb-2">{eq.name}</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <p className="text-xs text-slate-400">MTTR</p>
+                                    <p className={`text-lg font-bold ${eq.MTTR <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {eq.MTTR?.toFixed(2) || '0.00'}h
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-slate-400">MTBF</p>
+                                    <p className={`text-lg font-bold ${(mtbfData?.MTBF || 0) >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                      {mtbfData?.MTBF?.toFixed(2) || '0.00'}h
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-400 mt-2">Incidentes: {eq.Incidentes || 0}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12">
+                    <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-slate-500">No hay datos MTTR/MTBF disponibles</p>
+                    <p className="text-slate-600 text-sm mt-1">Verifica que existan registros en la base de datos</p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

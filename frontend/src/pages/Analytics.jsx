@@ -12,7 +12,9 @@ import {
   getTicketsByEquipment,
   getTopTicketsByEquipment,
   getEquipos,
-  getTopTiempos
+  getTopTiempos,
+  getMttrMtbf,
+  getMttrMtbfMachines
 } from '../api_deadtimes'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -76,6 +78,16 @@ export default function Analytics() {
   const [selectedMaquina, setSelectedMaquina] = useState('')
   const [topTiempos, setTopTiempos] = useState([])
 
+  // State for MTTR/MTBF
+  const [mttrMtbfData, setMttrMtbfData] = useState([])
+  const [mttrMachines, setMttrMachines] = useState([])
+  const [selectedMttrMachine, setSelectedMttrMachine] = useState('all')
+  const [mttrPeriod, setMttrPeriod] = useState('weekly')
+  const [loadingMttr, setLoadingMttr] = useState(false)
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('general')
+
   useEffect(() => {
     loadInitialData()
   }, [])
@@ -89,12 +101,19 @@ export default function Analytics() {
   useEffect(() => {
     // Cargar la lista de máquinas
     getEquipos().then(setMaquinas).catch(console.error);
+    // Cargar máquinas para MTTR/MTBF 
+    getMttrMtbfMachines().then(setMttrMachines).catch(console.error);
   }, []);
 
   useEffect(() => {
     // Cargar el TOP de tiempos perdidos
     getTopTiempos(selectedMaquina).then(setTopTiempos).catch(console.error);
   }, [selectedMaquina]);
+
+  // Load MTTR/MTBF data
+  useEffect(() => {
+    loadMttrMtbfData();
+  }, [selectedMttrMachine, mttrPeriod]);
 
   async function loadInitialData() {
     setLoading(true)
@@ -145,6 +164,30 @@ export default function Analytics() {
       console.error('Error cargando estadísticas:', error)
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  // Load MTTR/MTBF data
+  async function loadMttrMtbfData() {
+    setLoadingMttr(true)
+    try {
+      const params = { 
+        period: mttrPeriod,
+        machine: selectedMttrMachine === 'all' ? undefined : selectedMttrMachine
+      }
+      
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = normalizeDateTimeInput(customStartDate).split(' ')[0]
+        params.endDate = normalizeDateTimeInput(customEndDate).split(' ')[0]
+      }
+      
+      const data = await getMttrMtbf(params)
+      setMttrMtbfData(data)
+    } catch (error) {
+      console.error('Error loading MTTR/MTBF data:', error)
+      setMttrMtbfData([])
+    } finally {
+      setLoadingMttr(false)
     }
   }
 
@@ -506,6 +549,62 @@ export default function Analytics() {
     )
   }
 
+  // Prepare MTTR/MTBF chart data
+  const prepareMttrMtbfData = () => {
+    if (!Array.isArray(mttrMtbfData)) return [];
+    
+    // Group by time period (week or month)
+    const grouped = {}
+    
+    mttrMtbfData.forEach(item => {
+      const timeKey = mttrPeriod === 'weekly' 
+        ? new Date(item.week_start_date).toLocaleDateString('es', { month: 'short', day: 'numeric' })
+        : item.month || new Date(item.period_start).toLocaleDateString('es', { month: 'short', year: '2-digit' })
+      
+      if (selectedMttrMachine === 'all') {
+        // Group all machines together
+        if (!grouped[timeKey]) {
+          grouped[timeKey] = {
+            period: timeKey,
+            mttr: 0,
+            mtbf: 0,
+            mttr_target: 0.8,
+            mtbf_target: 12,
+            count: 0
+          }
+        }
+        grouped[timeKey].mttr += parseFloat(item.mttr) || 0
+        grouped[timeKey].mtbf += parseFloat(item.mtbf) || 0
+        grouped[timeKey].count += 1
+      } else {
+        // Show individual machine data
+        const key = `${timeKey}_${item.machine}`
+        grouped[key] = {
+          period: timeKey,
+          machine: item.machine,
+          mttr: parseFloat(item.mttr) || 0,
+          mtbf: parseFloat(item.mtbf) || 0,
+          mttr_target: parseFloat(item.mttr_target) || 0.8,
+          mtbf_target: parseFloat(item.mtbf_target) || 12,
+          incident_count: parseInt(item.incident_count) || 0
+        }
+      }
+    })
+    
+    let result = Object.values(grouped)
+    
+    if (selectedMttrMachine === 'all') {
+      // Average the values for combined view
+      result = result.map(item => ({
+        ...item,
+        mttr: item.count > 0 ? item.mttr / item.count : 0,
+        mtbf: item.count > 0 ? item.mtbf / item.count : 0
+      }))
+    }
+    
+    return result.sort((a, b) => new Date(a.period) - new Date(b.period))
+  }
+
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
@@ -696,8 +795,43 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Gráficas principales */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6 border-b border-slate-700">
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`px-6 py-3 font-medium text-sm transition-all ${
+              activeTab === 'general'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Análisis General
+          </button>
+          <button
+            onClick={() => setActiveTab('tiempos')}
+            className={`px-6 py-3 font-medium text-sm transition-all ${
+              activeTab === 'tiempos'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            Por Máquina
+          </button>
+          <button
+            onClick={() => setActiveTab('mttr')}
+            className={`px-6 py-3 font-medium text-sm transition-all ${
+              activeTab === 'mttr'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-slate-400 hover:text-slate-300'
+            }`}
+          >
+            MTTR/MTBF
+          </button>
+        </div>
+
+        {/* General Analytics Tab */}
+        {activeTab === 'general' && (
+        <div>
           {/* Gráfica de tickets por línea */}
           <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
             <h2 className="text-lg font-semibold text-slate-100 mb-4">
@@ -953,8 +1087,11 @@ export default function Analytics() {
             </div>
           )}
         </div>
+        )}
 
-        {/* Top 5 Tickets por Máquina - New Chart Section */}
+        {/* Por Máquina / Análisis de Tiempos Tab */}
+        {activeTab === 'tiempos' && (
+        <div>
         <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div>
@@ -1162,6 +1299,234 @@ export default function Analytics() {
             </div>
           )}
         </div>
+        )}
+
+        {/* MTTR/MTBF Analysis Tab */}
+        {activeTab === 'mttr' && (
+        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
+          <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
+            <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            MTTR/MTBF - Análisis de Confiabilidad
+          </h2>
+          
+          {/* Filters for MTTR/MTBF */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Filtrar por Máquina:
+              </label>
+              <select
+                value={selectedMttrMachine}
+                onChange={(e) => setSelectedMttrMachine(e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">Todas las Máquinas</option>
+                {mttrMachines.map((machine) => (
+                  <option key={machine} value={machine}>{machine}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Período:
+              </label>
+              <select
+                value={mttrPeriod}
+                onChange={(e) => setMttrPeriod(e.target.value)}
+                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="weekly">Semanal</option>
+                <option value="monthly">Mensual</option>
+              </select>
+            </div>
+          </div>
+
+          {/* MTTR/MTBF Chart */}
+          {loadingMttr ? (
+            <div className="flex items-center justify-center h-80">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-slate-400 mb-3"></div>
+                <p className="text-slate-400">Cargando datos MTTR/MTBF...</p>
+              </div>
+            </div>
+          ) : mttrMtbfData && mttrMtbfData.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* MTTR Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  MTTR (Mean Time To Repair)
+                  <span className="text-sm text-slate-400 ml-2">Target: 0.8h</span>
+                </h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={prepareMttrMtbfData()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis 
+                        dataKey="period" 
+                        stroke="#94a3b8" 
+                        tick={{ fill: '#94a3b8', fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1e293b', 
+                          border: '1px solid #475569',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="mttr_target" 
+                        stroke="#94a3b8" 
+                        strokeDasharray="5 5"
+                        name="MTTR Target"
+                        dot={false}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="mttr" 
+                        stroke="#ef4444" 
+                        strokeWidth={3}
+                        name="MTTR Actual"
+                        dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* MTBF Chart */}
+              <div>
+                <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  MTBF (Mean Time Between Failures)
+                  <span className="text-sm text-slate-400 ml-2">Target: 12h</span>
+                </h3>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={prepareMttrMtbfData()}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis 
+                        dataKey="period" 
+                        stroke="#94a3b8" 
+                        tick={{ fill: '#94a3b8', fontSize: 11 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
+                      <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1e293b', 
+                          border: '1px solid #475569',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="mtbf_target" 
+                        stroke="#94a3b8" 
+                        strokeDasharray="5 5"
+                        name="MTBF Target"
+                        dot={false}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="mtbf" 
+                        stroke="#10b981" 
+                        strokeWidth={3}
+                        name="MTBF Actual"
+                        dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-slate-500">No hay datos MTTR/MTBF disponibles</p>
+              <p className="text-slate-600 text-sm mt-1">Verifica que existan registros en la base de datos</p>
+            </div>
+          )}
+
+          {/* Summary Cards */}
+          {mttrMtbfData && mttrMtbfData.length > 0 && prepareMttrMtbfData().length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+              {(() => {
+                const data = prepareMttrMtbfData();
+                const latest = data[data.length - 1] || {};
+                const avgMttr = data.reduce((sum, item) => sum + item.mttr, 0) / data.length;
+                const avgMtbf = data.reduce((sum, item) => sum + item.mtbf, 0) / data.length;
+                
+                return [
+                  {
+                    title: 'MTTR Actual',
+                    value: `${(latest.mttr || 0).toFixed(1)}h`,
+                    target: `Target: ${(latest.mttr_target || 0.8).toFixed(1)}h`,
+                    color: 'red',
+                    status: (latest.mttr || 0) <= (latest.mttr_target || 0.8) ? 'good' : 'bad'
+                  },
+                  {
+                    title: 'MTBF Actual', 
+                    value: `${(latest.mtbf || 0).toFixed(1)}h`,
+                    target: `Target: ${(latest.mtbf_target || 12).toFixed(1)}h`,
+                    color: 'emerald',
+                    status: (latest.mtbf || 0) >= (latest.mtbf_target || 12) ? 'good' : 'bad'
+                  },
+                  {
+                    title: 'MTTR Promedio',
+                    value: `${avgMttr.toFixed(1)}h`,
+                    target: `Período: ${mttrPeriod === 'weekly' ? 'Semanal' : 'Mensual'}`,
+                    color: 'blue',
+                    status: avgMttr <= 0.8 ? 'good' : 'bad'
+                  },
+                  {
+                    title: 'MTBF Promedio',
+                    value: `${avgMtbf.toFixed(1)}h`, 
+                    target: `Período: ${mttrPeriod === 'weekly' ? 'Semanal' : 'Mensual'}`,
+                    color: 'purple',
+                    status: avgMtbf >= 12 ? 'good' : 'bad'
+                  }
+                ].map((card, index) => (
+                  <div key={index} className={`bg-gradient-to-br from-slate-800 to-slate-700 border border-slate-600 rounded-lg p-4 shadow-lg`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-slate-300 text-sm font-medium">{card.title}</p>
+                        <p className="text-2xl font-bold text-slate-100 mt-1">{card.value}</p>
+                        <p className="text-xs text-slate-400 mt-1">{card.target}</p>
+                      </div>
+                      <div className={`p-2 rounded-full ${card.status === 'good' ? 'bg-emerald-700/40' : 'bg-red-700/40'}`}>
+                        {card.status === 'good' ? (
+                          <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          )}
+        </div>
+        )}
       </div>
 
       {/* Drill-Down Modal for Equipment Details */}
