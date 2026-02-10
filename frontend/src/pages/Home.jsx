@@ -237,6 +237,41 @@ export default function Home() {
     }
   }, [showAnalytics, analyticsTab]);
 
+  // Poll mantenimiento and cambio_modelo state every 3 seconds
+  useEffect(() => {
+    let iv
+    const pollMaintenance = async () => {
+      try {
+        if (lineas.length === 0) return
+        
+        const mantenimientoMap = {}
+        const cambioModeloMap = {}
+        
+        // Check each line's mantenimiento and cambio_modelo status
+        for (const linea of lineas) {
+          const estado = await getEstado(linea.linea)
+          if (estado && estado.estado) {
+            mantenimientoMap[linea.linea] = estado.estado.mantenimiento === 1
+            cambioModeloMap[linea.linea] = estado.estado.cambio_modelo === 1
+          }
+        }
+        
+        // Update states
+        setMantenimientoActivo(mantenimientoMap)
+        setCambioModeloActivo(cambioModeloMap)
+      } catch (error) {
+        console.error('Error polling maintenance state:', error)
+      }
+    }
+
+    // Initial check and then every 3 seconds
+    pollMaintenance()
+    iv = setInterval(pollMaintenance, 3000)
+    return () => {
+      if (iv) clearInterval(iv)
+    }
+  }, [lineas])
+
   async function loadInitialData() {
     setInitialLoading(true)
     try {
@@ -1672,7 +1707,7 @@ export default function Home() {
                   <span>Display</span>
                 </button>
 
-                <button onClick={() => toggleMantenimiento()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showMantenimiento ? 'bg-blue-700 border-blue-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                <button onClick={() => toggleMantenimiento()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(mantenimientoActivo).includes(true) ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/50' : showMantenimiento ? 'bg-blue-700 border-blue-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showMantenimiento ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1680,7 +1715,7 @@ export default function Home() {
                   <span>Mantenimiento</span>
                 </button>
 
-                <button onClick={() => toggleCambioModelo()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showCambioModelo ? 'bg-amber-700 border-amber-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                <button onClick={() => toggleCambioModelo()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(cambioModeloActivo).includes(true) ? 'bg-amber-600 border-amber-400 text-white shadow-lg shadow-amber-500/50' : showCambioModelo ? 'bg-amber-700 border-amber-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showCambioModelo ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -3692,7 +3727,13 @@ export default function Home() {
           <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
             <div className="absolute top-4 right-4 z-50">
               <button 
-                onClick={() => {
+                onClick={async () => {
+                  try {
+                    // Deactivate display in database (all other devices will detect via polling)
+                    await setDisplayMode(displayLineaSelected, false)
+                  } catch (error) {
+                    console.error('Error deactivating display:', error)
+                  }
                   setShowDisplay(false)
                   setDisplayLineaSelected('')
                 }}
@@ -4139,7 +4180,7 @@ export default function Home() {
                     onClick={() => handleMantenimientoToggle(linea.linea, mantenimientoActivo[linea.linea])}
                     className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${
                       mantenimientoActivo[linea.linea]
-                        ? 'bg-blue-900/40 border-blue-500 text-blue-200'
+                        ? 'bg-blue-900/40 border-blue-500 text-blue-200 shadow-lg shadow-blue-500/50'
                         : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
                     }`}
                   >
@@ -4186,7 +4227,7 @@ export default function Home() {
                     onClick={() => handleCambioModeloToggle(linea.linea, cambioModeloActivo[linea.linea])}
                     className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${
                       cambioModeloActivo[linea.linea]
-                        ? 'bg-amber-900/40 border-amber-500 text-amber-200'
+                        ? 'bg-amber-900/40 border-amber-500 text-amber-200 shadow-lg shadow-amber-500/50'
                         : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
                     }`}
                   >
