@@ -24,6 +24,7 @@ import {
   getMttrMtbf
 } from '../api_deadtimes'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
+import { getDowntimeAnalytics } from '../api_produccion'
 import LoginModal from '../components/LoginModal'
 import ProduccionSection from '../components/ProduccionSection'
 import Configuration from './Configuration'
@@ -181,6 +182,13 @@ export default function Home() {
   const [currentMonthOffset, setCurrentMonthOffset] = useState(0) // 0 = current month, -1 = previous, etc.
   const [currentYearOffset, setCurrentYearOffset] = useState(0) // 0 = current year, -1 = previous, etc.
 
+  // Estados para Downtime Analytics tab
+  const [downtimeLinea, setDowntimeLinea] = useState('')
+  const [downtimeFecha, setDowntimeFecha] = useState(new Date().toISOString().slice(0, 10))
+  const [downtimeData, setDowntimeData] = useState(null)
+  const [downtimeLoading, setDowntimeLoading] = useState(false)
+  const [downtimeExpandedRow, setDowntimeExpandedRow] = useState(null)
+
   // Hook para detectar inactividad y cerrar sesión después de 2 minutos
   useInactivityTimeout(() => {
     // Logout: limpiar credenciales y cerrar sesiones
@@ -236,6 +244,13 @@ export default function Home() {
       }).catch(console.error);
     }
   }, [showAnalytics, analyticsTab]);
+
+  // Load downtime analytics when tab is active and filters are set
+  useEffect(() => {
+    if (showAnalytics && analyticsTab === 'downtime' && downtimeLinea && downtimeFecha) {
+      loadDowntimeAnalytics()
+    }
+  }, [showAnalytics, analyticsTab, downtimeLinea, downtimeFecha])
 
   // Poll mantenimiento and cambio_modelo state every 3 seconds
   useEffect(() => {
@@ -460,6 +475,22 @@ export default function Home() {
       console.error('Error cargando estadísticas de analytics:', error)
     } finally {
       setRefreshing(false)
+    }
+  }
+
+  async function loadDowntimeAnalytics() {
+    if (!downtimeLinea || !downtimeFecha) return
+    setDowntimeLoading(true)
+    setDowntimeExpandedRow(null)
+    try {
+      const result = await getDowntimeAnalytics(downtimeLinea, downtimeFecha)
+      if (result.success) {
+        setDowntimeData(result.data)
+      }
+    } catch (error) {
+      console.error('Error cargando downtime analytics:', error)
+    } finally {
+      setDowntimeLoading(false)
     }
   }
 
@@ -2347,6 +2378,17 @@ export default function Home() {
                       MTTR/MTBF
                     </span>
                   </button>
+                  <button 
+                    onClick={() => setAnalyticsTab('downtime')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'downtime' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Downtime
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -3674,6 +3716,269 @@ export default function Home() {
                     </svg>
                     <p className="text-slate-500">No hay datos MTTR/MTBF disponibles</p>
                     <p className="text-slate-600 text-sm mt-1">Verifica que existan registros en la base de datos</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* DOWNTIME TAB */}
+            {analyticsTab === 'downtime' && (
+              <div className="space-y-4">
+                {/* Filters */}
+                <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <h2 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Downtime por Intervalo de Producción
+                  </h2>
+                  <p className="text-slate-400 text-xs mb-4">
+                    Muestra el DT de producción menos el tiempo de tickets registrados en cada intervalo horario. Solo visual — no modifica la base de datos.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-slate-300 text-xs font-medium mb-2">Línea</label>
+                      <select
+                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        value={downtimeLinea}
+                        onChange={e => setDowntimeLinea(e.target.value)}
+                      >
+                        <option value="">Seleccionar línea</option>
+                        {lineas.map(l => (
+                          <option key={l.id} value={l.linea}>Línea {l.linea}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 text-xs font-medium mb-2">Fecha</label>
+                      <input
+                        type="date"
+                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        value={downtimeFecha}
+                        onChange={e => setDowntimeFecha(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        onClick={loadDowntimeAnalytics}
+                        disabled={!downtimeLinea || !downtimeFecha || downtimeLoading}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {downtimeLoading ? 'Cargando...' : 'Consultar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary Cards */}
+                {downtimeData && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <p className="text-slate-400 text-xs font-medium">DT Total (Producción)</p>
+                      <p className="text-2xl font-bold text-white mt-1">
+                        {downtimeData.summary.totalDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                      </p>
+                    </div>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <p className="text-slate-400 text-xs font-medium">DT Justificado (Tickets)</p>
+                      <p className="text-2xl font-bold text-cyan-400 mt-1">
+                        {downtimeData.summary.totalTicketDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                      </p>
+                    </div>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <p className="text-slate-400 text-xs font-medium">DT Sin Justificar</p>
+                      <p className="text-2xl font-bold text-red-400 mt-1">
+                        {downtimeData.summary.totalAdjustedDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                      </p>
+                    </div>
+                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
+                      <p className="text-slate-400 text-xs font-medium">Tickets Totales</p>
+                      <p className="text-2xl font-bold text-purple-400 mt-1">
+                        {downtimeData.summary.totalTickets}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bar Chart */}
+                {downtimeData && downtimeData.intervals.length > 0 && (
+                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                    <h3 className="text-sm font-semibold text-slate-100 mb-4">DT vs Tickets por Intervalo</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={downtimeData.intervals.map(i => ({
+                        name: `${i.inicio?.substring(0,5) || ''}-${i.final?.substring(0,5) || ''}`,
+                        'DT Producción': i.dt,
+                        'Tickets': i.ticketDeadtimeMin,
+                        'DT Ajustado': i.adjustedDt
+                      }))}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} label={{ value: 'Minutos', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }} />
+                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }} />
+                        <Legend />
+                        <Bar dataKey="DT Producción" fill="#ef4444" radius={[4,4,0,0]} />
+                        <Bar dataKey="Tickets" fill="#06b6d4" radius={[4,4,0,0]} />
+                        <Bar dataKey="DT Ajustado" fill="#f59e0b" radius={[4,4,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Table */}
+                {downtimeData && (
+                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                    <h3 className="text-sm font-semibold text-slate-100 mb-4">Detalle por Intervalo Horario</h3>
+                    {downtimeData.intervals.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-slate-500">No hay registros de producción para esta línea y fecha</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-slate-700">
+                              <th className="text-left text-slate-400 font-medium py-2 px-3">Hora</th>
+                              <th className="text-left text-slate-400 font-medium py-2 px-3">Modelo</th>
+                              <th className="text-right text-slate-400 font-medium py-2 px-3">Cap</th>
+                              <th className="text-right text-slate-400 font-medium py-2 px-3">Prod</th>
+                              <th className="text-right text-slate-400 font-medium py-2 px-3">Delta</th>
+                              <th className="text-right text-slate-400 font-medium py-2 px-3">DT (min)</th>
+                              <th className="text-right text-cyan-400 font-medium py-2 px-3">Tickets (min)</th>
+                              <th className="text-right text-red-400 font-medium py-2 px-3">DT Ajustado</th>
+                              <th className="text-center text-slate-400 font-medium py-2 px-3">Tickets</th>
+                              <th className="text-center text-slate-400 font-medium py-2 px-3"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {downtimeData.intervals.map((interval, idx) => (
+                              <React.Fragment key={interval.id || idx}>
+                                <tr
+                                  className={`border-b border-slate-700/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-slate-700/50' : ''} ${downtimeExpandedRow === idx ? 'bg-slate-700/30' : ''}`}
+                                  onClick={() => {
+                                    if (interval.ticketCount > 0) {
+                                      setDowntimeExpandedRow(downtimeExpandedRow === idx ? null : idx)
+                                    }
+                                  }}
+                                >
+                                  <td className="py-2 px-3 text-slate-200 font-mono text-xs">
+                                    {interval.inicio?.substring(0,5)} - {interval.final?.substring(0,5)}
+                                  </td>
+                                  <td className="py-2 px-3 text-slate-300 text-xs">{interval.modelo || '-'}</td>
+                                  <td className="py-2 px-3 text-right text-slate-300">{interval.capacidad || 0}</td>
+                                  <td className="py-2 px-3 text-right text-slate-300">{interval.produccion || 0}</td>
+                                  <td className="py-2 px-3 text-right text-slate-300">{interval.delta || 0}</td>
+                                  <td className="py-2 px-3 text-right text-yellow-300 font-medium">{interval.dt.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-right text-cyan-400 font-medium">{interval.ticketDeadtimeMin.toFixed(2)}</td>
+                                  <td className={`py-2 px-3 text-right font-bold ${interval.adjustedDt > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                                    {interval.adjustedDt.toFixed(2)}
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    {interval.ticketCount > 0 ? (
+                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-900/50 text-cyan-300 text-xs font-bold">
+                                        {interval.ticketCount}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-600">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    {interval.ticketCount > 0 && (
+                                      <svg className={`w-4 h-4 text-slate-400 transition-transform inline-block ${downtimeExpandedRow === idx ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    )}
+                                  </td>
+                                </tr>
+                                {/* Expanded ticket details */}
+                                {downtimeExpandedRow === idx && interval.ticketCount > 0 && (
+                                  <tr>
+                                    <td colSpan={10} className="p-0">
+                                      <div className="bg-slate-900/60 border-l-4 border-cyan-500 mx-2 my-1 rounded-lg p-4">
+                                        <h4 className="text-cyan-300 text-xs font-semibold mb-3 flex items-center gap-2">
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                          </svg>
+                                          Tickets en este intervalo ({interval.inicio?.substring(0,5)} - {interval.final?.substring(0,5)})
+                                        </h4>
+                                        <div className="space-y-2">
+                                          {interval.tickets.map(t => (
+                                            <div
+                                              key={t.id}
+                                              className="bg-slate-800/80 rounded-lg p-3 border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 hover:bg-slate-700/60 transition-colors"
+                                              onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}
+                                            >
+                                              <div className="flex justify-between items-start flex-wrap gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-mono text-slate-500">#{t.id}</span>
+                                                    <span className="text-sm font-medium text-slate-200">{t.equipo || 'Sin equipo'}</span>
+                                                    {t.clasificacion && (
+                                                      <span className="px-2 py-0.5 rounded text-xs bg-purple-900/40 text-purple-300">{t.clasificacion}</span>
+                                                    )}
+                                                    <span className="text-xs text-cyan-400 ml-auto flex items-center gap-1">
+                                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                      </svg>
+                                                      Ver detalle
+                                                    </span>
+                                                  </div>
+                                                  <p className="text-xs text-slate-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
+                                                  {t.solucion && <p className="text-xs text-slate-500 mt-1 truncate">Solución: {t.solucion}</p>}
+                                                  <div className="flex gap-4 mt-2 text-xs text-slate-500 flex-wrap">
+                                                    <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}) : '-'}</span>
+                                                    <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}) : '-'}</span>
+                                                    {t.tecnico && <span>Técnico: {t.tecnico}</span>}
+                                                  </div>
+                                                </div>
+                                                <div className="text-right">
+                                                  <p className="text-sm font-bold text-cyan-400">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
+                                                  {t.piezas > 0 && <p className="text-xs text-slate-500">{t.piezas} pzas perdidas</p>}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                          {/* Totals row */}
+                          <tfoot>
+                            <tr className="border-t-2 border-slate-600">
+                              <td colSpan={5} className="py-2 px-3 text-right text-slate-300 font-semibold">Totales:</td>
+                              <td className="py-2 px-3 text-right text-yellow-300 font-bold">{downtimeData.summary.totalDt.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right text-cyan-400 font-bold">{downtimeData.summary.totalTicketDt.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right text-red-400 font-bold">{downtimeData.summary.totalAdjustedDt.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-center text-purple-400 font-bold">{downtimeData.summary.totalTickets}</td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {!downtimeData && !downtimeLoading && (
+                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 text-center">
+                    <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-slate-400">Selecciona una línea y fecha para ver el análisis de downtime</p>
+                    <p className="text-slate-500 text-sm mt-1">Compara el DT de producción contra los tickets registrados</p>
+                  </div>
+                )}
+
+                {/* Loading state */}
+                {downtimeLoading && (
+                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-600 border-t-red-400 mx-auto mb-4"></div>
+                    <p className="text-slate-400">Cargando análisis de downtime...</p>
                   </div>
                 )}
               </div>

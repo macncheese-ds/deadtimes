@@ -9,45 +9,38 @@ const api = axios.create({
 });
 
 // ============================================================================
-// PRODUCCIÓN - EDICIÓN
+// PRODUCCIÓN - Registros
 // ============================================================================
 
-// GET /produccion/intervalos - obtener tabla de intervalos
-export const getIntervalos = (linea, fecha, turno) => {
-  return api.get('/produccion/intervalos', {
-    params: { linea, fecha, turno }
+// GET /produccion/registros - obtener registros para línea+fecha
+export const getRegistros = (linea, fecha) => {
+  return api.get('/produccion/registros', {
+    params: { linea, fecha }
   }).then(r => r.data);
 };
 
-// POST /produccion/intervalos - crear intervalos para línea+turno
-export const crearIntervalos = (linea, fecha, turno) => {
-  return api.post('/produccion/intervalos', { linea, fecha, turno }).then(r => r.data);
+// POST /produccion/registros - crear/actualizar un registro
+export const guardarRegistro = (data) => {
+  return api.post('/produccion/registros', data).then(r => r.data);
 };
 
-// PUT /produccion/intervalos/:id - editar producción, scrap o modelo
-export const actualizarIntervalo = (intervaloId, campo, valor, numEmpleado, password) => {
-  return api.put(`/produccion/intervalos/${intervaloId}`, {
-    campo,
-    valor,
-    numEmpleado,
-    password
+// DELETE /produccion/registros/:id - eliminar un registro
+export const eliminarRegistro = (id) => {
+  return api.delete(`/produccion/registros/${id}`).then(r => r.data);
+};
+
+// GET /produccion/modelos - obtener modelos (opcionalmente por línea)
+export const getModelosProduccion = (linea) => {
+  const params = {};
+  if (linea) params.linea = linea;
+  return api.get('/produccion/modelos', { params }).then(r => r.data);
+};
+
+// GET /produccion/downtime-analytics - obtener intervalos de producción con DT y tickets
+export const getDowntimeAnalytics = (linea, fecha) => {
+  return api.get('/produccion/downtime-analytics', {
+    params: { linea, fecha }
   }).then(r => r.data);
-};
-
-// ============================================================================
-// PRODUCCIÓN - REVIEW (Deadtime No Justificado)
-// ============================================================================
-
-// GET /produccion/unjustified - obtener deadtime no justificado por intervalo
-export const getDeadtimeNoJustificado = (linea, fecha, turno) => {
-  return api.get('/produccion/unjustified', {
-    params: { linea, fecha, turno }
-  }).then(r => r.data);
-};
-
-// GET /produccion/related-tickets/:intervaloId - obtener tickets relacionados
-export const getTicketsRelacionados = (intervaloId) => {
-  return api.get(`/produccion/related-tickets/${intervaloId}`).then(r => r.data);
 };
 
 export default api;

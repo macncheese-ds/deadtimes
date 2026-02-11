@@ -1,507 +1,377 @@
 // ============================================================================
-// RUTAS: PRODUCCIÓN (nuevas)
-// POST /api/produccion/intervalos - crear/actualizar intervalos
-// GET /api/produccion/intervalos - obtener tabla de producción
-// PUT /api/produccion/intervalos/:id - editar producción o scrap (requiere credencial)
-// GET /api/produccion/unjustified - obtener deadtime no justificado (Review)
-// GET /api/produccion/related-tickets - obtener tickets relacionados a intervalo
+// RUTAS: PRODUCCION (nueva tabla produccion)
+// GET  /api/produccion/registros       - obtener registros por linea+fecha
+// POST /api/produccion/registros       - crear/actualizar un registro
+// DELETE /api/produccion/registros/:id  - eliminar un registro
+// GET  /api/produccion/modelos         - obtener modelos por linea
+// GET  /api/produccion/lineas          - obtener lineas
+// CRUD equipos, lineas, modelos        - mantenimiento de catalogos
 // ============================================================================
 
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
-const jwt = require('jsonwebtoken');
 dotenv.config();
 
-// Helper para conectar a credenciales DB
-async function createCredConnection() {
-  const config = {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.CRED_DB_NAME || 'credenciales'
-  };
-  return await mysql.createConnection(config);
-}
-
-// Helper para registrar auditoría
-async function logAudit(tabla, registroId, numEmpleado, nombreUsuario, accion, campo, valorAnterior, valorNuevo, ipOrigen) {
-  try {
-    const [result] = await db.query(
-      `INSERT INTO auditor_cambios 
-       (tabla_afectada, registro_id, num_empleado, nombre_usuario, accion, campo, valor_anterior, valor_nuevo, ip_origen)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [tabla, registroId, numEmpleado, nombreUsuario, accion, campo, valorAnterior, valorNuevo, ipOrigen]
-    );
-    return result;
-  } catch (err) {
-    console.error('Error registrando auditoría:', err);
-  }
-}
-
-
-// Helper para validar credenciales contra BD credenciales
-// Retorna: { num_empleado, nombre, editor } si es válido, null si no
-async function validarCredenciales(numEmpleado, password) {
-  try {
-    const conn = await createCredConnection();
-    const [rows] = await conn.execute(
-      'SELECT num_empleado, nombre, password, editor, rol FROM users WHERE num_empleado = ? LIMIT 1',
-      [numEmpleado]
-    );
-    await conn.end();
-    
-    if (!rows || rows.length === 0) return null;
-    
-    // Aquí se asume que la contraseña se compara (simplificado para demostración)
-    // En producción, usar bcrypt para comparar
-    const user = rows[0];
-    if (user.password === password) {
-      return { 
-        num_empleado: user.num_empleado, 
-        nombre: user.nombre,
-        editor: user.editor,
-        rol: user.rol
-      };
-    }
-    return null;
-  } catch (err) {
-    console.error('Error validando credenciales:', err);
-    return null;
-  }
-}
-
-// Helper para calcular deadtime basado en piezas faltantes
-// Fórmula: si (rate_acumulado - produccion_acumulada - scrap) > 0
-//          entonces deadtime = ((rate_acumulado - produccion_acumulada - scrap) / rate) * 60 minutos
-//          sino 0
-function calcularDeadtime(rateAcumulado, produccionAcumulada, scrap, ratePorHora) {
-  if (!ratePorHora || ratePorHora === 0) return 0;
-  const piezasFaltantes = rateAcumulado - produccionAcumulada - scrap;
-  if (piezasFaltantes <= 0) return 0;
-  return (piezasFaltantes / ratePorHora) * 60; // convertir a minutos
-}
-
 // ============================================================================
-// GET /api/produccion/intervalos
-// Obtener tabla de producción por intervalo para una línea y turno
-// Query params: linea, fecha, turno
+// GET /api/produccion/registros
+// Obtener todos los registros de produccion para una linea y fecha
+// Query params: linea, fecha
 // ============================================================================
-router.get('/intervalos', async (req, res) => {
+router.get('/registros', async (req, res) => {
   try {
-    const { linea, fecha, turno } = req.query;
+    const { linea, fecha } = req.query;
 
-    if (!linea || !fecha || !turno) {
+    if (!linea || !fecha) {
       return res.status(400).json({
         success: false,
-        error: 'Parámetros requeridos: linea, fecha, turno'
+        error: 'Parametros requeridos: linea, fecha'
       });
     }
+
+    console.log('[GET /registros] linea=' + linea + ' fecha=' + fecha);
 
     const [rows] = await db.query(
-      `SELECT 
-        id,
-        linea,
-        fecha,
-        turno,
-        hora_inicio,
-        modelo,
-        producto,
-        rate,
-        rate_acumulado,
-        produccion,
-        produccion_acumulada,
-        scrap,
-        delta,
-        deadtime_minutos,
-        porcentaje_cumplimiento,
-        justificado_minutos,
-        tiempo_no_justificado,
-        updated_at
-      FROM produccion_intervalos
-      WHERE linea = ? AND fecha = ? AND turno = ?
-      ORDER BY hora_inicio ASC`,
-      [linea, fecha, parseInt(turno, 10)]
+      `SELECT id, modelo, inicio, final, fecha, capacidad, acumulado,
+              produccion, acumulado1, delta, dt, linea, scrap
+       FROM produccion
+       WHERE linea = ? AND fecha = ?
+       ORDER BY inicio ASC`,
+      [linea, fecha]
     );
 
-    // Convert DECIMAL strings to proper types for all rows
-    const normalizedRows = rows.map(r => ({
-      ...r,
-      rate: parseInt(r.rate) || 0,
-      rate_acumulado: parseInt(r.rate_acumulado) || 0,
-      produccion: parseInt(r.produccion) || 0,
-      produccion_acumulada: parseInt(r.produccion_acumulada) || 0,
-      scrap: parseInt(r.scrap) || 0,
-      delta: parseInt(r.delta) || 0,
-      deadtime_minutos: parseFloat(r.deadtime_minutos) || 0,
-      porcentaje_cumplimiento: parseFloat(r.porcentaje_cumplimiento) || 0,
-      justificado_minutos: parseFloat(r.justificado_minutos) || 0,
-      tiempo_no_justificado: parseFloat(r.tiempo_no_justificado) || 0
-    }));
-
-    // Calcular totales - All values now properly typed
-    const totales = {
-      rate_total: normalizedRows.reduce((sum, r) => sum + (r.rate || 0), 0),
-      produccion_total: normalizedRows.reduce((sum, r) => sum + (r.produccion || 0), 0),
-      scrap_total: normalizedRows.reduce((sum, r) => sum + (r.scrap || 0), 0),
-      deadtime_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.deadtime_minutos || 0), 0).toFixed(2)),
-      justificado_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.justificado_minutos || 0), 0).toFixed(2)),
-      no_justificado_total: parseFloat(normalizedRows.reduce((sum, r) => sum + (r.tiempo_no_justificado || 0), 0).toFixed(2))
-    };
-
-    // Calcular porcentaje de cumplimiento general
-    totales.porcentaje_cumplimiento = totales.rate_total > 0 
-      ? parseFloat(((totales.produccion_total / totales.rate_total) * 100).toFixed(2))
-      : 0;
+    console.log('[GET /registros] found ' + rows.length + ' rows');
 
     res.json({
       success: true,
-      data: normalizedRows,
-      totales
+      data: rows || []
     });
   } catch (error) {
-    console.error('Error en GET /intervalos:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error en GET /registros:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // ============================================================================
-// POST /api/produccion/intervalos
-// Crear intervalos para una línea y turno (se ejecuta al seleccionar línea+turno)
-// Body: { linea, fecha, turno }
-// Crea 12 intervalos VACÍOS (sin rellenar automáticamente)
-// El operador debe llenarlos manualmente según avanza el turno
+// POST /api/produccion/registros
+// Crear o actualizar un registro de produccion
+// Body: { id?, linea, fecha, inicio, final, modelo, capacidad, produccion, scrap }
+// Recalcula automaticamente acumulado, acumulado1, delta, dt para TODOS
+// los registros de esa linea+fecha
 // ============================================================================
-router.post('/intervalos', async (req, res) => {
+router.post('/registros', async (req, res) => {
   try {
-    const { linea, fecha, turno } = req.body;
+    const { id, linea, fecha, inicio, final: fin, modelo, capacidad, produccion, scrap } = req.body;
 
-    if (!linea || !fecha || !turno) {
+    if (!linea || !fecha || !inicio || !fin) {
       return res.status(400).json({
         success: false,
-        error: 'Parámetros requeridos: linea, fecha, turno'
+        error: 'Parametros requeridos: linea, fecha, inicio, final'
       });
     }
 
-    // Determinar rango de horas según turno
-    const horas = turno == 1 ? [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] : [20, 21, 22, 23, 0, 1, 2, 3, 4, 5, 6, 7];
+    const cap = parseInt(capacidad) || 0;
+    const prod = parseInt(produccion) || 0;
+    const sc = parseInt(scrap) || 0;
 
-    // Insertar 12 intervalos VACÍOS (sin modelo, sin rate, sin producción)
-    for (let i = 0; i < horas.length; i++) {
-      const hora = horas[i];
+    // Calcular delta y dt para este registro
+    const delta = cap - prod;
+    const dt = cap > 0 ? parseFloat(((delta * 60) / cap).toFixed(2)) : 0;
 
+    if (id) {
+      // Actualizar registro existente
       await db.query(
-        `INSERT INTO produccion_intervalos 
-         (linea, fecha, turno, hora_inicio, modelo, producto, rate, rate_acumulado, produccion, produccion_acumulada, scrap, delta, deadtime_minutos, porcentaje_cumplimiento)
-         VALUES (?, ?, ?, ?, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0)
-         ON DUPLICATE KEY UPDATE
-           modelo = IFNULL(modelo, NULL),
-           producto = IFNULL(producto, NULL),
-           rate = IFNULL(rate, 0),
-           rate_acumulado = IFNULL(rate_acumulado, 0)`,
-        [linea, fecha, turno, hora]
+        `UPDATE produccion
+         SET modelo = ?, inicio = ?, final = ?, fecha = ?, capacidad = ?,
+             produccion = ?, scrap = ?, delta = ?, dt = ?, linea = ?
+         WHERE id = ?`,
+        [modelo || null, inicio, fin, fecha, cap, prod, sc, delta, dt, linea, id]
       );
+    } else {
+      // Verificar si ya existe un registro para ese intervalo
+      const [existing] = await db.query(
+        `SELECT id FROM produccion WHERE linea = ? AND fecha = ? AND inicio = ? AND final = ?`,
+        [linea, fecha, inicio, fin]
+      );
+
+      if (existing && existing.length > 0) {
+        // Actualizar existente
+        await db.query(
+          `UPDATE produccion
+           SET modelo = ?, capacidad = ?, produccion = ?, scrap = ?, delta = ?, dt = ?
+           WHERE id = ?`,
+          [modelo || null, cap, prod, sc, delta, dt, existing[0].id]
+        );
+      } else {
+        // Insertar nuevo
+        await db.query(
+          `INSERT INTO produccion (modelo, inicio, final, fecha, capacidad, produccion, scrap, delta, dt, linea, acumulado, acumulado1)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`,
+          [modelo || null, inicio, fin, fecha, cap, prod, sc, delta, dt, linea]
+        );
+      }
     }
+
+    // Recalcular acumulados para TODOS los registros de esa linea+fecha
+    await recalcularAcumulados(linea, fecha);
+
+    // Devolver los registros actualizados
+    const [rows] = await db.query(
+      `SELECT id, modelo, inicio, final, fecha, capacidad, acumulado,
+              produccion, acumulado1, delta, dt, linea, scrap
+       FROM produccion
+       WHERE linea = ? AND fecha = ?
+       ORDER BY inicio ASC`,
+      [linea, fecha]
+    );
 
     res.json({
       success: true,
-      message: `Intervalos creados para ${linea} - Turno ${turno} - ${fecha}`
+      message: 'Registro guardado correctamente',
+      data: rows || []
     });
   } catch (error) {
-    console.error('Error en POST /intervalos:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error en POST /registros:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // ============================================================================
-// PUT /api/produccion/intervalos/:id
-// Editar producción o scrap de un intervalo
-// Requiere validación de credenciales (num_empleado + password)
-// Body: { campo: 'produccion' | 'scrap' | 'modelo', valor, numEmpleado, password }
+// DELETE /api/produccion/registros/:id
+// Eliminar un registro y recalcular acumulados
 // ============================================================================
-router.put('/intervalos/:id', async (req, res) => {
+router.delete('/registros/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { campo, valor, numEmpleado, password } = req.body;
-    const ipOrigen = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
-    if (!campo || valor === undefined || !numEmpleado || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Parámetros requeridos: campo, valor, numEmpleado, password'
-      });
+    // Obtener datos del registro antes de eliminarlo
+    const [rows] = await db.query('SELECT linea, fecha FROM produccion WHERE id = ?', [id]);
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Registro no encontrado' });
     }
 
-    // Validar credenciales (contra credenciales.users)
-    // Permitir usuario genérico 0000/1111 para ediciones rápidas sin login
-    let user = null;
-    if (numEmpleado === '0000' && password === '1111') {
-      // Usuario genérico para ediciones rápidas
-      user = {
-        num_empleado: '0000',
-        nombre: 'Sistema',
-        editor: 1,
-        rol: 'operador'
-      };
-    } else {
-      user = await validarCredenciales(numEmpleado, password);
-    }
+    const { linea, fecha } = rows[0];
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Credenciales inválidas'
-      });
-    }
+    await db.query('DELETE FROM produccion WHERE id = ?', [id]);
 
-    // LÓGICA: Para editar PRODUCCIÓN, solo se requiere estar registrado
-    // El empleado queda registrado en auditor_cambios automáticamente
-    // No hay restricción adicional - todos los registrados pueden editar producción
+    // Recalcular acumulados
+    await recalcularAcumulados(linea, fecha);
 
-    // Obtener intervalo actual
-    const [intervalosAnt] = await db.query(
-      'SELECT * FROM produccion_intervalos WHERE id = ? LIMIT 1',
-      [id]
+    // Devolver registros actualizados
+    const [updatedRows] = await db.query(
+      `SELECT id, modelo, inicio, final, fecha, capacidad, acumulado,
+              produccion, acumulado1, delta, dt, linea, scrap
+       FROM produccion
+       WHERE linea = ? AND fecha = ?
+       ORDER BY inicio ASC`,
+      [linea, fecha]
     );
 
-    if (!intervalosAnt || intervalosAnt.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Intervalo no encontrado'
-      });
-    }
+    res.json({
+      success: true,
+      message: 'Registro eliminado',
+      data: updatedRows || []
+    });
+  } catch (error) {
+    console.error('Error en DELETE /registros/:id:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
-    const intervaloAnt = intervalosAnt[0];
-    let actualizaciones = {};
+// ============================================================================
+// Helper: Recalcular acumulados para todos los registros de linea+fecha
+// acumulado  = suma acumulativa de capacidad
+// acumulado1 = suma acumulativa de produccion
+// delta      = capacidad - produccion
+// dt         = (delta * 60) / capacidad
+// ============================================================================
+async function recalcularAcumulados(linea, fecha) {
+  const [rows] = await db.query(
+    `SELECT id, capacidad, produccion, scrap FROM produccion
+     WHERE linea = ? AND fecha = ?
+     ORDER BY inicio ASC`,
+    [linea, fecha]
+  );
 
-    // Procesar según el campo editado
-    if (campo === 'produccion') {
-      actualizaciones.produccion = parseInt(valor, 10);
-      actualizaciones.num_empleado_produccion = numEmpleado;
-    } else if (campo === 'scrap') {
-      actualizaciones.scrap = parseInt(valor, 10);
-      actualizaciones.num_empleado_scrap = numEmpleado;
-    } else if (campo === 'modelo') {
-      // Si cambia modelo, obtener el nuevo rate
-      const [modelosNuevos] = await db.query(
-        'SELECT modelo, producto, rate FROM modelos WHERE modelo = ? AND linea = ? LIMIT 1',
-        [valor, intervaloAnt.linea]
-      );
-      if (modelosNuevos && modelosNuevos.length > 0) {
-        const modeloNuevo = modelosNuevos[0];
-        actualizaciones.modelo = modeloNuevo.modelo;
-        actualizaciones.producto = modeloNuevo.producto;
-        actualizaciones.rate = modeloNuevo.rate;
-      }
-    } else {
+  let acumCapacidad = 0;
+  let acumProduccion = 0;
+
+  for (const row of rows) {
+    const cap = parseInt(row.capacidad) || 0;
+    const prod = parseInt(row.produccion) || 0;
+
+    acumCapacidad += cap;
+    acumProduccion += prod;
+
+    const delta = cap - prod;
+    const dt = cap > 0 ? parseFloat(((delta * 60) / cap).toFixed(2)) : 0;
+
+    await db.query(
+      `UPDATE produccion SET acumulado = ?, acumulado1 = ?, delta = ?, dt = ? WHERE id = ?`,
+      [acumCapacidad, acumProduccion, delta, dt, row.id]
+    );
+  }
+}
+
+// ============================================================================
+// GET /api/produccion/downtime-analytics
+// Returns production intervals for a line+date with DT values, and for each
+// interval the matching closed tickets (from deadtimes table) whose hr falls
+// within that hour range. The "adjusted DT" (dt minus ticket time) is computed
+// here for convenience but nothing is written back to the DB.
+// Query params: linea, fecha
+// ============================================================================
+router.get('/downtime-analytics', async (req, res) => {
+  try {
+    const { linea, fecha } = req.query;
+
+    if (!linea || !fecha) {
       return res.status(400).json({
         success: false,
-        error: 'Campo no permitido para editar'
+        error: 'Parametros requeridos: linea, fecha'
       });
     }
 
-    // Recalcular valores dependientes
-    const produccionNueva = actualizaciones.produccion !== undefined ? actualizaciones.produccion : intervaloAnt.produccion;
-    const scrapNuevo = actualizaciones.scrap !== undefined ? actualizaciones.scrap : intervaloAnt.scrap;
-    const rateNuevo = actualizaciones.rate !== undefined ? actualizaciones.rate : intervaloAnt.rate;
+    // 1. Get all production intervals for this line+date
+    const [produccionRows] = await db.query(
+      `SELECT id, modelo, inicio, final, fecha, capacidad, acumulado,
+              produccion, acumulado1, delta, dt, linea, scrap
+       FROM produccion
+       WHERE linea = ? AND fecha = ?
+       ORDER BY inicio ASC`,
+      [linea, fecha]
+    );
 
-    // Recalcular delta = (rate - produccion) - scrap
-    actualizaciones.delta = rateNuevo - produccionNueva - scrapNuevo;
+    // 2. Get all closed tickets for this line on this date
+    //    A ticket matches if it was opened (hr) on the same date and same line
+    const [ticketRows] = await db.query(
+      `SELECT id, hr, ha, hc, descr, modelo, turno, linea, nombre,
+              equipo, pf, pa, clasificacion, tecnico, solucion, rate,
+              piezas, deadtime
+       FROM deadtimes
+       WHERE done = 1 AND linea = ? AND DATE(hr) = ?
+       ORDER BY hr ASC`,
+      [linea, fecha]
+    );
 
-    // Recalcular rate_acumulado si cambió modelo (rehacer sumatorias de todos los intervalos)
-    if (campo === 'modelo') {
-      const [intervalos] = await db.query(
-        `SELECT id, hora_inicio, rate FROM produccion_intervalos 
-         WHERE linea = ? AND fecha = ? AND turno = ?
-         ORDER BY hora_inicio ASC`,
-        [intervaloAnt.linea, intervaloAnt.fecha, intervaloAnt.turno]
-      );
+    // 3. For each production interval, find matching tickets and compute adjusted DT
+    const intervals = produccionRows.map(row => {
+      const inicioStr = row.inicio; // e.g. "07:00:00"
+      const finalStr = row.final;   // e.g. "08:00:00"
 
-      let acumulado = 0;
-      for (let int of intervalos) {
-        const rateActual = int.id === parseInt(id, 10) ? rateNuevo : int.rate;
-        acumulado += rateActual;
-        if (int.id === parseInt(id, 10)) {
-          actualizaciones.rate_acumulado = acumulado;
-        } else if (int.hora_inicio > intervaloAnt.hora_inicio) {
-          // Actualizar rate_acumulado de intervalos posteriores
-          // (simplificado: se hace en un segundo query)
+      // Parse interval hours for comparison
+      const inicioH = parseInt(inicioStr.split(':')[0], 10);
+      const inicioM = parseInt(inicioStr.split(':')[1], 10);
+      const finalH = parseInt(finalStr.split(':')[0], 10);
+      const finalM = parseInt(finalStr.split(':')[1], 10);
+
+      const inicioMinutes = inicioH * 60 + inicioM;
+      // Handle midnight wrap (23:00 -> 00:00 means finalMinutes = 1440)
+      let finalMinutes = finalH * 60 + finalM;
+      if (finalMinutes <= inicioMinutes) finalMinutes += 1440;
+
+      // Find tickets whose hr (open time) falls within this interval
+      const matchingTickets = ticketRows.filter(t => {
+        if (!t.hr) return false;
+        const ticketDate = new Date(t.hr);
+        const ticketH = ticketDate.getHours();
+        const ticketM = ticketDate.getMinutes();
+        const ticketMinutes = ticketH * 60 + ticketM;
+        // Also handle midnight wrap for ticket time
+        const ticketMinutesAdj = ticketMinutes < inicioMinutes ? ticketMinutes + 1440 : ticketMinutes;
+        return ticketMinutesAdj >= inicioMinutes && ticketMinutesAdj < finalMinutes;
+      });
+
+      // Sum ticket deadtime in minutes
+      const ticketDeadtimeMin = matchingTickets.reduce((sum, t) => {
+        return sum + (parseFloat(t.deadtime) || 0);
+      }, 0);
+
+      const dtValue = parseFloat(row.dt) || 0;
+      // Adjusted DT = DT - ticket deadtime, minimum 0
+      const adjustedDt = Math.max(0, parseFloat((dtValue - ticketDeadtimeMin).toFixed(2)));
+
+      return {
+        id: row.id,
+        modelo: row.modelo,
+        inicio: row.inicio,
+        final: row.final,
+        fecha: row.fecha,
+        capacidad: row.capacidad,
+        produccion: row.produccion,
+        delta: row.delta,
+        dt: dtValue,
+        scrap: row.scrap,
+        ticketDeadtimeMin: parseFloat(ticketDeadtimeMin.toFixed(2)),
+        adjustedDt,
+        ticketCount: matchingTickets.length,
+        tickets: matchingTickets.map(t => ({
+          id: t.id,
+          hr: t.hr,
+          hc: t.hc,
+          equipo: t.equipo,
+          descr: t.descr,
+          clasificacion: t.clasificacion,
+          tecnico: t.tecnico,
+          solucion: t.solucion,
+          deadtime: t.deadtime,
+          piezas: t.piezas
+        }))
+      };
+    });
+
+    // Summary totals
+    const totalDt = intervals.reduce((s, i) => s + i.dt, 0);
+    const totalTicketDt = intervals.reduce((s, i) => s + i.ticketDeadtimeMin, 0);
+    const totalAdjustedDt = intervals.reduce((s, i) => s + i.adjustedDt, 0);
+    const totalTickets = intervals.reduce((s, i) => s + i.ticketCount, 0);
+
+    res.json({
+      success: true,
+      data: {
+        intervals,
+        summary: {
+          totalDt: parseFloat(totalDt.toFixed(2)),
+          totalTicketDt: parseFloat(totalTicketDt.toFixed(2)),
+          totalAdjustedDt: parseFloat(totalAdjustedDt.toFixed(2)),
+          totalTickets
         }
       }
-    }
-
-    // Recalcular produccion_acumulada y deadtime
-    const [intervalosAct] = await db.query(
-      `SELECT produccion FROM produccion_intervalos 
-       WHERE linea = ? AND fecha = ? AND turno = ? AND hora_inicio <= ?
-       ORDER BY hora_inicio ASC`,
-      [intervaloAnt.linea, intervaloAnt.fecha, intervaloAnt.turno, intervaloAnt.hora_inicio]
-    );
-
-    let produccionAcum = 0;
-    for (let int of intervalosAct) {
-      if (int.id === parseInt(id, 10)) {
-        produccionAcum += produccionNueva;
-      } else {
-        produccionAcum += int.produccion || 0;
-      }
-    }
-    actualizaciones.produccion_acumulada = produccionAcum;
-
-    // Calcular deadtime
-    const rateAcumActual = actualizaciones.rate_acumulado || intervaloAnt.rate_acumulado;
-    actualizaciones.deadtime_minutos = calcularDeadtime(
-      rateAcumActual,
-      produccionAcum,
-      scrapNuevo,
-      rateNuevo
-    );
-
-    // Calcular porcentaje de cumplimiento
-    if (rateAcumActual > 0) {
-      actualizaciones.porcentaje_cumplimiento = ((produccionAcum / rateAcumActual) * 100).toFixed(2);
-    }
-
-    // Ejecutar UPDATE
-    const actualizacionesSQL = Object.keys(actualizaciones)
-      .map(key => `${key} = ?`)
-      .join(', ');
-    const valores = Object.values(actualizaciones);
-    valores.push(id);
-
-    const [result] = await db.query(
-      `UPDATE produccion_intervalos SET ${actualizacionesSQL} WHERE id = ?`,
-      valores
-    );
-
-    // Registrar auditoría
-    await logAudit(
-      'produccion_intervalos',
-      parseInt(id, 10),
-      numEmpleado,
-      user.nombre,
-      'UPDATE',
-      campo,
-      `${intervaloAnt[campo]}`,
-      `${valor || actualizaciones[campo]}`,
-      ipOrigen
-    );
-
-    res.json({
-      success: true,
-      message: `Campo ${campo} actualizado correctamente`,
-      data: actualizaciones
     });
   } catch (error) {
-    console.error('Error en PUT /intervalos/:id:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error en GET /downtime-analytics:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // ============================================================================
-// GET /api/produccion/unjustified
-// Obtener deadtime no justificado por intervalo (para sección Review)
-// Query params: linea, fecha, turno
-// Retorna: deadtime_minutos - minutos_justificados por tickets
+// GET /api/produccion/modelos
+// Obtener lista de modelos disponibles (opcionalmente filtrar por linea)
 // ============================================================================
-router.get('/unjustified', async (req, res) => {
+router.get('/modelos', async (req, res) => {
   try {
-    const { linea, fecha, turno } = req.query;
+    const { linea } = req.query;
+    let query = 'SELECT id, linea, modelo, producto, rate FROM modelos';
+    let params = [];
 
-    if (!linea || !fecha || !turno) {
-      return res.status(400).json({
-        success: false,
-        error: 'Parámetros requeridos: linea, fecha, turno'
-      });
+    if (linea) {
+      query += ' WHERE linea = ?';
+      params.push(linea);
     }
 
-    const [rows] = await db.query(
-      `SELECT 
-        pi.id,
-        pi.linea,
-        pi.fecha,
-        pi.turno,
-        pi.hora_inicio,
-        pi.modelo,
-        COALESCE(pi.deadtime_minutos, 0) as deadtime_minutos,
-        COALESCE(SUM(tpr.minutos_justificados), 0) AS minutos_justificados,
-        (COALESCE(pi.deadtime_minutos, 0) - COALESCE(SUM(tpr.minutos_justificados), 0)) AS tiempo_no_justificado
-      FROM produccion_intervalos pi
-      LEFT JOIN ticket_produccion_relacion tpr ON pi.id = tpr.intervalo_id
-      WHERE pi.linea = ? AND pi.fecha = ? AND pi.turno = ?
-      GROUP BY pi.id
-      ORDER BY pi.hora_inicio ASC`,
-      [linea, fecha, parseInt(turno, 10)]
-    );
-
-    res.json({
-      success: true,
-      data: rows
-    });
+    query += ' ORDER BY modelo ASC';
+    const [rows] = await db.query(query, params);
+    res.json({ success: true, data: rows || [] });
   } catch (error) {
-    console.error('Error en GET /unjustified:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    console.error('Error en GET /modelos:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // ============================================================================
-// GET /api/produccion/related-tickets/:intervaloId
-// Obtener tickets relacionados a un intervalo (para modal en Review)
+// CRUD: Equipos
 // ============================================================================
-router.get('/related-tickets/:intervaloId', async (req, res) => {
-  try {
-    const { intervaloId } = req.params;
-
-    const [rows] = await db.query(
-      `SELECT 
-        d.id,
-        d.descr,
-        d.modelo,
-        d.hr,
-        d.hc,
-        TIMESTAMPDIFF(MINUTE, d.hr, d.hc) AS duracion_minutos,
-        d.solucion,
-        tpr.minutos_justificados
-      FROM deadtimes d
-      INNER JOIN ticket_produccion_relacion tpr ON d.id = tpr.ticket_id
-      WHERE tpr.intervalo_id = ? AND d.done = 1
-      ORDER BY d.hr DESC`,
-      [intervaloId]
-    );
-
-    res.json({
-      success: true,
-      data: rows
-    });
-  } catch (error) {
-    console.error('Error en GET /related-tickets:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ============================================================================
-// ENDPOINTS DE CONFIGURACIÓN (CRUD)
-// ============================================================================
-
-// GET /api/produccion/equipos - obtener todos los equipos
 router.get('/equipos', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM equipos ORDER BY id ASC');
@@ -511,11 +381,9 @@ router.get('/equipos', async (req, res) => {
   }
 });
 
-// POST /api/produccion/equipos - crear nuevo equipo
 router.post('/equipos', async (req, res) => {
   const { nombre } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
-
   try {
     const [result] = await db.query('INSERT INTO equipos (nombre) VALUES (?)', [nombre]);
     res.json({ success: true, data: { id: result.insertId, nombre } });
@@ -524,12 +392,10 @@ router.post('/equipos', async (req, res) => {
   }
 });
 
-// PUT /api/produccion/equipos/:id - actualizar equipo
 router.put('/equipos/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
-
   try {
     await db.query('UPDATE equipos SET nombre = ? WHERE id = ?', [nombre, id]);
     res.json({ success: true, data: { id, nombre } });
@@ -538,10 +404,8 @@ router.put('/equipos/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/produccion/equipos/:id - eliminar equipo
 router.delete('/equipos/:id', async (req, res) => {
   const { id } = req.params;
-
   try {
     await db.query('DELETE FROM equipos WHERE id = ?', [id]);
     res.json({ success: true, message: 'Equipo eliminado' });
@@ -550,7 +414,9 @@ router.delete('/equipos/:id', async (req, res) => {
   }
 });
 
-// GET /api/produccion/lineas - obtener todas las líneas
+// ============================================================================
+// CRUD: Lineas
+// ============================================================================
 router.get('/lineas', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM lineas ORDER BY id ASC');
@@ -560,11 +426,9 @@ router.get('/lineas', async (req, res) => {
   }
 });
 
-// POST /api/produccion/lineas - crear nueva línea
 router.post('/lineas', async (req, res) => {
   const { nombre, equipo } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
-
   try {
     const [result] = await db.query('INSERT INTO lineas (nombre, equipo) VALUES (?, ?)', [nombre, equipo]);
     res.json({ success: true, data: { id: result.insertId, nombre, equipo } });
@@ -573,12 +437,10 @@ router.post('/lineas', async (req, res) => {
   }
 });
 
-// PUT /api/produccion/lineas/:id - actualizar línea
 router.put('/lineas/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre, equipo } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
-
   try {
     await db.query('UPDATE lineas SET nombre = ?, equipo = ? WHERE id = ?', [nombre, equipo, id]);
     res.json({ success: true, data: { id, nombre, equipo } });
@@ -587,23 +449,22 @@ router.put('/lineas/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/produccion/lineas/:id - eliminar línea
 router.delete('/lineas/:id', async (req, res) => {
   const { id } = req.params;
-
   try {
     await db.query('DELETE FROM lineas WHERE id = ?', [id]);
-    res.json({ success: true, message: 'Línea eliminada' });
+    res.json({ success: true, message: 'Linea eliminada' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// POST /api/produccion/modelos - crear nuevo modelo
+// ============================================================================
+// CRUD: Modelos
+// ============================================================================
 router.post('/modelos', async (req, res) => {
   const { modelo, producto, rate, linea } = req.body;
   if (!modelo || !rate) return res.status(400).json({ error: 'Modelo y rate requeridos' });
-
   try {
     const [result] = await db.query(
       'INSERT INTO modelos (modelo, producto, rate, linea) VALUES (?, ?, ?, ?)',
@@ -615,12 +476,10 @@ router.post('/modelos', async (req, res) => {
   }
 });
 
-// PUT /api/produccion/modelos/:id - actualizar modelo
 router.put('/modelos/:id', async (req, res) => {
   const { id } = req.params;
   const { modelo, producto, rate, linea } = req.body;
   if (!modelo || !rate) return res.status(400).json({ error: 'Modelo y rate requeridos' });
-
   try {
     await db.query(
       'UPDATE modelos SET modelo = ?, producto = ?, rate = ?, linea = ? WHERE id = ?',
@@ -632,152 +491,13 @@ router.put('/modelos/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/produccion/modelos/:id - eliminar modelo
 router.delete('/modelos/:id', async (req, res) => {
   const { id } = req.params;
-
   try {
     await db.query('DELETE FROM modelos WHERE id = ?', [id]);
     res.json({ success: true, message: 'Modelo eliminado' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ============================================================================
-// ENDPOINTS DE EDICIÓN DE TICKETS
-// ============================================================================
-
-// GET /deadtimes/:id - obtener ticket por ID
-router.get('/deadtimes/:id', async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const [rows] = await db.query(
-      `SELECT 
-        id, descr, modelo, producto, hr, hc, 
-        TIMESTAMPDIFF(MINUTE, hr, hc) AS duracion_minutos,
-        solucion, observaciones, done
-      FROM deadtimes
-      WHERE id = ?`,
-      [id]
-    );
-
-    if (!rows || rows.length === 0) {
-      return res.status(404).json({ error: 'Ticket no encontrado' });
-    }
-
-    res.json({ success: true, data: rows[0] });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// PUT /deadtimes/:id - actualizar ticket completo
-// Solo Ingeniero puede actualizar tickets
-router.put('/deadtimes/:id', async (req, res) => {
-  const { id } = req.params;
-  const numEmpleado = req.headers['x-employee'];
-  const password = req.headers['authorization'];
-
-  if (!numEmpleado) {
-    return res.status(401).json({ error: 'Empleado requerido' });
-  }
-
-  const { descr, modelo, hr, hc, solucion, observaciones } = req.body;
-
-  try {
-    // Validar credenciales si hay password
-    let user = null;
-    if (password) {
-      const authMatch = password.match(/Basic\s+(.+)/);
-      if (authMatch) {
-        const credentials = Buffer.from(authMatch[1], 'base64').toString('utf-8');
-        const [empId, pass] = credentials.split(':');
-        user = await validarCredenciales(parseInt(empId), pass);
-        if (!user) {
-          return res.status(401).json({ error: 'Credenciales inválidas' });
-        }
-      }
-    }
-
-    // Validar que el usuario tiene rol de Ingeniero
-    if (!user || user.rol !== 'Ingeniero') {
-      return res.status(403).json({ 
-        error: 'Solo Ingenieros pueden actualizar tickets',
-        rolActual: user ? user.rol : 'desconocido'
-      });
-    }
-
-    // Obtener datos anteriores para auditoría
-    const [oldRows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
-    const oldData = oldRows[0];
-
-    // Actualizar ticket
-    await db.query(
-      `UPDATE deadtimes 
-       SET descr = ?, modelo = ?, hr = ?, hc = ?, solucion = ?, observaciones = ?
-       WHERE id = ?`,
-      [descr, modelo, hr, hc, solucion, observaciones, id]
-    );
-
-    // Registrar cambios en auditoría
-    const fields = ['descr', 'modelo', 'hr', 'hc', 'solucion', 'observaciones'];
-    const newData = { descr, modelo, hr, hc, solucion, observaciones };
-
-    for (const field of fields) {
-      if (oldData[field] !== newData[field]) {
-        await logAudit(
-          'deadtimes',
-          id,
-          numEmpleado,
-          user.nombre,
-          'UPDATE',
-          field,
-          String(oldData[field] || ''),
-          String(newData[field] || ''),
-          req.ip
-        );
-      }
-    }
-
-    res.json({ success: true, message: 'Ticket actualizado exitosamente' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ============================================================================
-// GET /api/modelos
-// Obtener lista de modelos disponibles para una línea
-// Query params: linea
-// ============================================================================
-router.get('/modelos', async (req, res) => {
-  try {
-    const { linea } = req.query;
-
-    if (!linea) {
-      return res.status(400).json({
-        success: false,
-        error: 'Parámetro requerido: linea'
-      });
-    }
-
-    const [rows] = await db.query(
-      `SELECT id, linea, modelo, producto, rate FROM modelos WHERE linea = ? ORDER BY modelo ASC`,
-      [linea]
-    );
-
-    res.json({
-      success: true,
-      data: rows || []
-    });
-  } catch (error) {
-    console.error('Error en GET /modelos:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
   }
 });
 

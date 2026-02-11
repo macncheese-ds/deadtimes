@@ -1,470 +1,612 @@
 import React, { useState, useEffect } from 'react';
+import { getRegistros, guardarRegistro, eliminarRegistro, getModelosProduccion } from '../api_produccion';
+import { getLineas, login } from '../api_deadtimes';
 import LoginModal from './LoginModal';
 
-export default function ProduccionEdicion({ linea, fecha, turno, onClose }) {
-  const [intervalos, setIntervalos] = useState([]);
-  const [loading, setLoading] = useState(true);
+// Generar 24 intervalos de 1 hora: 00:00-01:00, 01:00-02:00, ..., 23:00-00:00
+const INTERVALOS = Array.from({ length: 24 }, (_, i) => {
+  const h = i;
+  const hNext = (i + 1) % 24;
+  return {
+    h,
+    hNext,
+    inicio: String(h).padStart(2, '0') + ':00:00',
+    final: String(hNext).padStart(2, '0') + ':00:00',
+    label: String(h).padStart(2, '0') + ':00 - ' + String(hNext).padStart(2, '0') + ':00'
+  };
+});
+
+function filaVacia(int) {
+  return {
+    id: null,
+    h: int.h,
+    inicio: int.inicio,
+    final: int.final,
+    label: int.label,
+    modelo: '',
+    capacidad: 0,
+    produccion: 0,
+    scrap: 0,
+    acumulado: 0,
+    acumulado1: 0,
+    delta: 0,
+    dt: 0,
+    pctProd: 0,
+    pctCump: 0
+  };
+}
+
+// Extraer la hora (0-23) de un valor TIME que viene como string "HH:MM:SS" o "H:MM:SS"
+function extraerHora(val) {
+  if (val == null) return -1;
+  var s = String(val);
+  var m = s.match(/^(\d{1,2})/);
+  if (m) return parseInt(m[1], 10);
+  return -1;
+}
+
+export default function ProduccionEdicion({ onClose }) {
+  const [lineas, setLineas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginBusy, setLoginBusy] = useState(false);
-  const [editingField, setEditingField] = useState(null); // { intervaloId, campo, valor }
-  const [totales, setTotales] = useState({});
-  const [initializingIntervalos, setInitializingIntervalos] = useState(false);
-  const [selectedIntervaloId, setSelectedIntervaloId] = useState(null); // ID del intervalo seleccionado
-  const [editValues, setEditValues] = useState({}); // { produccion, scrap } para edición directa
-  const [modelos, setModelos] = useState([]); // Lista de modelos disponibles para la línea
-  const [modelosLoading, setModelosLoading] = useState(false);
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3107/api';
+  const [successMsg, setSuccessMsg] = useState('');
+  const [selectedLinea, setSelectedLinea] = useState('');
+  const [selectedFecha, setSelectedFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [filas, setFilas] = useState(INTERVALOS.map(filaVacia));
+  
+  // Authentication states
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // { type: 'save' | 'saveAll' | 'delete', idx: number }
 
-  // Cargar intervalos
+  // Cargar lineas al montar
   useEffect(() => {
-    if (linea) {
-      cargarIntervalos();
-      cargarModelos();
-    }
-  }, [linea, fecha, turno]);
-
-  // Actualizar intervalo actual cada minuto
-  useEffect(() => {
-    const interval = setInterval(() => {
-      cargarIntervalos();
-    }, 60000); // actualizar cada minuto
-    return () => clearInterval(interval);
-  }, [linea, fecha, turno]);
-
-  // Limpiar modales al desmontar
-  useEffect(() => {
-    return () => {
-      setShowLoginModal(false)
-      setEditingField(null)
-    }
+    (async () => {
+      try {
+        const data = await getLineas();
+        setLineas(data || []);
+        if (data && data.length > 0) {
+          setSelectedLinea(data[0].linea || data[0].nombre || '');
+        }
+      } catch (err) {
+        console.error('Error cargando lineas:', err);
+      }
+    })();
   }, []);
 
-  const cargarIntervalos = async () => {
+  // Cargar modelos y registros cuando cambia linea o fecha
+  useEffect(() => {
+    if (selectedLinea && selectedFecha) {
+      cargarModelos();
+      cargarRegistros();
+    }
+  }, [selectedLinea, selectedFecha]);
+
+  const cargarModelos = async () => {
+    try {
+      const result = await getModelosProduccion(selectedLinea);
+      setModelos(result.data || []);
+    } catch (err) {
+      console.error('Error cargando modelos:', err);
+      setModelos([]);
+    }
+  };
+
+  // Mapear array de registros del servidor a las 24 filas de intervalos
+  const mapearRegistros = (data) => {
+    var acumCap = 0;
+    var acumProd = 0;
+    return INTERVALOS.map(function(int) {
+      var reg = data.find(function(r) {
+        return extraerHora(r.inicio) === int.h;
+      });
+
+      if (reg) {
+        var cap = parseInt(reg.capacidad) || 0;
+        var prod = parseInt(reg.produccion) || 0;
+        acumCap += cap;
+        acumProd += prod;
+        var delta = cap - prod;
+        var dt = cap > 0 ? parseFloat(((delta * 60) / cap).toFixed(2)) : 0;
+        var pctProd = cap > 0 ? parseFloat(((prod / cap) * 100).toFixed(1)) : 0;
+        var pctCump = acumCap > 0 ? parseFloat(((acumProd / acumCap) * 100).toFixed(1)) : 0;
+
+        return {
+          id: reg.id,
+          h: int.h,
+          inicio: int.inicio,
+          final: int.final,
+          label: int.label,
+          modelo: reg.modelo || '',
+          capacidad: cap,
+          produccion: prod,
+          scrap: parseInt(reg.scrap) || 0,
+          acumulado: acumCap,
+          acumulado1: acumProd,
+          delta: delta,
+          dt: dt,
+          pctProd: pctProd,
+          pctCump: pctCump
+        };
+      }
+
+      return filaVacia(int);
+    });
+  };
+
+  const cargarRegistros = async () => {
+    if (!selectedLinea || !selectedFecha) return;
     setLoading(true);
     setError('');
     try {
-      // Cargar los intervalos existentes (sin crear automáticamente)
-      const response = await fetch(
-        `${apiUrl}/produccion/intervalos?linea=${encodeURIComponent(linea)}&fecha=${fecha}&turno=${turno}`
-      );
-      if (!response.ok) throw new Error('Error cargando intervalos');
-
-      const result = await response.json();
-      setIntervalos(result.data || []);
-      setTotales(result.totales || {});
-      
-      // Seleccionar el primer intervalo por defecto
-      if ((result.data || []).length > 0 && !selectedIntervaloId) {
-        setSelectedIntervaloId(result.data[0].id);
-        setEditValues({
-          produccion: result.data[0].produccion || 0,
-          scrap: result.data[0].scrap || 0,
-          modelo: result.data[0].modelo || ''
-        });
-      }
+      const result = await getRegistros(selectedLinea, selectedFecha);
+      var data = result.data || [];
+      console.log('cargarRegistros linea=' + selectedLinea + ' fecha=' + selectedFecha + ' rows=' + data.length, data);
+      setFilas(mapearRegistros(data));
     } catch (err) {
-      setError(err.message);
-      console.error(err);
+      setError('Error cargando registros: ' + err.message);
+      console.error('Error cargando registros:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const cargarModelos = async () => {
-    if (!linea) return; // No cargar si no hay línea
-    
-    setModelosLoading(true);
-    try {
-      const url = `${apiUrl}/produccion/modelos?linea=${encodeURIComponent(linea)}`;
-      console.log('Cargando modelos desde:', url);
-      
-      const response = await fetch(url);
-      console.log('Respuesta status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('Modelos cargados:', result);
-      
-      setModelos(result.data || []);
-    } catch (err) {
-      console.error('Error cargando modelos:', err);
-      setModelos([]);
-    } finally {
-      setModelosLoading(false);
-    }
-  };
-
-  const handleInitializeIntervalos = async () => {
-    setInitializingIntervalos(true);
-    try {
-      const response = await fetch(`${apiUrl}/produccion/intervalos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ linea, fecha, turno: parseInt(turno) })
-      });
-
-      if (!response.ok) throw new Error('Error inicializando intervalos');
-
-      // Recargar después de inicializar
-      await cargarIntervalos();
-    } catch (err) {
-      setError(err.message);
-      console.error(err);
-    } finally {
-      setInitializingIntervalos(false);
-    }
-  };
-
-  // Manejar cambio de intervalo seleccionado
-  const handleSelectIntervalo = (intervalo) => {
-    setSelectedIntervaloId(intervalo.id);
-    setEditValues({
-      produccion: intervalo.produccion || 0,
-      scrap: intervalo.scrap || 0,
-      modelo: intervalo.modelo || ''
+  // Recalcular acumulados localmente al editar
+  const recalcularLocal = (arr) => {
+    var acumCap = 0;
+    var acumProd = 0;
+    return arr.map(function(fila) {
+      var cap = parseInt(fila.capacidad) || 0;
+      var prod = parseInt(fila.produccion) || 0;
+      acumCap += cap;
+      acumProd += prod;
+      var delta = cap - prod;
+      var dt = cap > 0 ? parseFloat(((delta * 60) / cap).toFixed(2)) : 0;
+      var pctProd = cap > 0 ? parseFloat(((prod / cap) * 100).toFixed(1)) : 0;
+      var pctCump = acumCap > 0 ? parseFloat(((acumProd / acumCap) * 100).toFixed(1)) : 0;
+      return { ...fila, acumulado: acumCap, acumulado1: acumProd, delta: delta, dt: dt, pctProd: pctProd, pctCump: pctCump };
     });
   };
 
-  // Manejar cambio de modelo y actualizar producto y rate
-  const handleModeloChange = (modeloNombre) => {
-    const modeloSeleccionado = modelos.find(m => m.modelo === modeloNombre);
-    
-    const nuevosDatos = {
-      ...editValues,
-      modelo: modeloNombre,
-      producto: modeloSeleccionado?.producto || '',
-      rate: modeloSeleccionado?.rate || 0
-    };
-    
-    setEditValues(nuevosDatos);
-    
-    // Guardar modelo automáticamente
-    if (selectedIntervaloId && modeloNombre) {
-      handleGuardarCambios('modelo', modeloNombre);
-    }
+  const handleModeloChange = (idx, modeloNombre) => {
+    const modeloObj = modelos.find(function(m) { return m.modelo === modeloNombre; });
+    const rate = modeloObj ? parseInt(modeloObj.rate) || 0 : 0;
+    const arr = [...filas];
+    arr[idx] = { ...arr[idx], modelo: modeloNombre, capacidad: rate };
+    setFilas(recalcularLocal(arr));
   };
 
-  // Guardar cambios sin modal
-  const handleGuardarCambios = async (campo, valor) => {
-    if (!selectedIntervaloId) return;
+  const handleProduccionChange = (idx, valor) => {
+    const arr = [...filas];
+    arr[idx] = { ...arr[idx], produccion: parseInt(valor) || 0 };
+    setFilas(recalcularLocal(arr));
+  };
 
+  const handleScrapChange = (idx, valor) => {
+    const arr = [...filas];
+    arr[idx] = { ...arr[idx], scrap: parseInt(valor) || 0 };
+    setFilas(recalcularLocal(arr));
+  };
+
+  const handleGuardarFila = async (idx) => {
+    const fila = filas[idx];
+    if (!fila.modelo && fila.produccion === 0 && fila.capacidad === 0) {
+      setError('Completa al menos el modelo o la produccion');
+      setTimeout(function() { setError(''); }, 3000);
+      return;
+    }
+    // Show auth modal before saving
+    setPendingAction({ type: 'save', idx });
+    setShowAuthModal(true);
+  };
+
+  const executeGuardarFila = async (idx) => {
+    const fila = filas[idx];
+    setSaving(true);
+    setError('');
+    setSuccessMsg('');
     try {
-      const response = await fetch(`${apiUrl}/produccion/intervalos/${selectedIntervaloId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          campo,
-          valor: parseInt(valor) || 0,
-          numEmpleado: '0000', // Usuario genérico para edición rápida
-          password: '1111'     // Contraseña genérica
-        })
+      const result = await guardarRegistro({
+        id: fila.id || undefined,
+        linea: selectedLinea,
+        fecha: selectedFecha,
+        inicio: fila.inicio,
+        final: fila.final,
+        modelo: fila.modelo,
+        capacidad: fila.capacidad,
+        produccion: fila.produccion,
+        scrap: fila.scrap
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        console.error('Error al guardar:', result.error);
-        return;
+      if (result.success) {
+        // Usar datos de la respuesta directamente si los tiene
+        if (result.data && result.data.length > 0) {
+          console.log('guardar: usando datos de respuesta, rows=' + result.data.length);
+          setFilas(mapearRegistros(result.data));
+        } else {
+          await cargarRegistros();
+        }
+        setSuccessMsg('Guardado: ' + fila.label);
+        setTimeout(function() { setSuccessMsg(''); }, 2000);
       }
-
-      // Actualizar la lista local
-      await cargarIntervalos();
     } catch (err) {
-      console.error('Error guardando:', err);
+      setError('Error guardando: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Navegar entre intervalos
-  const handleIntervaloAnterior = () => {
-    const idx = intervalos.findIndex(i => i.id === selectedIntervaloId);
-    if (idx > 0) {
-      handleSelectIntervalo(intervalos[idx - 1]);
+  const handleEliminarFila = async (idx) => {
+    const fila = filas[idx];
+    if (!fila.id) return;
+    // Show auth modal before deleting
+    setPendingAction({ type: 'delete', idx });
+    setShowAuthModal(true);
+  };
+
+  const executeEliminarFila = async (idx) => {
+    const fila = filas[idx];
+    try {
+      const result = await eliminarRegistro(fila.id);
+      if (result.success) {
+        // Usar datos de la respuesta directamente si los tiene
+        if (result.data) {
+          console.log('eliminar: usando datos de respuesta, rows=' + result.data.length);
+          setFilas(mapearRegistros(result.data));
+        } else {
+          await cargarRegistros();
+        }
+        setSuccessMsg('Registro eliminado');
+        setTimeout(function() { setSuccessMsg(''); }, 2000);
+      }
+    } catch (err) {
+      setError('Error eliminando: ' + err.message);
     }
   };
 
-  const handleIntervaloSiguiente = () => {
-    const idx = intervalos.findIndex(i => i.id === selectedIntervaloId);
-    if (idx < intervalos.length - 1) {
-      handleSelectIntervalo(intervalos[idx + 1]);
+  const handleGuardarTodo = async () => {
+    // Show auth modal before saving all
+    setPendingAction({ type: 'saveAll' });
+    setShowAuthModal(true);
+  };
+
+  const executeGuardarTodo = async () => {
+    setSaving(true);
+    setError('');
+    setSuccessMsg('');
+    try {
+      for (var i = 0; i < filas.length; i++) {
+        var fila = filas[i];
+        if (fila.modelo || fila.produccion > 0 || fila.capacidad > 0) {
+          await guardarRegistro({
+            id: fila.id || undefined,
+            linea: selectedLinea,
+            fecha: selectedFecha,
+            inicio: fila.inicio,
+            final: fila.final,
+            modelo: fila.modelo,
+            capacidad: fila.capacidad,
+            produccion: fila.produccion,
+            scrap: fila.scrap
+          });
+        }
+      }
+      // Recargar desde el servidor para tener datos frescos
+      await cargarRegistros();
+      setSuccessMsg('Todos los registros guardados');
+      setTimeout(function() { setSuccessMsg(''); }, 3000);
+    } catch (err) {
+      setError('Error guardando: ' + err.message);
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  const handleAuthConfirm = async ({ employee_input, password }) => {
+    setAuthBusy(true);
+    try {
+      const data = await login(employee_input, password);
+      
+      // Check if user has Lider or Ingeniero role
+      const userRole = (data.user.rolOriginal || '').toLowerCase();
+      if (userRole !== 'lider' && userRole !== 'ingeniero') {
+        throw new Error('Solo Líderes e Ingenieros pueden modificar datos de producción.');
+      }
+      
+      // Auth successful, close modal and execute pending action
+      setShowAuthModal(false);
+      
+      // Execute the pending action
+      if (pendingAction) {
+        if (pendingAction.type === 'save') {
+          await executeGuardarFila(pendingAction.idx);
+        } else if (pendingAction.type === 'delete') {
+          await executeEliminarFila(pendingAction.idx);
+        } else if (pendingAction.type === 'saveAll') {
+          await executeGuardarTodo();
+        }
+      }
+      
+      setPendingAction(null);
+    } catch (error) {
+      console.error('Error:', error);
+      throw error;
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleAuthCancel = () => {
+    setShowAuthModal(false);
+    setPendingAction(null);
+  };
+
+  // Totales
+  var totCapacidad = 0, totProduccion = 0, totScrap = 0, totDelta = 0, totDt = 0;
+  filas.forEach(function(f) {
+    totCapacidad += parseInt(f.capacidad) || 0;
+    totProduccion += parseInt(f.produccion) || 0;
+    totScrap += parseInt(f.scrap) || 0;
+    totDelta += parseInt(f.delta) || 0;
+    totDt += parseFloat(f.dt) || 0;
+  });
+  var totalPct = totCapacidad > 0 ? ((totProduccion / totCapacidad) * 100).toFixed(1) : '0.0';
+
+  // Color helpers
+  function pctColor(val) {
+    if (val >= 90) return 'text-green-400';
+    if (val >= 70) return 'text-yellow-300';
+    if (val > 0) return 'text-red-400';
+    return 'text-slate-500';
   }
 
-  const turnoLabel = turno == 1 ? 'Turno 1 (08:00 - 20:00)' : 'Turno 2 (20:00 - 08:00)';
-  const intervaloActual = intervalos.find(int => int.id === selectedIntervaloId);
-  const idxActual = intervalos.findIndex(int => int.id === selectedIntervaloId);
-
   return (
-    <div className="bg-slate-900 rounded-lg p-6 mb-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-slate-100">
-          {turnoLabel} - {linea} ({fecha})
+    <>
+      <LoginModal
+        visible={showAuthModal}
+        onClose={handleAuthCancel}
+        onConfirm={handleAuthConfirm}
+        busy={authBusy}
+      />
+      
+      <div className="glass-card rounded-2xl shadow-2xl p-3 sm:p-6 animate-slide-up">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
+          Produccion
         </h2>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-200 text-xl"
+            className="w-10 h-10 rounded-lg bg-slate-700 hover:bg-red-600 flex items-center justify-center text-white text-lg font-bold transition-colors"
           >
-            ✕
+            X
           </button>
         )}
       </div>
 
+      {/* Selectores */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div>
+          <label className="block text-slate-200 text-sm font-semibold mb-1">Linea</label>
+          <select
+            value={selectedLinea}
+            onChange={function(e) { setSelectedLinea(e.target.value); }}
+            className="w-full bg-slate-800 border-2 border-slate-600 rounded-lg px-3 py-3 text-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">-- Selecciona --</option>
+            {lineas.map(function(l) {
+              return (
+                <option key={l.id || l.linea} value={l.linea || l.nombre}>
+                  {l.linea || l.nombre}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+        <div>
+          <label className="block text-slate-200 text-sm font-semibold mb-1">Fecha</label>
+          <input
+            type="date"
+            value={selectedFecha}
+            onChange={function(e) { setSelectedFecha(e.target.value); }}
+            className="w-full bg-slate-800 border-2 border-slate-600 rounded-lg px-3 py-3 text-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        <div className="flex items-end">
+          <button
+            onClick={handleGuardarTodo}
+            disabled={saving || !selectedLinea}
+            className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 text-white px-4 py-3 rounded-lg font-bold transition text-base shadow-lg"
+          >
+            {saving ? 'Guardando...' : 'GUARDAR TODO'}
+          </button>
+        </div>
+      </div>
+
+      {/* Mensajes */}
       {error && (
-        <div className="bg-red-900/50 border border-red-600 text-red-200 px-4 py-2 rounded mb-4">
+        <div className="bg-red-900/70 border-2 border-red-500 text-red-100 px-4 py-3 rounded-lg mb-4 text-sm font-semibold">
           {error}
         </div>
       )}
-
-      {/* Mensaje si no hay intervalos */}
-      {!loading && intervalos.length === 0 && (
-        <div className="bg-blue-900/30 border border-blue-600 text-blue-300 px-4 py-4 rounded mb-4">
-          <p className="mb-3">No hay intervalos registrados para esta línea, fecha y turno.</p>
-          <button
-            onClick={handleInitializeIntervalos}
-            disabled={initializingIntervalos}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded font-medium"
-          >
-            {initializingIntervalos ? 'Inicializando...' : 'Inicializar Intervalos'}
-          </button>
+      {successMsg && (
+        <div className="bg-green-900/70 border-2 border-green-500 text-green-100 px-4 py-3 rounded-lg mb-4 text-sm font-semibold">
+          {successMsg}
         </div>
       )}
 
-      {/* Interfaz de Edición con Navegación */}
-      {intervalos.length > 0 && intervaloActual && (
-        <div className="bg-slate-800 rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-slate-100">
-              Intervalo {idxActual + 1}/{intervalos.length} - {intervaloActual.hora_inicio}:00 hrs
-            </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={handleIntervaloAnterior}
-                disabled={idxActual === 0}
-                className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded font-medium transition"
-              >
-                ← Anterior
-              </button>
-              <button
-                onClick={handleIntervaloSiguiente}
-                disabled={idxActual === intervalos.length - 1}
-                className="bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded font-medium transition"
-              >
-                Siguiente →
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Columna Izquierda - Info */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Modelo</label>
-                <select
-                  value={editValues.modelo}
-                  onChange={(e) => handleModeloChange(e.target.value)}
-                  disabled={modelosLoading}
-                  className="w-full bg-slate-700 border border-slate-600 hover:border-slate-500 text-slate-100 px-3 py-2 rounded font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  <option value="">-- Selecciona modelo --</option>
-                  {modelos.map((m) => (
-                    <option key={m.id || m.modelo} value={m.modelo}>
-                      {m.modelo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Producto</label>
-                <div className="bg-slate-700 text-slate-300 px-3 py-2 rounded">
-                  {editValues.producto || intervaloActual.producto || '-'}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Rate</label>
-                <div className="bg-slate-700 text-slate-300 px-3 py-2 rounded">
-                  {editValues.rate || intervaloActual.rate || 0} piezas/hora
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Rate Acumulado</label>
-                <div className="bg-slate-700 text-slate-300 px-3 py-2 rounded">
-                  {intervaloActual.rate_acumulado || 0}
-                </div>
-              </div>
-            </div>
-
-            {/* Columna Derecha - Edición */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Producción</label>
-                <input
-                  type="number"
-                  value={editValues.produccion}
-                  onChange={(e) => setEditValues({...editValues, produccion: e.target.value})}
-                  onBlur={() => handleGuardarCambios('produccion', editValues.produccion)}
-                  placeholder="0"
-                  className="w-full bg-green-900/30 border-2 border-green-600 hover:border-green-500 text-green-300 px-3 py-3 rounded font-bold text-2xl text-center focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Scrap</label>
-                <input
-                  type="number"
-                  value={editValues.scrap}
-                  onChange={(e) => setEditValues({...editValues, scrap: e.target.value})}
-                  onBlur={() => handleGuardarCambios('scrap', editValues.scrap)}
-                  placeholder="0"
-                  className="w-full bg-red-900/30 border-2 border-red-600 hover:border-red-500 text-red-300 px-3 py-3 rounded font-bold text-2xl text-center focus:outline-none focus:ring-2 focus:ring-red-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Producción Acumulada</label>
-                <div className="bg-slate-700 text-slate-300 px-3 py-2 rounded">
-                  {intervaloActual.produccion_acumulada || 0}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 text-sm font-medium mb-2">Delta</label>
-                <div className="bg-slate-700 text-slate-300 px-3 py-2 rounded">
-                  {intervaloActual.delta || 0}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Indicadores */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 p-4 bg-slate-700 rounded">
-            <div>
-              <p className="text-slate-400 text-xs">Deadtime (min)</p>
-              <p className="text-amber-300 font-bold text-lg">
-                {Number(intervaloActual.deadtime_minutos || 0).toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs">Cumplimiento %</p>
-              <p className="text-slate-100 font-bold text-lg">
-                {intervaloActual.porcentaje_cumplimiento}%
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs">Justificado (min)</p>
-              <p className="text-blue-300 font-bold">
-                {Number(intervaloActual.justificado_minutos || 0).toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-400 text-xs">No Justificado (min)</p>
-              <p className="text-red-300 font-bold">
-                {Number(intervaloActual.tiempo_no_justificado || 0).toFixed(2)}
-              </p>
-            </div>
-          </div>
-
-          {/* Botón para registrar intervalo */}
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                handleGuardarCambios('produccion', editValues.produccion);
-                handleGuardarCambios('scrap', editValues.scrap);
-              }}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded font-bold text-lg transition shadow-lg"
-            >
-              ✓ Registrar Intervalo
-            </button>
-          </div>
+      {/* Loading */}
+      {loading && (
+        <div className="flex justify-center items-center p-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
         </div>
       )}
 
-      {/* Lista rápida de todos los intervalos */}
-      {intervalos.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-lg font-bold text-slate-100 mb-4">Resumen de Intervalos</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-            {intervalos.map((int, idx) => (
-              <button
-                key={int.id}
-                onClick={() => handleSelectIntervalo(int)}
-                className={`p-3 rounded transition font-medium ${
-                  selectedIntervaloId === int.id
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-              >
-                <div className="text-sm opacity-75">{int.hora_inicio}:00</div>
-                <div className="text-lg">
-                  {int.produccion || 0}p / {int.scrap || 0}s
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Tabla de Intervalos (deshabilitada - usar solo la vista de ticket actual) */}
-      {false && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+      {/* Tabla */}
+      {!loading && selectedLinea && (
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
+          <table className="w-full border-collapse min-w-[900px]">
             <thead>
-              <tr className="bg-slate-800 border-b border-slate-700">
-                <th className="px-3 py-2 text-left text-slate-300 font-semibold">Hora</th>
+              <tr className="bg-slate-800 border-b-2 border-slate-600">
+                <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">Hora</th>
+                <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">Modelo</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Cap</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Acum</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Prod</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">ProdAcum</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">%Prod</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">%Cump</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Delta</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">DT min</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Scrap</th>
+                <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm w-24">Acc</th>
               </tr>
             </thead>
+            <tbody>
+              {filas.map(function(fila, idx) {
+                var hasData = fila.modelo || fila.produccion > 0 || fila.capacidad > 0;
+                var rowBg = hasData ? 'bg-slate-800/90' : 'bg-slate-900/50';
+                return (
+                  <tr key={idx} className={rowBg + ' border-b border-slate-700/60 hover:bg-slate-700/70 transition'}>
+                    {/* Hora */}
+                    <td className="px-2 py-2 text-white font-bold text-sm whitespace-nowrap">
+                      {String(fila.h).padStart(2, '0')}:00
+                    </td>
+
+                    {/* Modelo */}
+                    <td className="px-2 py-2">
+                      <select
+                        value={fila.modelo}
+                        onChange={function(e) { handleModeloChange(idx, e.target.value); }}
+                        className="w-full bg-slate-700 border-2 border-slate-500 text-white px-2 py-2 rounded text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[44px]"
+                      >
+                        <option value="">--</option>
+                        {modelos.map(function(m) {
+                          return (
+                            <option key={m.id || m.modelo} value={m.modelo}>
+                              {m.modelo}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </td>
+
+                    {/* Capacidad (auto desde rate del modelo) */}
+                    <td className="px-2 py-2 text-center text-white font-bold text-base">
+                      {fila.capacidad || '-'}
+                    </td>
+
+                    {/* Acumulado capacidad */}
+                    <td className="px-2 py-2 text-center text-blue-300 font-bold text-base">
+                      {fila.acumulado || '-'}
+                    </td>
+
+                    {/* Produccion (input editable) */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={fila.produccion || ''}
+                        onChange={function(e) { handleProduccionChange(idx, e.target.value); }}
+                        placeholder="0"
+                        className="w-20 bg-green-900/40 border-2 border-green-600 text-green-100 px-2 py-2 rounded text-base text-center font-bold focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 min-h-[44px]"
+                      />
+                    </td>
+
+                    {/* Prod acumulada */}
+                    <td className="px-2 py-2 text-center text-green-300 font-bold text-base">
+                      {fila.acumulado1 || '-'}
+                    </td>
+
+                    {/* % Prod = produccion / capacidad * 100 */}
+                    <td className={'px-2 py-2 text-center font-bold text-sm ' + (fila.pctProd >= 100 ? 'text-green-300' : fila.pctProd >= 80 ? 'text-yellow-300' : fila.pctProd > 0 ? 'text-red-300' : 'text-slate-500')}>
+                      {fila.capacidad > 0 ? fila.pctProd + '%' : '-'}
+                    </td>
+
+                    {/* % Cumplimiento = acumProd / acumCap * 100 */}
+                    <td className={'px-2 py-2 text-center font-bold text-sm ' + (fila.pctCump >= 90 ? 'text-green-300' : fila.pctCump >= 70 ? 'text-yellow-300' : fila.pctCump > 0 ? 'text-red-300' : 'text-slate-500')}>
+                      {fila.acumulado > 0 ? fila.pctCump + '%' : '-'}
+                    </td>
+
+                    {/* Delta = capacidad - produccion */}
+                    <td className={'px-2 py-2 text-center font-bold text-sm ' + (fila.delta > 0 ? 'text-red-400' : fila.delta < 0 ? 'text-green-400' : 'text-slate-500')}>
+                      {fila.capacidad > 0 ? fila.delta : '-'}
+                    </td>
+
+                    {/* DT minutos = (delta * 60) / capacidad */}
+                    <td className={'px-2 py-2 text-center font-bold text-sm ' + (fila.dt > 15 ? 'text-red-400' : fila.dt > 0 ? 'text-amber-300' : 'text-slate-500')}>
+                      {fila.capacidad > 0 ? fila.dt.toFixed(1) : '-'}
+                    </td>
+
+                    {/* Scrap (input editable) */}
+                    <td className="px-2 py-2">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={fila.scrap || ''}
+                        onChange={function(e) { handleScrapChange(idx, e.target.value); }}
+                        placeholder="0"
+                        className="w-16 bg-red-900/40 border-2 border-red-600 text-red-100 px-2 py-2 rounded text-base text-center font-bold focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 min-h-[44px]"
+                      />
+                    </td>
+
+                    {/* Acciones: OK para guardar, X para eliminar */}
+                    <td className="px-2 py-2 text-center">
+                      <div className="flex gap-1 justify-center">
+                        <button
+                          onClick={function() { handleGuardarFila(idx); }}
+                          disabled={saving}
+                          className="bg-blue-600 hover:bg-blue-500 active:bg-blue-800 disabled:opacity-50 text-white w-11 h-11 rounded font-bold text-sm transition flex items-center justify-center"
+                          title="Guardar fila"
+                        >
+                          OK
+                        </button>
+                        {fila.id && (
+                          <button
+                            onClick={function() { handleEliminarFila(idx); }}
+                            className="bg-red-600 hover:bg-red-500 active:bg-red-800 text-white w-11 h-11 rounded font-bold text-sm transition flex items-center justify-center"
+                            title="Eliminar fila"
+                          >
+                            X
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+
+            {/* Totales */}
+            <tfoot>
+              <tr className="bg-slate-700 border-t-2 border-slate-500">
+                <td className="px-2 py-3 text-white font-bold text-sm">TOTAL</td>
+                <td className="px-2 py-3"></td>
+                <td className="px-2 py-3 text-center text-white font-bold text-base">{totCapacidad}</td>
+                <td className="px-2 py-3 text-center text-blue-300 font-bold text-base">{totCapacidad}</td>
+                <td className="px-2 py-3 text-center text-green-300 font-bold text-base">{totProduccion}</td>
+                <td className="px-2 py-3 text-center text-green-300 font-bold text-base">{totProduccion}</td>
+                <td className={'px-2 py-3 text-center font-bold text-base ' + pctColor(parseFloat(totalPct))}>{totalPct}%</td>
+                <td className={'px-2 py-3 text-center font-bold text-base ' + pctColor(parseFloat(totalPct))}>{totalPct}%</td>
+                <td className="px-2 py-3 text-center text-red-400 font-bold text-base">{totDelta}</td>
+                <td className="px-2 py-3 text-center text-amber-300 font-bold text-base">{totDt.toFixed(1)}</td>
+                <td className="px-2 py-3 text-center text-red-300 font-bold text-base">{totScrap}</td>
+                <td></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
 
-      {/* Totales */}
-      {intervaloActual && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6 p-4 bg-slate-800 rounded">
-          <div>
-            <p className="text-slate-400 text-sm">Rate Total</p>
-            <p className="text-slate-100 font-bold text-lg">{totales.rate_total || 0}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">Producción Total</p>
-            <p className="text-green-400 font-bold text-lg">{totales.produccion_total || 0}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">Scrap Total</p>
-            <p className="text-red-400 font-bold text-lg">{totales.scrap_total || 0}</p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">Deadtime Total</p>
-            <p className="text-amber-400 font-bold text-lg">
-              {Number(totales.deadtime_total || 0).toFixed(2)} min
-            </p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">Justificado</p>
-            <p className="text-blue-400 font-bold text-lg">
-              {Number(totales.justificado_total || 0).toFixed(2)} min
-            </p>
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm">Cumplimiento</p>
-            <p className="text-slate-100 font-bold text-lg">{totales.porcentaje_cumplimiento}%</p>
-          </div>
+      {/* Sin linea seleccionada */}
+      {!selectedLinea && !loading && (
+        <div className="text-center text-slate-400 py-8 text-base">
+          Selecciona una linea para comenzar
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

@@ -36,7 +36,13 @@ app.use(helmet({
 // Add custom headers for security and performance
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'public, max-age=3600'); // Default cache for dynamic content
+  // Only cache static content, never cache API responses
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+  } else {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
   next();
 });
 
