@@ -77,6 +77,15 @@ body {
   }
 }
 
+@keyframes pulsePurple {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .animate-slide-up {
   animation: slideUp 0.3s ease-out forwards;
 }
@@ -95,6 +104,10 @@ body {
 
 .animate-pulse-orange {
   animation: pulseOrange 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-purple {
+  animation: pulsePurple 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Smooth fade-in animations */

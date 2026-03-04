@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0f172a"/>
+  <circle cx="256" cy="220" r="120" fill="none" stroke="#3b82f6" stroke-width="20"/>
+  <!-- Clock hands -->
+  <line x1="256" y1="220" x2="256" y2="140" stroke="#3b82f6" stroke-width="16" stroke-linecap="round"/>
+  <line x1="256" y1="220" x2="316" y2="220" stroke="#60a5fa" stroke-width="12" stroke-linecap="round"/>
+  <!-- Center dot -->
+  <circle cx="256" cy="220" r="10" fill="#3b82f6"/>
+  <!-- Pause bars (downtime symbol) -->
+  <rect x="218" y="375" width="24" height="60" rx="6" fill="#ef4444"/>
+  <rect x="270" y="375" width="24" height="60" rx="6" fill="#ef4444"/>
+</svg>

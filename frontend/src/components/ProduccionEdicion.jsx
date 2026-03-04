@@ -308,10 +308,11 @@ export default function ProduccionEdicion({ onClose }) {
     try {
       const data = await login(employee_input, password);
       
-      // Check if user has Lider or Ingeniero role
+      // Check if user has Lider, Ingeniero or Tecnico role
       const userRole = (data.user.rolOriginal || '').toLowerCase();
-      if (userRole !== 'lider' && userRole !== 'ingeniero') {
-        throw new Error('Solo Líderes e Ingenieros pueden modificar datos de producción.');
+      const rolesPermitidos = ['lider', 'líder', 'ingeniero', 'tecnico', 'técnico'];
+      if (!rolesPermitidos.includes(userRole)) {
+        throw new Error('Solo Líderes, Ingenieros y Técnicos pueden modificar datos de producción.');
       }
       
       // Auth successful, close modal and execute pending action

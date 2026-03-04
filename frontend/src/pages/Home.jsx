@@ -21,6 +21,7 @@ import {
   getEstado,
   setMantenimiento,
   setCambioModelo,
+  setAuditoria,
   getMttrMtbf
 } from '../api_deadtimes'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
@@ -87,8 +88,10 @@ export default function Home() {
   const [displayLineaSelected, setDisplayLineaSelected] = useState('')
   const [mantenimientoActivo, setMantenimientoActivo] = useState({})
   const [cambioModeloActivo, setCambioModeloActivo] = useState({})
+  const [auditoriaActivo, setAuditoriaActivo] = useState({})
   const [showMantenimiento, setShowMantenimiento] = useState(false)
   const [showCambioModelo, setShowCambioModelo] = useState(false)
+  const [showAuditoria, setShowAuditoria] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [lineas, setLineas] = useState([])
@@ -261,19 +264,22 @@ export default function Home() {
         
         const mantenimientoMap = {}
         const cambioModeloMap = {}
+        const auditoriaMap = {}
         
-        // Check each line's mantenimiento and cambio_modelo status
+        // Check each line's mantenimiento, cambio_modelo and auditoria status
         for (const linea of lineas) {
           const estado = await getEstado(linea.linea)
           if (estado && estado.estado) {
             mantenimientoMap[linea.linea] = estado.estado.mantenimiento === 1
             cambioModeloMap[linea.linea] = estado.estado.cambio_modelo === 1
+            auditoriaMap[linea.linea] = estado.estado.auditoria === 1
           }
         }
         
         // Update states
         setMantenimientoActivo(mantenimientoMap)
         setCambioModeloActivo(cambioModeloMap)
+        setAuditoriaActivo(auditoriaMap)
       } catch (error) {
         console.error('Error polling maintenance state:', error)
       }
@@ -990,7 +996,7 @@ export default function Home() {
     try {
       const data = await login(employee_input, password)
       if (!data.user.puedeAtender) {
-        throw new Error('No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento.')
+        throw new Error('No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento, Calidad.')
       }
       // Guardar credenciales
       setCurrentCredentials({
@@ -1508,6 +1514,7 @@ export default function Home() {
       setShowToolsMenu(false)
       setShowMantenimiento(false)
       setShowCambioModelo(false)
+      setShowAuditoria(false)
     }
     resetFilters()
   }
@@ -1525,6 +1532,7 @@ export default function Home() {
       setShowDisplay(false)
       setShowMantenimiento(true)
       setShowCambioModelo(false)
+      setShowAuditoria(false)
     }
     resetFilters()
   }
@@ -1542,6 +1550,25 @@ export default function Home() {
       setShowDisplay(false)
       setShowMantenimiento(false)
       setShowCambioModelo(true)
+      setShowAuditoria(false)
+    }
+    resetFilters()
+  }
+
+  function toggleAuditoria() {
+    if (showAuditoria) {
+      setShowAuditoria(false)
+    } else {
+      setShowNew(false)
+      setShowOpen(false)
+      setShowClosed(false)
+      setShowAnalytics(false)
+      setShowProduccion(false)
+      setShowConfiguration(false)
+      setShowDisplay(false)
+      setShowMantenimiento(false)
+      setShowCambioModelo(false)
+      setShowAuditoria(true)
     }
     resetFilters()
   }
@@ -1580,6 +1607,24 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error en handleCambioModeloToggle:', error);
+    }
+  }
+
+  async function handleAuditoriaToggle(linea, currentState) {
+    try {
+      const newState = !currentState;
+      const response = await setAuditoria(linea, newState);
+      if (response.success) {
+        // Actualizar estado local
+        setAuditoriaActivo(prev => ({
+          ...prev,
+          [linea]: newState
+        }));
+      } else {
+        console.error('Error actualizando auditoría:', response.error);
+      }
+    } catch (error) {
+      console.error('Error en handleAuditoriaToggle:', error);
     }
   }
 
@@ -1682,7 +1727,7 @@ export default function Home() {
             </button>
 
             {showToolsMenu && (
-              <div className="border-t border-slate-700 grid grid-cols-1 sm:grid-cols-5 gap-2 p-3">
+              <div className="border-t border-slate-700 grid grid-cols-1 sm:grid-cols-6 gap-2 p-3">
                 <button onClick={() => {
                   setShowConfiguration(true)
                   setShowNew(false)
@@ -1693,6 +1738,7 @@ export default function Home() {
                   setShowDisplay(false)
                   setShowMantenimiento(false)
                   setShowCambioModelo(false)
+                  setShowAuditoria(false)
                   resetFilters()
                 }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showConfiguration ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showConfiguration ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1712,6 +1758,7 @@ export default function Home() {
                   setShowDisplay(false)
                   setShowMantenimiento(false)
                   setShowCambioModelo(false)
+                  setShowAuditoria(false)
                   resetFilters()
                 }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showAnalytics ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showAnalytics ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1730,6 +1777,7 @@ export default function Home() {
                   setShowProduccion(false)
                   setShowMantenimiento(false)
                   setShowCambioModelo(false)
+                  setShowAuditoria(false)
                   resetFilters()
                 }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showDisplay ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showDisplay ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1752,12 +1800,19 @@ export default function Home() {
                   </svg>
                   <span>Cambio Modelo</span>
                 </button>
+
+                <button onClick={() => toggleAuditoria()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(auditoriaActivo).includes(true) ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-500/50' : showAuditoria ? 'bg-purple-700 border-purple-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
+                  <svg className={`w-5 h-5 transition-transform duration-300 ${showAuditoria ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                  <span>Auditoría</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
-        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showCambioModelo && (
+        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showCambioModelo && !showAuditoria && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
@@ -3094,6 +3149,17 @@ export default function Home() {
 
                           <div className="grid grid-cols-2 gap-3">
                             <div className="bg-slate-700/50 rounded-lg p-3">
+                              <p className="text-slate-400 text-xs mb-1">Sección Afectada</p>
+                              <p className="text-white font-semibold">{machineDetailTicket.pa || 'N/A'}</p>
+                            </div>
+                            <div className="bg-slate-700/50 rounded-lg p-3">
+                              <p className="text-slate-400 text-xs mb-1">Condición de Paro</p>
+                              <p className="text-white font-semibold">{machineDetailTicket.pf || 'N/A'}</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-700/50 rounded-lg p-3">
                               <p className="text-slate-400 text-xs mb-1">Línea</p>
                               <p className="text-white font-semibold">Línea {machineDetailTicket.linea}</p>
                             </div>
@@ -3102,6 +3168,22 @@ export default function Home() {
                               <p className="text-white font-semibold">{machineDetailTicket.modelo}</p>
                             </div>
                           </div>
+
+                          {/* Montadoras afectadas - solo si es NXT */}
+                          {machineDetailTicket.equipo === 'NXT' && (
+                            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                              <p className="text-cyan-300 text-xs font-medium mb-2">Montadoras Afectadas</p>
+                              <div className="grid grid-cols-6 gap-2">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                                  <div key={i} className={`flex items-center justify-center py-1.5 rounded text-xs font-medium ${
+                                    machineDetailTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                                  }`}>
+                                    M{i}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <div className="bg-slate-700/50 rounded-lg p-3">
                             <p className="text-slate-400 text-xs mb-1">Solución Aplicada</p>
@@ -4050,7 +4132,7 @@ export default function Home() {
               </button>
             </div>
             <div className="flex-1">
-              <DisplayVisualization linea={displayLineaSelected} mantenimientoActivo={mantenimientoActivo} cambioModeloActivo={cambioModeloActivo} />
+              <DisplayVisualization linea={displayLineaSelected} mantenimientoActivo={mantenimientoActivo} cambioModeloActivo={cambioModeloActivo} auditoriaActivo={auditoriaActivo} />
             </div>
           </div>
         )}
@@ -4260,7 +4342,31 @@ export default function Home() {
                       <p className="text-slate-400 text-xs">Equipo</p>
                       <p className="text-white font-semibold">{selectedTicket.equipo}</p>
                     </div>
+                    <div className="bg-slate-700/50 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">Sección Afectada</p>
+                      <p className="text-white font-semibold">{selectedTicket.pa || 'N/A'}</p>
+                    </div>
+                    <div className="bg-slate-700/50 rounded-lg p-3">
+                      <p className="text-slate-400 text-xs">Condición de Paro</p>
+                      <p className="text-white font-semibold">{selectedTicket.pf || 'N/A'}</p>
+                    </div>
                   </div>
+
+                  {/* Montadoras afectadas - Mostrar solo si es NXT */}
+                  {selectedTicket.equipo === 'NXT' && (
+                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                      <p className="text-cyan-300 text-xs font-medium mb-3">Montadoras Afectadas</p>
+                      <div className="grid grid-cols-6 gap-2">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                          <div key={i} className={`flex items-center justify-center py-2 rounded text-sm font-medium ${
+                            selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                          }`}>
+                            M{i}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="bg-slate-700/50 rounded-lg p-3">
                     <p className="text-slate-400 text-xs">Descripción del problema</p>
@@ -4544,6 +4650,53 @@ export default function Home() {
                     <span>Línea {linea.linea}</span>
                     {cambioModeloActivo[linea.linea] && (
                       <span className="text-xs bg-amber-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAuditoria && (
+          <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-900/50 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-bold text-white">Auditoría</h2>
+              </div>
+              <button onClick={() => setShowAuditoria(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-slate-300 text-sm">Selecciona las líneas en auditoría:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {lineas.map(linea => (
+                  <button
+                    key={`auditoria-${linea.id}`}
+                    onClick={() => handleAuditoriaToggle(linea.linea, auditoriaActivo[linea.linea])}
+                    className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${
+                      auditoriaActivo[linea.linea]
+                        ? 'bg-purple-900/40 border-purple-500 text-purple-200 shadow-lg shadow-purple-500/50'
+                        : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                    }`}
+                  >
+                    <svg className={`w-5 h-5 transition-colors ${
+                      auditoriaActivo[linea.linea] ? 'text-purple-400' : 'text-slate-400 group-hover:text-slate-200'
+                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    <span>Línea {linea.linea}</span>
+                    {auditoriaActivo[linea.linea] && (
+                      <span className="text-xs bg-purple-600 px-2 py-1 rounded-full mt-1">Activo</span>
                     )}
                   </button>
                 ))}

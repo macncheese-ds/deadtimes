@@ -1148,12 +1148,30 @@ export default function Analytics() {
                   
                   <p className="text-slate-200 text-sm mb-2">{ticket.descr}</p>
                   
-                  <div className="flex flex-wrap gap-4 text-xs text-slate-400">
+                  <div className="flex flex-wrap gap-4 text-xs text-slate-400 mb-3">
                     <span><span className="text-slate-500">Modelo:</span> {ticket.modelo}</span>
                     <span><span className="text-slate-500">Clasificación:</span> {ticket.clasificacion || 'N/A'}</span>
+                    <span><span className="text-slate-500">Sección:</span> {ticket.pa || 'N/A'}</span>
+                    <span><span className="text-slate-500">Condición:</span> {ticket.pf || 'N/A'}</span>
                     <span><span className="text-slate-500">Piezas:</span> <span className="text-rose-300">{ticket.piezas || 0}</span></span>
                     <span><span className="text-slate-500">Fecha:</span> {ticket.hc ? new Date(ticket.hc).toLocaleDateString('es-MX') : 'N/A'}</span>
                   </div>
+
+                  {/* Montadoras afectadas - Mostrar solo si es NXT */}
+                  {ticket.equipo === 'NXT' && (
+                    <div className="mt-2 pt-2 border-t border-slate-600">
+                      <p className="text-slate-400 text-xs mb-2 font-medium">Montadoras Afectadas:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                          <span key={i} className={`px-2 py-1 rounded text-xs font-medium ${
+                            ticket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-600/30 text-slate-500 border border-slate-600/40'
+                          }`}>
+                            M{i}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1581,6 +1599,8 @@ export default function Analytics() {
                         <th className="px-4 py-3">Modelo</th>
                         <th className="px-4 py-3">Línea</th>
                         <th className="px-4 py-3">Clasificación</th>
+                        <th className="px-4 py-3">Sección</th>
+                        <th className="px-4 py-3">Condición</th>
                         <th className="px-4 py-3">Duración (min)</th>
                         <th className="px-4 py-3">Piezas</th>
                         <th className="px-4 py-3">Reportado</th>
@@ -1597,6 +1617,8 @@ export default function Analytics() {
                           <td className="px-4 py-3 text-slate-300">{ticket.modelo}</td>
                           <td className="px-4 py-3 text-slate-300">Línea {ticket.linea}</td>
                           <td className="px-4 py-3 text-slate-300">{ticket.clasificacion}</td>
+                          <td className="px-4 py-3 text-slate-300">{ticket.pa || 'N/A'}</td>
+                          <td className="px-4 py-3 text-slate-300">{ticket.pf || 'N/A'}</td>
                           <td className="px-4 py-3 text-amber-300 font-semibold">{ticket.duracion_minutos || 0}</td>
                           <td className="px-4 py-3 text-rose-300">{ticket.piezas || 0}</td>
                           <td className="px-4 py-3 text-slate-400 text-xs">{ticket.nombre}</td>
@@ -1705,6 +1727,14 @@ export default function Analytics() {
                           <span className="text-slate-300">{ticket.clasificacion || 'N/A'}</span>
                         </div>
                         <div>
+                          <span className="text-slate-500 text-xs block">Sección Afectada</span>
+                          <span className="text-slate-300">{ticket.pa || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-xs block">Condición de Paro</span>
+                          <span className="text-slate-300">{ticket.pf || 'N/A'}</span>
+                        </div>
+                        <div>
                           <span className="text-slate-500 text-xs block">Piezas Perdidas</span>
                           <span className="text-rose-300 font-medium">{ticket.piezas || 0}</span>
                         </div>
@@ -1715,6 +1745,22 @@ export default function Analytics() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Montadoras afectadas - Mostrar solo si es NXT */}
+                      {ticket.equipo === 'NXT' && (
+                        <div className="mt-3 pt-3 border-t border-slate-600">
+                          <p className="text-slate-400 text-xs mb-2 font-medium">Montadoras Afectadas:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                              <span key={i} className={`px-2 py-1 rounded text-xs font-medium ${
+                                ticket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-600/30 text-slate-500 border border-slate-600/40'
+                              }`}>
+                                M{i}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="mt-3 pt-3 border-t border-slate-600 flex justify-between text-xs text-slate-400">
                         <span>Reportado: {ticket.nombre}</span>

@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { getDisplayTickets, getEstado } from '../api_deadtimes'
 
-export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {} }) {
+export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {}, auditoriaActivo = {} }) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
   const [mantenimientoActualizado, setMantenimientoActualizado] = useState(false)
   const [cambioModeloActualizado, setCambioModeloActualizado] = useState(false)
+  const [auditoriaActualizado, setAuditoriaActualizado] = useState(false)
   const [idioma, setIdioma] = useState(0) // 0: Español, 1: English, 2: 한국어
   const [prevTickets, setPrevTickets] = useState([])
   const [newTicketIds, setNewTicketIds] = useState(new Set())
@@ -15,6 +16,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   const mensajes = {
     mantenimiento: ['MANTENIMIENTO', 'MAINTENANCE', '유지보수'],
     cambio: ['CAMBIO DE MODELO', 'MODEL CHANGE', '모델 변경'],
+    auditoria: ['AUDITORÍA', 'AUDIT', '감사'],
     linea: ['Línea', 'Line', '라인']
   }
 
@@ -45,6 +47,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
         if (data.success && data.estado) {
           setMantenimientoActualizado(Boolean(data.estado.mantenimiento))
           setCambioModeloActualizado(Boolean(data.estado.cambio_modelo))
+          setAuditoriaActualizado(Boolean(data.estado.auditoria))
         }
       } catch (err) {
         console.error('Error verificando estado:', err)
@@ -144,6 +147,16 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
           <div className="text-center">
             <p className="text-5xl font-black text-amber-500 drop-shadow-2xl transition-all duration-500">{mensajes.cambio[idioma]}</p>
             <p className="text-2xl text-amber-400 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de Auditoría */}
+      {auditoriaActualizado && (
+        <div className="animate-pulse-purple fixed inset-0 bg-purple-600/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
+          <div className="text-center">
+            <p className="text-5xl font-black text-purple-500 drop-shadow-2xl transition-all duration-500">{mensajes.auditoria[idioma]}</p>
+            <p className="text-2xl text-purple-400 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}

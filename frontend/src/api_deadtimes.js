@@ -184,6 +184,11 @@ export const setCambioModelo = (linea, activo) => {
   return api.put(`/estados/${encodeURIComponent(linea)}/cambio-modelo`, { activo }).then(r => r.data);
 };
 
+// Activar/Desactivar auditoría
+export const setAuditoria = (linea, activo) => {
+  return api.put(`/estados/${encodeURIComponent(linea)}/auditoria`, { activo }).then(r => r.data);
+};
+
 // Resetear todos los estados de una línea
 export const resetEstados = (linea) => {
   return api.put(`/estados/${encodeURIComponent(linea)}/reset`).then(r => r.data);

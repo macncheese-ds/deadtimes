@@ -67,7 +67,7 @@ router.post('/login', async (req, res) => {
     // - The Goat tiene todos los permisos (admin)
     
     const rolesCrearTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
-    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'Calidad', 'The Goat'];
     
     let deadtimesRol = 'empleado'; // Por defecto solo visualización
     let puedeCrear = rolesCrearTickets.includes(user.rol);
@@ -141,7 +141,7 @@ router.get('/lookup/:employee_input', async (req, res) => {
     // Calcular permisos basados en rol
     // Lista base: ['Ingeniero', 'Técnico', 'AOI', 'Supervisor', 'Líder', 'Soporte', 'Mantenimiento']
     const rolesCrearTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
-    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+    const rolesAtenderTickets = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'Calidad', 'The Goat'];
     
     let puedeCrear = rolesCrearTickets.includes(user.rol);
     let puedeAtender = rolesAtenderTickets.includes(user.rol) || user.rol === 'The Goat';

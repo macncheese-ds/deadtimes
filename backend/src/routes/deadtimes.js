@@ -77,7 +77,7 @@ async function validateCredentials(authHeader) {
 const ROLES_CREAR_TICKETS = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Lider', 'Líder', 'Soporte', 'Mantenimiento', 'The Goat'];
 
 // Roles permitidos para cerrar/atender tickets (lista base EXCEPTO Líder)
-const ROLES_ATENDER_TICKETS = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'The Goat'];
+const ROLES_ATENDER_TICKETS = ['Ingeniero', 'Tecnico', 'Técnico', 'AOI', 'Supervisor', 'Soporte', 'Mantenimiento', 'Calidad', 'The Goat'];
 
 // Función para validar si un usuario puede crear tickets
 async function validarRolParaCrear(num_empleado) {
@@ -488,7 +488,21 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
         TIMESTAMPDIFF(MINUTE, hr, hc) as duracion_minutos,
         piezas,
         deadtime,
-        solucion
+        solucion,
+        pa,
+        pf,
+        mod1,
+        mod2,
+        mod3,
+        mod4,
+        mod5,
+        mod6,
+        mod7,
+        mod8,
+        mod9,
+        mod10,
+        mod11,
+        mod12
       FROM deadtimes 
       WHERE done = 1 AND ${dateCondition} ${equipoCondition} ${lineaCondition}
       ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
@@ -798,7 +812,7 @@ router.post('/:id/start', async (req, res) => {
     const puedeAtender = await validarRolParaAtender(num_empleado1);
     if (!puedeAtender) {
       return res.status(403).json({ 
-        error: 'No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento.' 
+        error: 'No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento, Calidad.' 
       });
     }
   }

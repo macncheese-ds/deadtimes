@@ -422,6 +422,8 @@ export default function MachineAnalysis() {
                       <th className="px-4 py-3">Máquina</th>
                       <th className="px-4 py-3">Descripción</th>
                       <th className="px-4 py-3">Clasificación</th>
+                      <th className="px-4 py-3">Sección</th>
+                      <th className="px-4 py-3">Condición</th>
                       <th className="px-4 py-3">Modelo</th>
                       <th className="px-4 py-3">Línea</th>
                       <th className="px-4 py-3">Duración</th>
@@ -444,6 +446,8 @@ export default function MachineAnalysis() {
                             {ticket.clasificacion || 'N/A'}
                           </span>
                         </td>
+                        <td className="px-4 py-3 text-slate-300 text-xs">{ticket.pa || 'N/A'}</td>
+                        <td className="px-4 py-3 text-slate-300 text-xs">{ticket.pf || 'N/A'}</td>
                         <td className="px-4 py-3 text-slate-300">{ticket.modelo}</td>
                         <td className="px-4 py-3 text-slate-300">Línea {ticket.linea}</td>
                         <td className="px-4 py-3 text-amber-300 font-semibold">
@@ -514,8 +518,32 @@ export default function MachineAnalysis() {
                       <span className="text-slate-500 block">Línea:</span>
                       <span className="text-slate-200">Línea {selectedTicket.linea}</span>
                     </div>
+                    <div>
+                      <span className="text-slate-500 block">Sección Afectada:</span>
+                      <span className="text-slate-200">{selectedTicket.pa || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Condición de Paro:</span>
+                      <span className="text-slate-200">{selectedTicket.pf || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Montadoras afectadas - Mostrar solo si es NXT */}
+                {selectedTicket.equipo === 'NXT' && (
+                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                    <h3 className="text-cyan-300 font-medium mb-3">Montadoras Afectadas</h3>
+                    <div className="grid grid-cols-6 gap-2">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                        <div key={i} className={`flex items-center justify-center py-2 px-1 rounded text-sm font-medium ${
+                          selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                        }`}>
+                          M{i}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Tiempos */}
                 <div className="bg-slate-700/50 rounded-lg p-4">

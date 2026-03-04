@@ -173,7 +173,36 @@ export default function ViewTicket(){
               <p className="text-white font-medium">{ticket.tecnico || 'N/A'}</p>
               {ticket.num_empleado1 && <p className="text-xs text-slate-500 mt-1">#{ticket.num_empleado1}</p>}
             </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-xs text-slate-400 mb-1">Sección Afectada</p>
+              <p className="text-white font-medium">{ticket.pa || 'N/A'}</p>
+            </div>
+            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+              <p className="text-xs text-slate-400 mb-1">Condición de Paro</p>
+              <p className="text-white font-medium">{ticket.pf || 'N/A'}</p>
+            </div>
           </div>
+
+          {/* Montadoras afectadas - Mostrar solo si es NXT */}
+          {ticket.equipo === 'NXT' && (
+            <div className="bg-cyan-500/10 rounded-xl p-5 border border-cyan-500/30 mb-6">
+              <p className="text-xs text-cyan-300 mb-4 font-medium flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7-12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Montadoras Afectadas
+              </p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
+                  <div key={i} className={`flex items-center justify-center py-2 px-3 rounded-lg text-sm font-medium ${
+                    ticket[`mod${i}`] ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                  }`}>
+                    M{i}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Solución */}
           {ticket.solucion && (

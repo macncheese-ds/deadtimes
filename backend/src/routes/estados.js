@@ -9,7 +9,7 @@ router.get('/:linea', async (req, res) => {
     
     const connection = await db.getConnection();
     const [rows] = await connection.execute(
-      'SELECT id, linea, cambio_modelo, mantenimiento FROM estados WHERE linea = ?',
+      'SELECT id, linea, cambio_modelo, mantenimiento, auditoria FROM estados WHERE linea = ?',
       [linea]
     );
     connection.release();
@@ -114,6 +114,46 @@ router.put('/:linea/cambio-modelo', async (req, res) => {
   }
 });
 
+// PUT: Activar/Desactivar auditoría para una línea
+router.put('/:linea/auditoria', async (req, res) => {
+  try {
+    const { linea } = req.params;
+    const { activo } = req.body;
+
+    if (typeof activo !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'El campo "activo" debe ser booleano'
+      });
+    }
+
+    const connection = await db.getConnection();
+    const [result] = await connection.execute(
+      'UPDATE estados SET auditoria = ? WHERE linea = ?',
+      [activo ? 1 : 0, linea]
+    );
+    connection.release();
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Línea no encontrada'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Auditoría ${activo ? 'activada' : 'desactivada'} para línea ${linea}`
+    });
+  } catch (error) {
+    console.error('Error actualizando auditoría:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // PUT: Desactivar todos los modos para una línea
 router.put('/:linea/reset', async (req, res) => {
   try {
@@ -121,7 +161,7 @@ router.put('/:linea/reset', async (req, res) => {
 
     const connection = await db.getConnection();
     const [result] = await connection.execute(
-      'UPDATE estados SET mantenimiento = 0, cambio_modelo = 0 WHERE linea = ?',
+      'UPDATE estados SET mantenimiento = 0, cambio_modelo = 0, auditoria = 0 WHERE linea = ?',
       [linea]
     );
     connection.release();
