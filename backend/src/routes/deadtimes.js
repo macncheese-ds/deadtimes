@@ -88,7 +88,7 @@ async function validarRolParaCrear(num_empleado) {
       [num_empleado]
     );
     await conn.end();
-    
+
     if (!rows || rows.length === 0) return false;
     return ROLES_CREAR_TICKETS.includes(rows[0].rol);
   } catch (err) {
@@ -106,7 +106,7 @@ async function validarRolParaAtender(num_empleado) {
       [num_empleado]
     );
     await conn.end();
-    
+
     if (!rows || rows.length === 0) return false;
     return ROLES_ATENDER_TICKETS.includes(rows[0].rol);
   } catch (err) {
@@ -124,7 +124,7 @@ async function validarRolParaActualizar(num_empleado) {
       [num_empleado]
     );
     await conn.end();
-    
+
     if (!rows || rows.length === 0) return false;
     // Solo Ingeniero puede actualizar tickets
     const rolesParaActualizar = ['Ingeniero', 'The Goat'];
@@ -221,23 +221,23 @@ router.get('/stats/equipos', async (req, res) => {
 router.get('/stats/linea', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
-    
+
     // Si days es 'custom', usar valor por defecto de 30
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     // Tickets totales, abiertos, cerrados por línea
     const query = `
       SELECT 
@@ -252,7 +252,7 @@ router.get('/stats/linea', async (req, res) => {
       GROUP BY linea
       ORDER BY linea
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -265,22 +265,22 @@ router.get('/stats/linea', async (req, res) => {
 router.get('/stats/equipos-detalle', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
-    
+
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     const query = `
       SELECT 
         equipo,
@@ -293,7 +293,7 @@ router.get('/stats/equipos-detalle', async (req, res) => {
       GROUP BY equipo, linea
       ORDER BY total_fallas DESC
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -306,22 +306,22 @@ router.get('/stats/equipos-detalle', async (req, res) => {
 router.get('/stats/tendencia', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
-    
+
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     const query = `
       SELECT 
         DATE(hr) as fecha,
@@ -335,7 +335,7 @@ router.get('/stats/tendencia', async (req, res) => {
       GROUP BY DATE(hr), linea
       ORDER BY fecha DESC, linea
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -348,22 +348,22 @@ router.get('/stats/tendencia', async (req, res) => {
 router.get('/stats/clasificacion', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
-    
+
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     const query = `
       SELECT 
         COALESCE(clasificacion, 'No especificado') as clasificacion,
@@ -375,7 +375,7 @@ router.get('/stats/clasificacion', async (req, res) => {
       GROUP BY clasificacion, linea
       ORDER BY total_tickets DESC
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -388,22 +388,22 @@ router.get('/stats/clasificacion', async (req, res) => {
 router.get('/stats/totales', async (req, res) => {
   try {
     const { linea, startDate, endDate, days = 30 } = req.query;
-    
+
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     const query = `
       SELECT 
         COUNT(*) as total_tickets,
@@ -415,7 +415,7 @@ router.get('/stats/totales', async (req, res) => {
       FROM deadtimes 
       WHERE ${dateCondition} ${lineaCondition}
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows[0] || {});
   } catch (err) {
@@ -439,11 +439,11 @@ router.get('/equipos', async (req, res) => {
 router.get('/stats/tickets-by-equipment', async (req, res) => {
   try {
     const { equipo, linea, startDate, endDate, days = 30, limit } = req.query;
-    
+
     const daysNum = (days === 'custom' || isNaN(days)) ? 30 : parseInt(days, 10);
     let dateCondition = `hr >= DATE_SUB(CURDATE(), INTERVAL ${daysNum} DAY)`;
     const params = [];
-    
+
     // Condición de equipo (opcional - si no se especifica, muestra todos)
     let equipoCondition = '';
     if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
@@ -451,28 +451,28 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
     } else if (equipo === 'sin_otros') {
       equipoCondition = 'AND LOWER(equipo) NOT LIKE ?';
     }
-    
+
     if (startDate && endDate) {
       dateCondition = 'hr >= ? AND hr <= ?';
       params.push(startDate, endDate);
     }
-    
+
     // Agregar equipo a params si está especificado
     if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
       params.push(equipo);
     } else if (equipo === 'sin_otros') {
       params.push('%otro%');
     }
-    
+
     let lineaCondition = '';
     if (linea) {
       lineaCondition = 'AND linea = ?';
       params.push(linea);
     }
-    
+
     // Add LIMIT clause if specified (for top N tickets)
     const limitClause = limit ? `LIMIT ${parseInt(limit, 10)}` : '';
-    
+
     const query = `
       SELECT 
         id,
@@ -508,7 +508,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
       ORDER BY TIMESTAMPDIFF(MINUTE, hr, hc) DESC
       ${limitClause}
     `;
-    
+
     const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
@@ -558,13 +558,72 @@ router.get('/modelos/:nombre', async (req, res) => {
 });
 
 // List tickets. Query ?status=open|closed
+// Closed tickets support server-side filtering, sorting, and pagination:
+//   ?linea=1&equipo=NXT&descr=motor&ticketId=123&startDate=2025-01-01&endDate=2025-12-31
+//   &sortBy=date|duration_asc|duration_desc&page=1&limit=50
 router.get('/', async (req, res) => {
   const status = req.query.status || 'open';
   try {
     if (status === 'closed') {
-      // Tickets cerrados: done=1
-      const [rows] = await db.query('SELECT * FROM deadtimes WHERE done = 1 ORDER BY hc DESC');
-      return res.json(rows);
+      const { linea, equipo, descr, ticketId, startDate, endDate, sortBy = 'date', page = 1, limit = 50 } = req.query;
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+      const offset = (pageNum - 1) * limitNum;
+
+      // Build WHERE conditions
+      const conditions = ['done = 1'];
+      const params = [];
+
+      if (ticketId) {
+        conditions.push('CAST(id AS CHAR) LIKE ?');
+        params.push(`%${ticketId.replace('#', '')}%`);
+      }
+      if (linea) {
+        conditions.push('linea = ?');
+        params.push(linea);
+      }
+      if (equipo) {
+        conditions.push('LOWER(equipo) LIKE ?');
+        params.push(`%${equipo.toLowerCase()}%`);
+      }
+      if (descr) {
+        conditions.push('LOWER(descr) LIKE ?');
+        params.push(`%${descr.toLowerCase()}%`);
+      }
+      if (startDate) {
+        conditions.push('hc >= ?');
+        params.push(startDate);
+      }
+      if (endDate) {
+        // If endDate has no time component, extend to end of day
+        const endVal = endDate.includes('T') ? endDate : `${endDate} 23:59:59`;
+        conditions.push('hc <= ?');
+        params.push(endVal);
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Sorting
+      let orderClause;
+      if (sortBy === 'duration_asc') {
+        orderClause = 'TIMESTAMPDIFF(MINUTE, hr, hc) ASC';
+      } else if (sortBy === 'duration_desc') {
+        orderClause = 'TIMESTAMPDIFF(MINUTE, hr, hc) DESC';
+      } else {
+        orderClause = 'hc DESC';
+      }
+
+      // Get total count for pagination
+      const [countResult] = await db.query(`SELECT COUNT(*) as total FROM deadtimes WHERE ${whereClause}`, params);
+      const total = countResult[0].total;
+
+      // Get paginated results
+      const [rows] = await db.query(
+        `SELECT * FROM deadtimes WHERE ${whereClause} ORDER BY ${orderClause} LIMIT ? OFFSET ?`,
+        [...params, limitNum, offset]
+      );
+
+      return res.json({ rows, total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) });
     } else {
       // Tickets abiertos: done=0 (ya no verificamos NULL porque ahora siempre se asigna 0 al crear)
       const [rows] = await db.query('SELECT * FROM deadtimes WHERE done = 0 ORDER BY hr DESC');
@@ -584,11 +643,11 @@ router.get('/', async (req, res) => {
 router.get('/mttr-mtbf', async (req, res) => {
   try {
     const { machine, period = 'weekly', startDate, endDate } = req.query;
-    
+
     // ALWAYS use startDate/endDate when provided
     let whereClause = '';
     let queryParams = [];
-    
+
     if (startDate && endDate) {
       whereClause = ' AND DATE(hr) >= ? AND DATE(hr) <= ?';
       queryParams.push(startDate, endDate);
@@ -599,7 +658,7 @@ router.get('/mttr-mtbf', async (req, res) => {
       // Fallback: last 8 weeks
       whereClause = ' AND hr >= DATE_SUB(CURDATE(), INTERVAL 8 WEEK)';
     }
-    
+
     // Get all unique machines from deadtimes (excluding "Otros")
     const [machines] = await db.query(`
       SELECT DISTINCT equipo as machine 
@@ -607,25 +666,25 @@ router.get('/mttr-mtbf', async (req, res) => {
       WHERE done = 1 AND equipo != 'Otros' AND equipo IS NOT NULL AND equipo != ''
       ORDER BY equipo
     `);
-    
+
     // Period-based parameters
     const isMonthlyPeriod = period === 'monthly';
     const available_time = isMonthlyPeriod ? 528 : 132; // 528 hours per month (4 weeks), 132 per week
     const mttr_target = isMonthlyPeriod ? 3.6 : 0.8;
     const mtbf_target = isMonthlyPeriod ? 48 : 12;
-    
+
     // Group by month for monthly period, otherwise by week
-    const groupByClause = isMonthlyPeriod 
-      ? 'DATE_FORMAT(DATE(hr), \'%Y-%m-01\')' 
+    const groupByClause = isMonthlyPeriod
+      ? 'DATE_FORMAT(DATE(hr), \'%Y-%m-01\')'
       : 'DATE_SUB(DATE(hr), INTERVAL (DAYOFWEEK(DATE(hr)) + 5) % 7 DAY)';
-    
+
     const results = [];
-    
+
     // Calculate data for each machine
     for (const { machine: mch } of machines) {
       // Skip if filtering by machine and this isn't it
       if (machine && machine !== 'all' && machine !== '' && mch !== machine) continue;
-      
+
       // Get data grouped by period
       let query = `
         SELECT 
@@ -635,20 +694,20 @@ router.get('/mttr-mtbf', async (req, res) => {
         FROM deadtimes
         WHERE equipo = ? AND done = 1
       `;
-      
+
       let params = [mch];
       params.push(...queryParams);
-      
+
       query += whereClause + ` GROUP BY period_key ORDER BY period_key ASC`;
-      
+
       const [periodData] = await db.query(query, params);
-      
+
       // Calculate MTTR/MTBF for each period
       for (const data of periodData) {
         const total_downtime = data.total_downtime_minutes / 60; // convert to hours
         const mttr = data.incident_count > 0 ? total_downtime / data.incident_count : 0;
         const mtbf = data.incident_count > 0 ? available_time / data.incident_count : available_time;
-        
+
         let periodStart, periodEnd;
         if (isMonthlyPeriod) {
           // For monthly: first day to last day of month
@@ -660,7 +719,7 @@ router.get('/mttr-mtbf', async (req, res) => {
           periodEnd = new Date(periodStart);
           periodEnd.setDate(periodEnd.getDate() + 6);
         }
-        
+
         results.push({
           machine: mch,
           period_key: periodStart.toISOString().split('T')[0],
@@ -676,10 +735,10 @@ router.get('/mttr-mtbf', async (req, res) => {
         });
       }
     }
-    
+
     // Sort by period descending
     results.sort((a, b) => new Date(b.period_key) - new Date(a.period_key));
-    
+
     res.json(results);
   } catch (error) {
     console.error('Error obteniendo datos MTTR/MTBF:', error);
@@ -734,7 +793,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const body = req.body;
   console.log('CREATE TICKET - Received body:', JSON.stringify(body, null, 2));
-  
+
   const {
     descr,
     modelo,
@@ -755,8 +814,8 @@ router.post('/', async (req, res) => {
   if (num_empleado) {
     const puedeCrear = await validarRolParaCrear(num_empleado);
     if (!puedeCrear) {
-      return res.status(403).json({ 
-        error: 'No tienes permisos para crear tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Líder, Soporte, Mantenimiento.' 
+      return res.status(403).json({
+        error: 'No tienes permisos para crear tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Líder, Soporte, Mantenimiento.'
       });
     }
   }
@@ -772,7 +831,7 @@ router.post('/', async (req, res) => {
     const hr = new Date();
     // El modelo viene completo con BOT/TOP ya incluido en el nombre
     const storedModelo = modelo || '';
-    
+
     // Rate viene de la tabla modelos (se guarda al crear el ticket)
     const rateValue = rate ? Number(rate) : null;
 
@@ -806,20 +865,20 @@ router.post('/', async (req, res) => {
 router.post('/:id/start', async (req, res) => {
   const id = req.params.id;
   const { tecnico, num_empleado1 } = req.body;
-  
+
   // REGLA DE NEGOCIO: Validar que el usuario tenga rol permitido para atender tickets
   if (num_empleado1) {
     const puedeAtender = await validarRolParaAtender(num_empleado1);
     if (!puedeAtender) {
-      return res.status(403).json({ 
-        error: 'No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento, Calidad.' 
+      return res.status(403).json({
+        error: 'No tienes permisos para cerrar tickets. Roles permitidos: Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento, Calidad.'
       });
     }
   }
-  
+
   try {
     const ha = new Date();
-    
+
     await db.query('UPDATE deadtimes SET ha = ?, tecnico = ?, num_empleado1 = ? WHERE id = ?', [ha, tecnico, num_empleado1 || null, id]);
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
@@ -857,7 +916,7 @@ router.put('/:id', async (req, res) => {
     // For simplicity allow updating a set of known fields
     const fields = [];
     const values = [];
-    const allowed = ['descr','modelo','turno','linea','nombre','num_empleado','equipo','pf','pa','clasificacion','clas_others','tecnico','num_empleado1','solucion','rate','hr','hc'];
+    const allowed = ['descr', 'modelo', 'turno', 'linea', 'nombre', 'num_empleado', 'equipo', 'pf', 'pa', 'clasificacion', 'clas_others', 'tecnico', 'num_empleado1', 'solucion', 'rate', 'hr', 'hc'];
     allowed.forEach(k => {
       if (k in body) {
         fields.push(`${k} = ?`);
@@ -884,13 +943,13 @@ router.put('/:id', async (req, res) => {
       const hrDate = new Date(hrValue);
       const hcDate = new Date(hcValue);
       const minutosCalc = Math.max(0, Math.round((hcDate.getTime() - hrDate.getTime()) / 60000));
-      
+
       // Calcular piezas = (rate / 60) * minutos
       const piezasCalc = Math.round((rateValue / 60) * minutosCalc);
-      
+
       // deadtime = minutos
       const deadtimeCalc = minutosCalc;
-      
+
       // Agregar estos campos al update
       fields.push('piezas = ?');
       values.push(piezasCalc);
@@ -923,7 +982,7 @@ router.post('/:id/finish', async (req, res) => {
     // Fetch the original hr and rate from the ticket
     const [origRows] = await db.query('SELECT hr, rate as ticket_rate FROM deadtimes WHERE id = ?', [id]);
     const hr = origRows && origRows[0] ? origRows[0].hr : null;
-    
+
     // Usar rate del request, o el rate ya guardado en el ticket, o 0
     const rateNum = Number(rate) || Number(origRows[0]?.ticket_rate) || 0;
     let piezasCalc = 0;
@@ -972,13 +1031,13 @@ router.get('/analisis/top-tiempos', async (req, res) => {
       FROM deadtimes
       WHERE done = 1
     `;
-    
+
     const params = [];
     if (maquina) {
       query += ' AND equipo = ?';
       params.push(maquina);
     }
-    
+
     query += `
       GROUP BY equipo, COALESCE(clasificacion, descr)
       ORDER BY tiempo_total DESC
@@ -1002,7 +1061,7 @@ router.get('/analisis/top-tiempos', async (req, res) => {
 router.get('/display/:linea', async (req, res) => {
   try {
     const { linea } = req.params;
-    
+
     // Obtener solo tickets activos (done = 0) de esta línea
     const [tickets] = await db.query(`
       SELECT 
@@ -1023,7 +1082,7 @@ router.get('/display/:linea', async (req, res) => {
       WHERE linea = ? AND done = 0
       ORDER BY hr DESC
     `, [linea]);
-    
+
     res.json({
       success: true,
       linea: linea,

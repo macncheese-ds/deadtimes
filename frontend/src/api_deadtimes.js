@@ -14,10 +14,11 @@ api.interceptors.request.use(config => {
   return config;
 });
 
-export const listTickets = (status='open') => {
+export const listTickets = (status = 'open', params = {}) => {
   // Agregar timestamp como query param para evitar cache
   const timestamp = new Date().getTime();
-  return api.get(`/deadtimes?status=${status}&_t=${timestamp}`).then(r => r.data);
+  const query = new URLSearchParams({ status, _t: timestamp, ...params }).toString();
+  return api.get(`/deadtimes?${query}`).then(r => r.data);
 };
 export const getTicket = (id) => {
   const timestamp = new Date().getTime();
