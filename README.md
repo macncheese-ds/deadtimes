@@ -22,7 +22,7 @@ A comprehensive production monitoring and dead time tracking system designed for
 
 ## Demo
 
-![Dashboard Demo](docs/demos/dashboard.gif)
+![Dashboard Demo](docs/deadtime gif.gif)
 
 ---
 
