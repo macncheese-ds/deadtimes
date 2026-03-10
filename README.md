@@ -5,20 +5,24 @@ A comprehensive production monitoring and dead time tracking system designed for
 ---
 
 ## Table of Contents
-- [Overview](#overview)
+- [Quick Start](#quick-start)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
 - [Installation](#installation)
 - [Environment Configuration](#environment-configuration)
 - [Running the Application](#running-the-application)
+- [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
 - [Database](#database)
 - [Data Analysis](#data-analysis)
-- [Demo](#demo)
 - [Development](#development)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Demo
+
+![Dashboard Demo](docs/demos/dashboard.gif)
 
 ---
 
@@ -318,22 +322,6 @@ Generate comprehensive reports on:
 - Root cause analysis
 - Production bottlenecks
 - Performance trends over time
-
----
-
-## Demo
-
-### Real-time Monitoring Dashboard
-![Dashboard Demo](docs/demos/dashboard.gif)
-
-### Dead Time Event Recording
-![Dead Time Recording](docs/demos/deadtime-recording.gif)
-
-### Production Analytics
-![Analytics Report](docs/demos/analytics.gif)
-
-### Equipment State Transitions
-![Equipment States](docs/demos/equipment-states.gif)
 
 ---
 
