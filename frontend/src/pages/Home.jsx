@@ -81,10 +81,15 @@ function formatToDatetimeLocal(dateString) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-// Helper para formatear horas (ej: 1.5 hrs, 0.25 hrs)
+// Helper para formatear horas decimales → H:MM h (ej: 1.5 → "1:30 h", 0.78 → "46m")
 function formatHoras(horas) {
-  if (!horas && horas !== 0) return '0';
-  return horas.toFixed(2);
+  if (horas === null || horas === undefined) return '0m';
+  const totalMins = Math.round(Number(horas) * 60);
+  if (isNaN(totalMins)) return '0m';
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
 export default function Home() {
@@ -1855,7 +1860,7 @@ export default function Home() {
                           <span className="text-white text-xs font-bold drop-shadow">{formatHoras(horasValue)}</span>
                         </div>
                       </div>
-                      <span className="text-slate-300 font-semibold text-xs w-16 text-right">{formatHoras(horasValue)} hrs</span>
+                      <span className="text-slate-300 font-semibold text-xs w-16 text-right">{formatHoras(horasValue)}</span>
                     </div>
                   )
                 })}
@@ -2342,7 +2347,7 @@ export default function Home() {
                           </p>
                           {duracionHrs !== null && (
                             <p className="text-slate-300 text-xs mt-1 font-medium">
-                              Duracion: {formatHoras(duracionHrs)} hrs
+                              Duracion: {formatHoras(duracionHrs)}
                             </p>
                           )}
                         </div>
@@ -2698,7 +2703,7 @@ export default function Home() {
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
                           labelStyle={{ color: '#e2e8f0' }}
-                          formatter={(value) => [formatHoras(value) + ' hrs', 'Tiempo Promedio']}
+                          formatter={(value) => [formatHoras(value), 'Tiempo Promedio']}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
                         <Line
@@ -2749,7 +2754,7 @@ export default function Home() {
                     <div key={idx} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
                       <p className="text-slate-400 text-xs font-medium">{turno.name}</p>
                       <p className="text-2xl font-bold text-white mt-1">{turno.tickets} <span className="text-sm">tickets</span></p>
-                      <p className="text-slate-400 text-xs mt-1">{formatHoras(turno.horas)} hrs totales</p>
+                      <p className="text-slate-400 text-xs mt-1">{formatHoras(turno.horas)} totales</p>
                     </div>
                   ))}
                   <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
@@ -2799,7 +2804,7 @@ export default function Home() {
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
                           labelStyle={{ color: '#e2e8f0' }}
-                          formatter={(value) => [formatHoras(value) + ' hrs', 'Horas Downtime']}
+                          formatter={(value) => [formatHoras(value), 'Horas Downtime']}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
                         <Bar dataKey="totalHoras" name="Horas Downtime" fill="#d97706" />
@@ -2849,7 +2854,7 @@ export default function Home() {
                         <Tooltip
                           contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
                           labelStyle={{ color: '#e2e8f0' }}
-                          formatter={(value) => [formatHoras(value) + ' hrs', 'Promedio']}
+                          formatter={(value) => [formatHoras(value), 'Promedio']}
                         />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
                         <Line
