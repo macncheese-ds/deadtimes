@@ -1,49 +1,51 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { login } from '../api_deadtimes';
+import React, { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { login } from '../api_deadtimes'
 
 export default function LoginModal({ visible, defaultEmployee = '', onClose, onConfirm, busy }) {
-  const [employeeInput, setEmployeeInput] = useState(defaultEmployee);
-  const [password, setPassword] = useState('');
-  const [status, setStatus] = useState(null);
-  const employeeInputRef = useRef(null);
+  const { t } = useTranslation()
+  const [employeeInput, setEmployeeInput] = useState(defaultEmployee)
+  const [password, setPassword] = useState('')
+  const [status, setStatus] = useState(null)
+  const employeeInputRef = useRef(null)
 
   // Reiniciar todo cuando el modal se abre
   useEffect(() => {
     if (visible) {
-      setEmployeeInput(defaultEmployee);
-      setPassword('');
-      setStatus(null);
+      setEmployeeInput(defaultEmployee)
+      setPassword('')
+      setStatus(null)
       // Focus en el campo de empleado al abrir
       setTimeout(() => {
         if (employeeInputRef.current) {
-          employeeInputRef.current.focus();
+          employeeInputRef.current.focus()
         }
-      }, 100);
+      }, 100)
     }
-  }, [visible, defaultEmployee]);
+  }, [visible, defaultEmployee])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus(null);
+    e.preventDefault()
+    setStatus(null)
     
     if (!employeeInput.trim()) {
-      setStatus('Ingrese su número de empleado');
-      return;
+      setStatus(t('login.enterEmployee'))
+      return
     }
     if (!password) {
-      setStatus('Ingrese su contraseña');
-      return;
+      setStatus(t('login.enterPassword'))
+      return
     }
 
     try {
-      await onConfirm({ employee_input: employeeInput.trim(), password });
+      await onConfirm({ employee_input: employeeInput.trim(), password })
     } catch (err) {
-      const msg = err && err.message ? err.message : 'Error autenticando';
-      setStatus(msg);
+      const msg = err && err.message ? err.message : t('login.invalidCredentials')
+      setStatus(msg)
     }
-  };
+  }
 
-  if (!visible) return null;
+  if (!visible) return null
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-fade-in">
@@ -55,13 +57,13 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-white">Iniciar Sesión</h3>
-          <p className="text-sm text-slate-400 mt-1">Ingrese sus credenciales para continuar</p>
+          <h3 className="text-xl font-bold text-white">{t('login.loginButton')}</h3>
+          <p className="text-sm text-slate-400 mt-1">{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-2 font-medium">Número de Empleado</label>
+            <label className="block text-sm text-slate-300 mb-2 font-medium">{t('login.employeeLabel')}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,14 +76,14 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
                 className="w-full bg-slate-800/50 border border-slate-600/50 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition-all"
                 value={employeeInput}
                 onChange={(e) => setEmployeeInput(e.target.value)}
-                placeholder="Ej: 1A, 123B"
+                placeholder={t('login.employeePlaceholder')}
                 autoComplete="username"
               />
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm text-slate-300 mb-2 font-medium">Contraseña</label>
+            <label className="block text-sm text-slate-300 mb-2 font-medium">{t('login.passwordLabel')}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +95,7 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
                 className="w-full bg-slate-800/50 border border-slate-600/50 text-white pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-500 transition-all"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t('login.passwordPlaceholder')}
                 autoComplete="current-password"
               />
             </div>
@@ -114,7 +116,7 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
               onClick={onClose} 
               className="flex-1 px-4 py-3 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 font-medium transition-all border border-slate-600/50"
             >
-              Cancelar
+              {t('common.cancel')}
             </button>
             <button 
               type="submit" 
@@ -124,14 +126,14 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
               {busy ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Verificando...</span>
+                  <span>{t('login.verifying')}</span>
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
-                  <span>Iniciar Sesión</span>
+                  <span>{t('login.loginButton')}</span>
                 </>
               )}
             </button>
@@ -139,5 +141,5 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
         </form>
       </div>
     </div>
-  );
+  )
 }

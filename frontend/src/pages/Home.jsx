@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   listTickets,
   createTicket,
@@ -30,6 +31,7 @@ import LoginModal from '../components/LoginModal'
 import ProduccionSection from '../components/ProduccionSection'
 import Configuration from './Configuration'
 import DisplayVisualization from '../components/DisplayVisualization'
+import LanguageSwitcher from '../components/LanguageSwitcher'
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine
@@ -75,6 +77,7 @@ function formatHoras(horas) {
 }
 
 export default function Home() {
+  const { t } = useTranslation()
   const [tickets, setTickets] = useState([])
   const [status, setStatus] = useState('open')
   const [showNew, setShowNew] = useState(false)
@@ -1641,7 +1644,7 @@ export default function Home() {
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M12 3a9 9 0 100 18 9 9 0 000-18z" />
             </svg>
-            <span>Sesión cerrada por inactividad (2 minutos sin movimiento)</span>
+            <span>{t('configurationPage.inactivityWarning')}</span>
           </div>
         )}
 
@@ -1673,31 +1676,34 @@ export default function Home() {
 
         {/* Navigation Buttons */}
         <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
               <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>Nuevo Ticket</span>
+              <span>{t('nav.newTicket')}</span>
             </button>
             <button onClick={toggleOpen} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showOpen ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
               <svg className={`w-6 h-6 transition-transform duration-300 ${showOpen ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Abiertos</span>
+              <span>{t('nav.open')}</span>
             </button>
             <button onClick={toggleClosed} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showClosed ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
               <svg className={`w-6 h-6 transition-transform duration-300 ${showClosed ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>Cerrados</span>
+              <span>{t('nav.closed')}</span>
             </button>
             <button onClick={toggleProduccion} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showProduccion ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
               <svg className={`w-6 h-6 transition-transform duration-300 ${showProduccion ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>Producción</span>
+              <span>{t('nav.produccion')}</span>
             </button>
+            <div className="flex justify-center lg:justify-start">
+              <LanguageSwitcher className="w-full sm:w-auto" />
+            </div>
           </div>
 
           {/* Collapsible Tools Menu */}
@@ -1710,7 +1716,7 @@ export default function Home() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                 </svg>
-                <span>Herramientas</span>
+                <span>{t('nav.tools')}</span>
               </div>
               <svg className={`w-5 h-5 transition-transform duration-300 ${showToolsMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -1736,7 +1742,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Configuración</span>
+                  <span>{t('nav.configuration')}</span>
                 </button>
 
                 <button onClick={() => {
@@ -1755,7 +1761,7 @@ export default function Home() {
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showAnalytics ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  <span>Analytics</span>
+                  <span>{t('nav.analytics')}</span>
                 </button>
 
                 <button onClick={() => {
@@ -1774,7 +1780,7 @@ export default function Home() {
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showDisplay ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <span>Display</span>
+                  <span>{t('nav.display')}</span>
                 </button>
 
                 <button onClick={() => toggleMantenimiento()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(mantenimientoActivo).includes(true) ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/50' : showMantenimiento ? 'bg-blue-700 border-blue-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
@@ -1782,21 +1788,21 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  <span>Mantenimiento</span>
+                  <span>{t('nav.maintenance')}</span>
                 </button>
 
                 <button onClick={() => toggleCambioModelo()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(cambioModeloActivo).includes(true) ? 'bg-amber-600 border-amber-400 text-white shadow-lg shadow-amber-500/50' : showCambioModelo ? 'bg-amber-700 border-amber-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showCambioModelo ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span>Cambio Modelo</span>
+                  <span>{t('nav.modelChange')}</span>
                 </button>
 
                 <button onClick={() => toggleAuditoria()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(auditoriaActivo).includes(true) ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-500/50' : showAuditoria ? 'bg-purple-700 border-purple-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
                   <svg className={`w-5 h-5 transition-transform duration-300 ${showAuditoria ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
-                  <span>Auditoría</span>
+                  <span>{t('nav.audit')}</span>
                 </button>
               </div>
             )}
@@ -1815,11 +1821,11 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Tiempos de Atención</h2>
-                    <p className="text-slate-400 text-xs">Promedio últimos 30 días</p>
+                    <h2 className="text-lg font-bold text-white">{t('stats.responseTime')}</h2>
+                    <p className="text-slate-400 text-xs">{t('stats.averageLastDays')}</p>
                   </div>
                 </div>
-                <span className="badge badge-blue">30 días</span>
+                <span className="badge badge-blue">{t('stats.days30')}</span>
               </div>
               <div className="space-y-3">
                 {Array.isArray(statsAtencion) && statsAtencion.slice(0, 10).map((stat, idx) => {
@@ -1849,8 +1855,8 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>
-                    <p className="text-slate-400 font-medium">No hay datos disponibles</p>
-                    <p className="text-slate-500 text-xs mt-1">Los datos aparecerán cuando se cierren tickets</p>
+                    <p className="text-slate-400 font-medium">{t('common.noDataAvailable')}</p>
+                    <p className="text-slate-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
                   </div>
                 )}
               </div>
@@ -1866,11 +1872,11 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">Equipos con Más Fallas</h2>
-                    <p className="text-slate-400 text-xs">Top 10 últimos 30 días</p>
+                    <h2 className="text-lg font-bold text-white">{t('stats.equipmentWithMostFailures')}</h2>
+                    <p className="text-slate-400 text-xs">{t('stats.topFailures')}</p>
                   </div>
                 </div>
-                <span className="badge badge-red">Top 10</span>
+                <span className="badge badge-red">{t('stats.topFailures')}</span>
               </div>
               <div className="space-y-3">
                 {statsEquipos.map((stat, idx) => {
@@ -1899,8 +1905,8 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-slate-400 font-medium">No hay datos disponibles</p>
-                    <p className="text-slate-500 text-xs mt-1">Los datos aparecerán cuando se cierren tickets</p>
+                    <p className="text-slate-400 font-medium">{t('common.noDataAvailable')}</p>
+                    <p className="text-slate-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
                   </div>
                 )}
               </div>
@@ -1917,7 +1923,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-white">Crear Nuevo Ticket</h2>
+                <h2 className="text-xl font-bold text-white">{t('tickets.newTicketFormTitle')}</h2>
               </div>
               <button onClick={toggleNew} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1931,20 +1937,20 @@ export default function Home() {
               <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="w-6 h-6 rounded-full bg-slate-500 text-white text-xs font-bold flex items-center justify-center">1</span>
-                  <h3 className="text-sm font-semibold text-white">Información de Línea y Modelo</h3>
+                  <h3 className="text-sm font-semibold text-white">{t('tickets.lineModelInfo')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <select className={inputClass(form.linea)} value={form.linea} onChange={handleLineaChange} required>
-                    <option value="">Seleccionar Línea *</option>
+                    <option value="">{t('tickets.selectLine')}</option>
                     {lineas.map(lin => <option key={lin.id} value={lin.linea}>Línea {lin.linea}</option>)}
                   </select>
 
                   <select className={inputClass(form.modelo)} value={form.modelo} onChange={handleModeloChange} required disabled={!form.linea || modelosLoading}>
                     {modelosLoading ? (
-                      <option value="">Cargando modelos...</option>
+                      <option value="">{t('common.loadingModels')}</option>
                     ) : (
                       <>
-                        <option value="">Seleccionar Modelo *</option>
+                        <option value="">{t('tickets.selectModel')}</option>
                         {modelos.map(mod => (
                           <option key={mod.id} value={mod.modelo}>
                             {mod.modelo}
@@ -1957,12 +1963,12 @@ export default function Home() {
 
                 {selectedModelo && (
                   <div className="mt-4 bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                    <p className="text-xs text-slate-400 mb-2 font-medium">Rate del modelo (automático)</p>
+                    <p className="text-xs text-slate-400 mb-2 font-medium">{t('tickets.modelRateAuto')}</p>
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span className="text-slate-300 font-semibold">{selectedModelo.rate || 'N/A'} piezas/hr</span>
+                      <span className="text-slate-300 font-semibold">{selectedModelo.rate || 'N/A'} {t('tickets.piecesPerHour')}</span>
                     </div>
                   </div>
                 )}
@@ -1972,22 +1978,22 @@ export default function Home() {
               <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.linea && form.modelo ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
                   <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.linea && form.modelo ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>2</span>
-                  <h3 className="text-sm font-semibold text-white">Información del Equipo</h3>
+                  <h3 className="text-sm font-semibold text-white">{t('tickets.equipmentInfo')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <select className={inputClass(form.equipo)} value={form.equipo} onChange={handleEquipoChange} required disabled={!form.linea || !form.modelo}>
-                    <option value="">Seleccionar Equipo *</option>
+                    <option value="">{t('tickets.selectEquipment')}</option>
                     {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
                   </select>
 
                   <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({ ...form, descr: e.target.value, descr_otros: '' })} required disabled={!form.equipo}>
                     {descripcionesLoading ? (
-                      <option value="">Cargando descripciones...</option>
+                      <option value="">{t('common.loadingDescriptions')}</option>
                     ) : (
                       <>
                         <option value="">Seleccionar Descripción *</option>
                         {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
-                        <option value="__OTROS__">Otros (especificar)</option>
+                        <option value="__OTROS__">{t('tickets.specifyOther')}</option>
                       </>
                     )}
                   </select>
@@ -1995,7 +2001,7 @@ export default function Home() {
                   {form.descr === '__OTROS__' && (
                     <input
                       className={inputClass(form.descr_otros)}
-                      placeholder="Especificar descripción de la falla *"
+                      placeholder={t('tickets.specifyFailure')}
                       value={form.descr_otros}
                       onChange={e => setForm({ ...form, descr_otros: e.target.value })}
                       required
@@ -2009,17 +2015,17 @@ export default function Home() {
               <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
                   <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>3</span>
-                  <h3 className="text-sm font-semibold text-white">Condiciones de Paro</h3>
+                  <h3 className="text-sm font-semibold text-white">{t('tickets.stopConditions')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <select className={inputClass(form.pf)} value={form.pf} onChange={e => setForm({ ...form, pf: e.target.value })} required disabled={!form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros)}>
-                    <option value="">Sección afectada *</option>
+                    <option value="">{t('tickets.affectedSection')}</option>
                     <option value="Equipo">Equipo</option>
                     <option value="Linea">Línea</option>
                   </select>
 
                   <select className={inputClass(form.pa)} value={form.pa} onChange={e => setForm({ ...form, pa: e.target.value })} required disabled={!form.equipo || !form.descr}>
-                    <option value="">Condición de Paro *</option>
+                    <option value="">{t('tickets.stopCondition')}</option>
                     <option value="Intermitente">Intermitente</option>
                     <option value="Total">Total</option>
                   </select>
@@ -2030,11 +2036,11 @@ export default function Home() {
               <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.pf && form.pa ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
                   <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.pf && form.pa ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>4</span>
-                  <h3 className="text-sm font-semibold text-white">Clasificación</h3>
+                  <h3 className="text-sm font-semibold text-white">{t('tickets.classification')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   <select className={inputClass(form.clasificacion)} value={form.clasificacion} onChange={e => setForm({ ...form, clasificacion: e.target.value })} required disabled={!form.pf || !form.pa}>
-                    <option value="">Seleccionar Clasificación *</option>
+                    <option value="">{t('tickets.selectClassification')}</option>
                     {['Equipo', 'Facilidades', 'Operacion', 'Procesos', 'Calidad', 'Materiales', 'Sistemas(IT)', 'Produccion', 'Otros'].map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
 
