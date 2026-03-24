@@ -1174,60 +1174,101 @@ export default function Home() {
   }
 
   // ===== REPORTE DIARIO (special export) =====================================
-  // Helper: draw a horizontal bar chart on a canvas and return PNG base64
-  const renderBarChartPNG = (lineEntries, W = 700, H_PER_BAR = 40, PADDING = 60) => {
-    const bars = lineEntries.map(([linea, tks]) => ({
-      label: linea,
-      value: parseFloat((tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0) / 60).toFixed(2)),
-      tickets: tks.length,
-      piezas: tks.reduce((s, t) => s + (t.piezas || 0), 0),
+  // Helper: compute "shift day" key (day runs 08:00 → 08:00 next calendar day)
+  const getShiftDay = (dateStr) => {
+    if (!dateStr) return 'Sin-Fecha'
+    const d = new Date(dateStr)
+    // Anything before 08:00 local belongs to previous calendar date
+    if (d.getHours() < 8) d.setDate(d.getDate() - 1)
+    const y  = d.getFullYear()
+    const m  = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${dd}`
+  }
+
+  // Helper: draw a horizontal bar chart for ONE line's tickets (all of them, sorted desc)
+  // Returns PNG base64 string (no data: prefix)
+  const renderLineChartPNG = (lineLabel, tickets, color = '#3b82f6') => {
+    // Sort descending by duration
+    const sorted = [...tickets].sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+    const bars   = sorted.map(t => ({
+      label: `#${t.id}`,
+      value: parseFloat(((t.duracion_minutos || 0) / 60).toFixed(2)),
+      piezas: t.piezas || 0,
+      equipo: t.equipo || '',
     }))
-    const H = PADDING * 2 + bars.length * H_PER_BAR + 20
-    const canvas = document.createElement('canvas')
-    canvas.width  = W
-    canvas.height = H
-    const ctx = canvas.getContext('2d')
+
+    const H_PER_BAR = 36
+    const LABEL_W   = 55
+    const VALUE_W   = 170
+    const W         = 780
+    const TITLE_H   = 36
+    const H         = TITLE_H + bars.length * H_PER_BAR + 16
+
+    const canvas     = document.createElement('canvas')
+    canvas.width     = W
+    canvas.height    = H
+    const ctx        = canvas.getContext('2d')
+    const BAR_AREA_W = W - LABEL_W - VALUE_W - 16
 
     // Background
-    ctx.fillStyle = '#1e293b'
+    ctx.fillStyle = '#0f172a'
     ctx.fillRect(0, 0, W, H)
 
-    const maxVal = Math.max(...bars.map(b => b.value), 0.01)
-    const BAR_AREA_W = W - PADDING - 160  // left label + right value space
-    const BAR_COLORS = ['#3b82f6','#22c55e','#f59e0b','#a855f7','#ef4444','#06b6d4']
+    // Title bar
+    ctx.fillStyle = color
+    ctx.fillRect(0, 0, W, TITLE_H)
+    ctx.fillStyle = '#ffffff'
+    ctx.font      = 'bold 13px sans-serif'
+    ctx.textAlign = 'left'
+    ctx.fillText(`${lineLabel}  --  ${bars.length} tickets  (duracion mayor a menor)`, 10, 22)
 
-    // Title
-    ctx.fillStyle = '#f1f5f9'
-    ctx.font = 'bold 14px sans-serif'
-    ctx.fillText('Duracion por Linea (horas)', PADDING, 22)
+    const maxVal = Math.max(...bars.map(b => b.value), 0.01)
 
     bars.forEach((bar, i) => {
-      const y     = PADDING + i * H_PER_BAR
-      const barW  = (bar.value / maxVal) * BAR_AREA_W
-      const color = BAR_COLORS[i % BAR_COLORS.length]
+      const y   = TITLE_H + i * H_PER_BAR
+      const row = i % 2 === 0 ? '#1e293b' : '#0f172a'
 
-      // Bar background (track)
+      // Row bg
+      ctx.fillStyle = row
+      ctx.fillRect(0, y, W, H_PER_BAR)
+
+      // Label (#ID)
+      ctx.fillStyle = '#94a3b8'
+      ctx.font      = '11px sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText(bar.label, LABEL_W - 4, y + H_PER_BAR / 2 + 4)
+
+      // Bar track
+      const trackX = LABEL_W
       ctx.fillStyle = '#334155'
-      ctx.fillRect(PADDING, y, BAR_AREA_W, H_PER_BAR - 8)
+      ctx.fillRect(trackX, y + 6, BAR_AREA_W, H_PER_BAR - 12)
 
       // Bar fill
+      const barW = (bar.value / maxVal) * BAR_AREA_W
       ctx.fillStyle = color
-      ctx.fillRect(PADDING, y, Math.max(barW, 2), H_PER_BAR - 8)
+      ctx.fillRect(trackX, y + 6, Math.max(barW, 2), H_PER_BAR - 12)
 
-      // Label (left)
-      ctx.fillStyle = '#e2e8f0'
-      ctx.font = '12px sans-serif'
-      ctx.textAlign = 'right'
-      ctx.fillText(bar.label, PADDING - 6, y + (H_PER_BAR - 8) / 2 + 4)
+      // Duration text inside bar (if fits)
+      if (barW > 40) {
+        ctx.fillStyle = '#ffffff'
+        ctx.font      = 'bold 10px sans-serif'
+        ctx.textAlign = 'left'
+        ctx.fillText(`${bar.value} h`, trackX + 4, y + H_PER_BAR / 2 + 3)
+      }
 
-      // Value (right of bar)
+      // Value area: equipo + hours + piezas
+      const vx = LABEL_W + BAR_AREA_W + 8
       ctx.fillStyle = '#fbbf24'
+      ctx.font      = '10px sans-serif'
       ctx.textAlign = 'left'
-      ctx.fillText(`${bar.value} h  |  ${bar.tickets} tkt  |  ${bar.piezas} pzs`,
-        PADDING + BAR_AREA_W + 8, y + (H_PER_BAR - 8) / 2 + 4)
+      ctx.fillText(`${bar.value} h`, vx, y + H_PER_BAR / 2 - 2)
+      ctx.fillStyle = '#94a3b8'
+      ctx.font      = '9px sans-serif'
+      ctx.fillText(`${bar.equipo}  |  ${bar.piezas} pzs`, vx, y + H_PER_BAR / 2 + 10)
     })
 
-    return canvas.toDataURL('image/png').split(',')[1] // base64 only
+    return canvas.toDataURL('image/png').split(',')[1]
   }
 
   const specialExportDiario = async () => {
@@ -1252,16 +1293,22 @@ export default function Home() {
 
       setSpecialExportProgress(`Procesando ${allTickets.length} tickets...`)
 
-      // Group: day -> linea -> tickets[]
+      // Group: day (08:00->08:00) -> linea -> tickets[] sorted desc by duration
       const byDay = {}
       allTickets.forEach(t => {
         const ref    = t.hc || t.hr
-        const day    = ref ? new Date(ref).toISOString().split('T')[0] : 'Sin-Fecha'
+        const day    = getShiftDay(ref)
         const linKey = `Linea ${t.linea}`
         if (!byDay[day]) byDay[day] = {}
         if (!byDay[day][linKey]) byDay[day][linKey] = []
         byDay[day][linKey].push(t)
       })
+      // Sort tickets within each line by duration desc
+      Object.values(byDay).forEach(lineMap =>
+        Object.values(lineMap).forEach(tks =>
+          tks.sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+        )
+      )
 
       const days = Object.keys(byDay).sort()
 
@@ -1353,72 +1400,39 @@ export default function Home() {
         dayTitle.alignment = { horizontal: 'center', vertical: 'middle' }
         ws.getRow(1).height = 28
 
-        // ── Chart image: one bar chart showing all lines for this day
-        const chartPng = renderBarChartPNG(lineEntries)
-        const imgId = wb.addImage({ base64: chartPng, extension: 'png' })
-        // Chart goes on rows 2-18 (approx 280px tall), columns A-L
-        ws.addImage(imgId, { tl: { col: 0, row: 1 }, br: { col: 11, row: 2 + lineEntries.length * 2 + 2 } })
+        // ── One chart + table for each line ─────────────────────────────────
+        const LINE_CHART_COLORS = ['#3b82f6','#22c55e','#f59e0b','#a855f7','#ef4444','#06b6d4']
 
-        // Blank rows to make room for the chart image
-        const chartRows = lineEntries.length * 2 + 3
-        for (let r = 0; r < chartRows; r++) ws.addRow([])
-
-        // Summary data header
-        ws.addRow([])
-        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-        const summLabel = ws.getCell(`A${ws.rowCount}`)
-        summLabel.value = 'RESUMEN POR LINEA'
-        summLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-        summLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
-        summLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-        ws.getRow(ws.rowCount).height = 20
-
-        const sHdr = ws.addRow(['Linea', 'Total Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'])
-        sHdr.eachCell((c, col) => {
-          if (col <= 5) {
-            c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
-            c.alignment = { horizontal: 'center', vertical: 'middle' }
-            applyBorder(c)
-          }
-        })
-
-        lineEntries.forEach(([linea, tks]) => {
-          const lc = LC[lineColorMap[linea] % LC.length]
+        lineEntries.forEach(([linea, tks], li) => {
+          const lc      = LC[lineColorMap[linea] % LC.length]
+          const color   = LINE_CHART_COLORS[lineColorMap[linea] % LINE_CHART_COLORS.length]
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          const sRow = ws.addRow([linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
-          sRow.eachCell((c, col) => {
-            if (col <= 5) {
-              c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.row } }
-              c.alignment = { horizontal: 'center', vertical: 'middle' }
-              c.font = { size: 10 }
-              applyBorder(c)
-            }
-          })
-        })
 
-        ws.addRow([])
-        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-        const detLabel = ws.getCell(`A${ws.rowCount}`)
-        detLabel.value = 'DETALLE DE TICKETS POR LINEA'
-        detLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-        detLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
-        detLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-        ws.getRow(ws.rowCount).height = 20
-
-        // Ticket rows per line
-        lineEntries.forEach(([linea, tks]) => {
-          const lc = LC[lineColorMap[linea] % LC.length]
           ws.addRow([])
-          ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-          const lHdr = ws.getCell(`A${ws.rowCount}`)
-          lHdr.value = `  ${linea.toUpperCase()}  --  ${tks.length} ticket(s)`
-          lHdr.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-          lHdr.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.accent } }
-          lHdr.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-          ws.getRow(ws.rowCount).height = 22
 
+          // Line header banner
+          ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
+          const lBanner = ws.getCell(`A${ws.rowCount}`)
+          lBanner.value = `  ${linea.toUpperCase()}  --  ${tks.length} tickets  |  ${parseFloat((totalMin / 60).toFixed(2))} h  |  ${totalPiezas} pzs perdidas`
+          lBanner.font  = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } }
+          lBanner.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.accent } }
+          lBanner.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+          ws.getRow(ws.rowCount).height = 24
+
+          // Chart image for this line (all tickets, sorted desc by duration)
+          const chartPng = renderLineChartPNG(linea, tks, color)
+          const imgId    = wb.addImage({ base64: chartPng, extension: 'png' })
+          // Each bar row = 36px, title = 36px → total height / ~19px per excel row ≈ chartRows rows
+          const chartHeightRows = Math.max(4, Math.ceil((36 + tks.length * 36 + 16) / 18))
+          const chartStartRow   = ws.rowCount  // 0-indexed: ws.rowCount is next empty row (1-based +1)
+          ws.addImage(imgId, {
+            tl: { col: 0, row: chartStartRow },
+            br: { col: 11, row: chartStartRow + chartHeightRows },
+          })
+          for (let r = 0; r < chartHeightRows; r++) ws.addRow([])
+
+          // Ticket table for this line
           const colHdr = ws.addRow(['#', 'ID', 'Equipo', 'Descripcion', 'Clasificacion', 'Dur (min)', 'Dur (h)', 'Piezas', 'Tecnico', 'Apertura', 'Cierre', 'Solucion'])
           colHdr.eachCell(c => {
             c.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 }
@@ -1445,8 +1459,7 @@ export default function Home() {
             })
           })
 
-          const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
-          const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
+          // Line totals row
           const totRow = ws.addRow(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
           totRow.eachCell(c => {
             c.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }
