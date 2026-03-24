@@ -192,6 +192,10 @@ export default function Home() {
   const [machineLoading, setMachineLoading] = useState(false)
   const [machineDetailTicket, setMachineDetailTicket] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+  // Special export state
+  const [specialExportLoading, setSpecialExportLoading] = useState(false)
+  const [specialExportProgress, setSpecialExportProgress] = useState('')
+  const [showSpecialExportModal, setShowSpecialExportModal] = useState(false)
   const [totales, setTotales] = useState({})
   const [statsLinea, setStatsLinea] = useState([])
   const [statsEquiposDetalle, setStatsEquiposDetalle] = useState([])
@@ -1168,6 +1172,133 @@ export default function Home() {
     const fileName = `Analisis_${nombreArchivo}_${new Date().toISOString().split('T')[0]}.xlsx`
     XLSX.writeFile(wb, fileName)
   }
+
+  // ===== REPORTE DIARIO (special export) =====================================
+  const specialExportDiario = async () => {
+    setSpecialExportLoading(true)
+    setSpecialExportProgress('Obteniendo tickets...')
+    try {
+      const params = { equipo: 'all' }
+      if (machineLinea) params.linea = machineLinea
+      if (dateRange === 'custom' && customStartDate && customEndDate) {
+        params.startDate = normalizeDateTimeInput(customStartDate)
+        params.endDate   = normalizeDateTimeInput(customEndDate)
+      } else {
+        params.days = dateRange
+      }
+
+      const allTickets = await getTicketsByEquipment(params)
+      if (!allTickets || allTickets.length === 0) {
+        setSpecialExportProgress('No hay tickets para este período.')
+        setTimeout(() => setShowSpecialExportModal(false), 2000)
+        return
+      }
+
+      setSpecialExportProgress(`Procesando ${allTickets.length} tickets...`)
+
+      // Group: day → linea → tickets[]
+      const byDay = {}
+      allTickets.forEach(t => {
+        const ref    = t.hc || t.hr
+        const day    = ref ? new Date(ref).toISOString().split('T')[0] : 'Sin-Fecha'
+        const linKey = `Línea ${t.linea}`
+        if (!byDay[day]) byDay[day] = {}
+        if (!byDay[day][linKey]) byDay[day][linKey] = []
+        byDay[day][linKey].push(t)
+      })
+
+      const days = Object.keys(byDay).sort()
+      const wb   = XLSX.utils.book_new()
+
+      const makeSheet = (rows, colWidths) => {
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+        if (colWidths) ws['!cols'] = colWidths
+        return ws
+      }
+
+      // Resumen sheet
+      setSpecialExportProgress('Generando hoja Resumen...')
+      const summaryRows = [
+        [`REPORTE DIARIO DE TIEMPOS MUERTOS  •  Generado: ${new Date().toLocaleString('es-MX')}`],
+        [`Período: ${days[0]} → ${days[days.length - 1]}   |   Línea${machineLinea ? ': ' + machineLinea : 'a: Todas'}`],
+        [],
+        ['Fecha', 'Línea', 'Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'],
+      ]
+      days.forEach(day => {
+        Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b)).forEach(([linea, tks]) => {
+          const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
+          const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
+          summaryRows.push([day, linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+        })
+      })
+      XLSX.utils.book_append_sheet(wb, makeSheet(summaryRows, [
+        { wch: 13 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 16 },
+      ]), 'Resumen')
+
+      // One sheet per day
+      for (let di = 0; di < days.length; di++) {
+        const day = days[di]
+        setSpecialExportProgress(`Hoja ${di + 1}/${days.length}: ${day}...`)
+
+        const lineEntries = Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b))
+        const rows = []
+        rows.push([`REPORTE DEL DÍA: ${day}`])
+        rows.push([])
+
+        // Chart-data summary
+        rows.push([`📊  DATOS PARA GRÁFICA POR LÍNEA`])
+        rows.push(['Línea', 'Total Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'])
+        lineEntries.forEach(([linea, tks]) => {
+          const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
+          const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
+          rows.push([linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+        })
+        rows.push([])
+
+        // Ticket detail per line
+        rows.push([`📋  DETALLE DE TICKETS POR LÍNEA`])
+        lineEntries.forEach(([linea, tks]) => {
+          rows.push([])
+          rows.push([`== ${linea.toUpperCase()} == (${tks.length} tickets)`])
+          rows.push(['#', 'ID', 'Equipo', 'Descripción', 'Clasificación', 'Dur (min)', 'Dur (h)', 'Piezas', 'Técnico', 'Apertura', 'Cierre', 'Solución'])
+          tks.forEach((t, i) => {
+            rows.push([
+              i + 1, t.id, t.equipo, t.descr, t.clasificacion || 'N/A',
+              t.duracion_minutos || 0,
+              parseFloat(((t.duracion_minutos || 0) / 60).toFixed(2)),
+              t.piezas || 0, t.tecnico || 'N/A',
+              t.hr ? new Date(t.hr).toLocaleString('es-MX') : '',
+              t.hc ? new Date(t.hc).toLocaleString('es-MX') : '',
+              t.solucion || '',
+            ])
+          })
+          const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
+          const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
+          rows.push(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+        })
+
+        XLSX.utils.book_append_sheet(wb, makeSheet(rows, [
+          { wch: 4 }, { wch: 7 }, { wch: 14 }, { wch: 32 }, { wch: 16 },
+          { wch: 11 }, { wch: 10 }, { wch: 9 }, { wch: 16 }, { wch: 20 }, { wch: 20 }, { wch: 35 },
+        ]), day)
+      }
+
+      setSpecialExportProgress('Guardando archivo...')
+      const period = dateRange === 'custom'
+        ? `${customStartDate?.slice(0, 10)}_${customEndDate?.slice(0, 10)}`
+        : `ultimos${dateRange}dias`
+      XLSX.writeFile(wb, `Reporte_Diario_${period}.xlsx`)
+
+      setSpecialExportProgress('¡Listo! Descarga completada ✓')
+      setTimeout(() => setShowSpecialExportModal(false), 2000)
+    } catch (err) {
+      console.error('Special export error:', err)
+      setSpecialExportProgress(`Error: ${err.message}`)
+    } finally {
+      setSpecialExportLoading(false)
+    }
+  }
+  // ============================================================================
 
   // Funciones para Analytics
   const prepareLineaData = () => {
@@ -2998,7 +3129,7 @@ export default function Home() {
                   </div>
 
                   {machineEquipo && (
-                    <div className="mt-4 flex justify-end">
+                    <div className="mt-4 flex justify-end gap-2">
                       <button
                         onClick={exportMachineToExcel}
                         disabled={machineTickets.length === 0}
@@ -3008,6 +3139,17 @@ export default function Home() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                         Exportar a Excel
+                      </button>
+                      <button
+                        onClick={() => { setShowSpecialExportModal(true); specialExportDiario() }}
+                        disabled={specialExportLoading}
+                        className="bg-violet-700/80 hover:bg-violet-600 text-violet-100 px-4 py-2 rounded-lg transition-all border border-violet-500/60 text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg shadow-violet-900/30"
+                        title="Descarga todas las líneas separadas por día en Excel"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        {specialExportLoading ? 'Generando...' : 'Reporte Diario'}
                       </button>
                     </div>
                   )}
@@ -4740,6 +4882,37 @@ export default function Home() {
               </svg>
             </div>
             <span className="font-semibold">Ticket creado exitosamente</span>
+          </div>
+        </div>
+      )}
+
+      {/* Reporte Diario Progress Modal */}
+      {showSpecialExportModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-2xl shadow-2xl border border-violet-500/40 p-8 max-w-sm w-full text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-900/50 border border-violet-500/50 flex items-center justify-center">
+              {specialExportLoading ? (
+                <svg className="w-8 h-8 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : (
+                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <h3 className="text-white font-bold text-lg mb-1">Reporte Diario</h3>
+            <p className="text-slate-400 text-sm">Todas las líneas · Separado por día</p>
+            <p className="text-violet-300 text-sm mt-4 font-medium min-h-[20px]">{specialExportProgress}</p>
+            {!specialExportLoading && (
+              <button
+                onClick={() => setShowSpecialExportModal(false)}
+                className="mt-5 px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+              >
+                Cerrar
+              </button>
+            )}
           </div>
         </div>
       )}
