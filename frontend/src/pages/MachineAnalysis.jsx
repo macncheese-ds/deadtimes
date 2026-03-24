@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { getEquipos, getTicketsByEquipment, getLineas } from '../api_deadtimes'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
-import ExcelJS from 'exceljs'
 
 // Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
 function formatMinutes(mins) {
@@ -196,11 +195,11 @@ export default function MachineAnalysis() {
 
       setSpecialExportProgress(`Procesando ${allTickets.length} tickets...`)
 
-      // Group by day (using hc, fallback hr)
+      // Group: day → linea → tickets[]
       const byDay = {}
       allTickets.forEach(t => {
-        const ref  = t.hc || t.hr
-        const day  = ref ? new Date(ref).toISOString().split('T')[0] : 'Sin-Fecha'
+        const ref    = t.hc || t.hr
+        const day    = ref ? new Date(ref).toISOString().split('T')[0] : 'Sin-Fecha'
         const linKey = `Línea ${t.linea}`
         if (!byDay[day]) byDay[day] = {}
         if (!byDay[day][linKey]) byDay[day][linKey] = []
@@ -208,205 +207,65 @@ export default function MachineAnalysis() {
       })
 
       const days = Object.keys(byDay).sort()
+      const wb   = XLSX.utils.book_new()
 
-      // ── ExcelJS workbook ──────────────────────────────────────────────────────
-      const wb = new ExcelJS.Workbook()
-      wb.creator  = 'Deadtimes App'
-      wb.created  = new Date()
-
-      // Colour palette per line index
-      const LINE_COLORS = [
-        { header: '1F3864', row1: 'D6E4F7', row2: 'EBF2FB', accent: '2E75B6' },
-        { header: '375623', row1: 'D9EAD3', row2: 'EEF7EB', accent: '548235' },
-        { header: '7B3F00', row1: 'FCE8D5', row2: 'FDF4EE', accent: 'C55A11' },
-        { header: '4B0082', row1: 'E8DAEF', row2: 'F5EEF8', accent: '7D3C98' },
-        { header: '880808', row1: 'FADBD8', row2: 'FDECEA', accent: 'C0392B' },
-        { header: '0B3D91', row1: 'D2E6FE', row2: 'EBF4FF', accent: '1A5276' },
-      ]
-      const getLC = idx => LINE_COLORS[idx % LINE_COLORS.length]
-
-      const applyBorder = cell => {
-        cell.border = {
-          top:    { style: 'thin', color: { argb: 'FF94A3B8' } },
-          left:   { style: 'thin', color: { argb: 'FF94A3B8' } },
-          bottom: { style: 'thin', color: { argb: 'FF94A3B8' } },
-          right:  { style: 'thin', color: { argb: 'FF94A3B8' } },
-        }
+      // Helper: push aoa rows and return the sheet
+      const makeSheet = (rows, colWidths) => {
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+        if (colWidths) ws['!cols'] = colWidths
+        return ws
       }
 
-      // ── SUMMARY sheet ────────────────────────────────────────────────────────
+      // ── RESUMEN sheet ──────────────────────────────────────────────────────
       setSpecialExportProgress('Generando hoja Resumen...')
-      const ws0 = wb.addWorksheet('Resumen', { views: [{ showGridLines: false }] })
-      ws0.columns = [
-        { width: 14 }, { width: 14 }, { width: 14 }, { width: 16 }, { width: 16 }, { width: 16 },
+      const summaryRows = [
+        [`REPORTE DIARIO DE TIEMPOS MUERTOS  •  Generado: ${new Date().toLocaleString('es-MX')}`],
+        [`Período: ${days[0]} → ${days[days.length - 1]}   |   Línea${selectedLinea ? ': ' + selectedLinea : 'a: Todas'}`],
+        [],
+        ['Fecha', 'Línea', 'Tickets', 'Duración Total (min)', 'Duración Total (h)', 'Piezas Perdidas'],
       ]
-
-      // Title
-      ws0.mergeCells('A1:F1')
-      const title = ws0.getCell('A1')
-      title.value = `REPORTE DIARIO DE TIEMPOS MUERTOS  •  Generado: ${new Date().toLocaleString('es-MX')}`
-      title.font = { bold: true, size: 13, color: { argb: 'FFFFFFFF' } }
-      title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
-      title.alignment = { horizontal: 'center', vertical: 'middle' }
-      ws0.getRow(1).height = 28
-
-      ws0.mergeCells('A2:F2')
-      const sub = ws0.getCell('A2')
-      sub.value = `Período: ${days[0]} → ${days[days.length - 1]}   |   Línea${selectedLinea ? ': ' + selectedLinea : 'a: Todas'}`
-      sub.font  = { size: 10, color: { argb: 'FF94A3B8' } }
-      sub.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }
-      sub.alignment = { horizontal: 'center' }
-      ws0.getRow(2).height = 18
-
-      ws0.addRow([])
-
-      // Header row
-      const hRow = ws0.addRow(['Fecha', 'Línea', 'Tickets', 'Duración Total (min)', 'Duración Total (h)', 'Piezas Perdidas'])
-      hRow.eachCell(cell => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
-        cell.alignment = { horizontal: 'center', vertical: 'middle' }
-        applyBorder(cell)
-      })
-      ws0.getRow(ws0.rowCount).height = 20
-
-      let lineColorMap = {}
-      let lcIdx = 0
-
       days.forEach(day => {
-        const lineEntries = Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b))
-        lineEntries.forEach(([linea, tks]) => {
-          if (lineColorMap[linea] === undefined) { lineColorMap[linea] = lcIdx++ }
-          const lc = getLC(lineColorMap[linea])
-          const totalMin   = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
-          const totalPiezas= tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          const dRow = ws0.addRow([
-            day,
-            linea,
-            tks.length,
-            totalMin,
-            parseFloat((totalMin / 60).toFixed(2)),
-            totalPiezas
-          ])
-          dRow.eachCell(cell => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + lc.row1 } }
-            cell.alignment = { horizontal: 'center', vertical: 'middle' }
-            cell.font = { size: 10 }
-            applyBorder(cell)
-          })
-        })
-      })
-
-      // ── One sheet per day ──────────────────────────────────────────────────
-      for (let di = 0; di < days.length; di++) {
-        const day = days[di]
-        setSpecialExportProgress(`Generando hoja ${di + 1}/${days.length}: ${day}...`)
-
-        const sheetName = day // YYYY-MM-DD fits in 31 chars
-        const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] })
-        ws.columns = [
-          { width: 5 },  // #
-          { width: 7 },  // ID
-          { width: 14 }, // Equipo
-          { width: 32 }, // Descripción
-          { width: 16 }, // Clasificación
-          { width: 12 }, // Duración min
-          { width: 12 }, // Duración h
-          { width: 9 },  // Piezas
-          { width: 16 }, // Técnico
-          { width: 20 }, // Apertura
-          { width: 20 }, // Cierre
-          { width: 35 }, // Solución
-        ]
-
-        // Day title banner
-        ws.mergeCells('A1:L1')
-        const dayTitle = ws.getCell('A1')
-        dayTitle.value = `📅  REPORTE DEL DÍA: ${day}`
-        dayTitle.font  = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } }
-        dayTitle.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }
-        dayTitle.alignment = { horizontal: 'center', vertical: 'middle' }
-        ws.getRow(1).height = 30
-
-        // ── Chart-data summary per line (first section, easy to select & chart in Excel)
-        ws.addRow([])
-        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-        const chartLabel = ws.getCell(`A${ws.rowCount}`)
-        chartLabel.value = '📊  DATOS PARA GRÁFICA POR LÍNEA'
-        chartLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-        chartLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
-        chartLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-        ws.getRow(ws.rowCount).height = 22
-
-        const cHdr = ws.addRow(['Línea', 'Total Tickets', 'Duración Total (min)', 'Duración Total (h)', 'Piezas Perdidas', '', '', '', '', '', '', ''])
-        cHdr.eachCell((cell, col) => {
-          if (col <= 5) {
-            cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-            cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
-            cell.alignment = { horizontal: 'center', vertical: 'middle' }
-            applyBorder(cell)
-          }
-        })
-        ws.getRow(ws.rowCount).height = 18
-
-        const lineEntries = Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b))
-        lineEntries.forEach(([linea, tks]) => {
-          const lc  = getLC(lineColorMap[linea] ?? 0)
+        Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b)).forEach(([linea, tks]) => {
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          const cRow = ws.addRow([
-            linea, tks.length, totalMin,
-            parseFloat((totalMin / 60).toFixed(2)), totalPiezas,
-          ])
-          cRow.eachCell((cell, col) => {
-            if (col <= 5) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + lc.row1 } }
-              cell.alignment = { horizontal: 'center', vertical: 'middle' }
-              cell.font = { bold: col === 1, size: 10 }
-              applyBorder(cell)
-            }
-          })
+          summaryRows.push([day, linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
         })
+      })
+      const ws0 = makeSheet(summaryRows, [
+        { wch: 13 }, { wch: 12 }, { wch: 10 }, { wch: 22 }, { wch: 20 }, { wch: 18 },
+      ])
+      XLSX.utils.book_append_sheet(wb, ws0, 'Resumen')
 
-        ws.addRow([])
-        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-        const detailLabel = ws.getCell(`A${ws.rowCount}`)
-        detailLabel.value = '📋  DETALLE DE TICKETS POR LÍNEA'
-        detailLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-        detailLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
-        detailLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-        ws.getRow(ws.rowCount).height = 22
+      // ── One sheet per day ─────────────────────────────────────────────────
+      for (let di = 0; di < days.length; di++) {
+        const day = days[di]
+        setSpecialExportProgress(`Hoja ${di + 1}/${days.length}: ${day}...`)
 
-        // ── Ticket sections per line
+        const lineEntries = Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b))
+        const rows = []
+
+        // Day title
+        rows.push([`REPORTE DEL DÍA: ${day}`])
+        rows.push([])
+
+        // ── Chart-data summary (easy to select & insert chart in Excel)
+        rows.push(['📊  DATOS PARA GRÁFICA POR LÍNEA'])
+        rows.push(['Línea', 'Total Tickets', 'Duración Total (min)', 'Duración Total (h)', 'Piezas Perdidas'])
         lineEntries.forEach(([linea, tks]) => {
-          const lc = getLC(lineColorMap[linea] ?? 0)
+          const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
+          const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
+          rows.push([linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+        })
+        rows.push([])
 
-          ws.addRow([])
-
-          // Line header banner
-          ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
-          const lHdr = ws.getCell(`A${ws.rowCount}`)
-          lHdr.value = `  ${linea.toUpperCase()}  —  ${tks.length} ticket(s)`
-          lHdr.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
-          lHdr.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + lc.header } }
-          lHdr.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
-          ws.getRow(ws.rowCount).height = 24
-
-          // Column headers
-          const colHdr = ws.addRow(['#', 'ID', 'Equipo', 'Descripción', 'Clasificación', 'Dur (min)', 'Dur (h)', 'Piezas', 'Técnico', 'Apertura', 'Cierre', 'Solución'])
-          colHdr.eachCell(cell => {
-            cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 }
-            cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + lc.accent } }
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: false }
-            applyBorder(cell)
-          })
-          ws.getRow(ws.rowCount).height = 18
-
-          // Ticket rows
+        // ── Ticket detail per line
+        rows.push(['📋  DETALLE DE TICKETS POR LÍNEA'])
+        lineEntries.forEach(([linea, tks]) => {
+          rows.push([])
+          rows.push([`== ${linea.toUpperCase()} == (${tks.length} tickets)`])
+          rows.push(['#', 'ID', 'Equipo', 'Descripción', 'Clasificación', 'Dur (min)', 'Dur (h)', 'Piezas', 'Técnico', 'Apertura', 'Cierre', 'Solución'])
           tks.forEach((t, i) => {
-            const isOdd = i % 2 === 0
-            const fgColor = 'FF' + (isOdd ? lc.row1 : lc.row2)
-            const dRow = ws.addRow([
+            rows.push([
               i + 1,
               t.id,
               t.equipo,
@@ -416,51 +275,39 @@ export default function MachineAnalysis() {
               parseFloat(((t.duracion_minutos || 0) / 60).toFixed(2)),
               t.piezas || 0,
               t.tecnico || 'N/A',
-              t.hr  ? new Date(t.hr).toLocaleString('es-MX')  : '',
-              t.hc  ? new Date(t.hc).toLocaleString('es-MX')  : '',
+              t.hr ? new Date(t.hr).toLocaleString('es-MX') : '',
+              t.hc ? new Date(t.hc).toLocaleString('es-MX') : '',
               t.solucion || '',
             ])
-            dRow.eachCell((cell, col) => {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fgColor } }
-              cell.font = { size: 9 }
-              cell.alignment = { vertical: 'middle', wrapText: col === 4 || col === 12 }
-              applyBorder(cell)
-            })
-            dRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-            dRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' }
-            dRow.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' }
-            dRow.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
-            dRow.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' }
           })
-
-          // Line totals
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          const totRow = ws.addRow(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
-          totRow.eachCell(cell => {
-            cell.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF' + lc.accent } }
-            cell.alignment = { horizontal: 'center', vertical: 'middle' }
-            applyBorder(cell)
-          })
-          totRow.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' }
-          ws.getRow(ws.rowCount).height = 18
+          rows.push(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
         })
+
+        const ws = makeSheet(rows, [
+          { wch: 4 },  // #
+          { wch: 7 },  // ID
+          { wch: 14 }, // Equipo
+          { wch: 32 }, // Descripción
+          { wch: 16 }, // Clasi
+          { wch: 12 }, // Dur min
+          { wch: 11 }, // Dur h
+          { wch: 9 },  // Piezas
+          { wch: 16 }, // Técnico
+          { wch: 20 }, // Apertura
+          { wch: 20 }, // Cierre
+          { wch: 35 }, // Solución
+        ])
+        XLSX.utils.book_append_sheet(wb, ws, day)
       }
 
-      // Write file
+      // Download
       setSpecialExportProgress('Guardando archivo...')
-      const buf  = await wb.xlsx.writeBuffer()
-      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href     = url
       const period = dateRange === 'custom'
-        ? `${customStartDate?.slice(0,10)}_${customEndDate?.slice(0,10)}`
+        ? `${customStartDate?.slice(0, 10)}_${customEndDate?.slice(0, 10)}`
         : `ultimos${dateRange}dias`
-      a.download = `Reporte_Diario_${period}.xlsx`
-      a.click()
-      URL.revokeObjectURL(url)
+      XLSX.writeFile(wb, `Reporte_Diario_${period}.xlsx`)
 
       setSpecialExportProgress('¡Listo! Descarga completada ✓')
       setTimeout(() => setShowSpecialExportModal(false), 2000)
