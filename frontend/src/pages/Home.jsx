@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef, useCallback } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   listTickets,
@@ -56,6 +56,17 @@ function formatDateTime(dateStr) {
 function minutosAHoras(minutos) {
   if (!minutos && minutos !== 0) return 0;
   return Math.round((minutos / 60) * 100) / 100;
+}
+
+// Helper para convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
+function formatMinutes(mins) {
+  if (mins === null || mins === undefined) return 'N/A';
+  const total = Math.round(Number(mins));
+  if (isNaN(total)) return 'N/A';
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
 // Helper para formatear datetime-local (preserva hora local)
@@ -4340,7 +4351,7 @@ export default function Home() {
                     </div>
                     <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
                       <p className="text-slate-400 text-xs">Deadtime</p>
-                      <p className="text-xl font-bold text-white">{selectedTicket.deadtime || 0}</p>
+                      <p className="text-xl font-bold text-white">{formatMinutes(selectedTicket.deadtime)}</p>
                     </div>
                     <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
                       <p className="text-slate-400 text-xs">Linea</p>

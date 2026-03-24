@@ -23,6 +23,15 @@ function calcularMinutos(fechaInicio, fechaFin) {
   return Math.max(0, Math.round(diffMs / 60000));
 }
 
+// Convertir minutos a formato H:MM hrs (e.g. 90 → "1:30 h")
+function formatMinutes(mins) {
+  if (mins === null || mins === undefined) return 'N/A';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}:${String(m).padStart(2, '0')} h`;
+}
+
 export default function ViewTicket(){
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
@@ -111,7 +120,7 @@ export default function ViewTicket(){
                   {formatDateTime(ticket.ha)}
                 </p>
                 {tiempoRespuesta !== null && (
-                  <p className="text-xs text-slate-400 mt-2">Respuesta: {tiempoRespuesta} min</p>
+                  <p className="text-xs text-slate-400 mt-2">Respuesta: {formatMinutes(tiempoRespuesta)}</p>
                 )}
               </div>
               
@@ -122,7 +131,7 @@ export default function ViewTicket(){
                   {formatDateTime(ticket.hc)}
                 </p>
                 {tiempoTotal !== null && (
-                  <p className="text-xs text-slate-400 mt-2">Total: {tiempoTotal} min</p>
+                  <p className="text-xs text-slate-400 mt-2">Total: {formatMinutes(tiempoTotal)}</p>
                 )}
               </div>
             </div>
@@ -132,15 +141,15 @@ export default function ViewTicket(){
               <div className="mt-4 pt-4 border-t border-slate-600/50 grid grid-cols-3 gap-4 text-center">
                 <div className="bg-slate-800/50 rounded-xl p-3">
                   <p className="text-xs text-slate-400 mb-1">Tiempo de Respuesta</p>
-                  <p className="text-xl font-bold text-emerald-400">{tiempoRespuesta ?? 'N/A'}<span className="text-sm ml-1">min</span></p>
+                  <p className="text-xl font-bold text-emerald-400">{formatMinutes(tiempoRespuesta)}</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-xl p-3">
                   <p className="text-xs text-slate-400 mb-1">Tiempo de Atención</p>
-                  <p className="text-xl font-bold text-amber-400">{tiempoAtencion ?? 'N/A'}<span className="text-sm ml-1">min</span></p>
+                  <p className="text-xl font-bold text-amber-400">{formatMinutes(tiempoAtencion)}</p>
                 </div>
                 <div className="bg-slate-800/50 rounded-xl p-3">
                   <p className="text-xs text-slate-400 mb-1">Tiempo Total</p>
-                  <p className="text-xl font-bold text-blue-400">{tiempoTotal}<span className="text-sm ml-1">min</span></p>
+                  <p className="text-xl font-bold text-blue-400">{formatMinutes(tiempoTotal)}</p>
                 </div>
               </div>
             )}
@@ -225,8 +234,8 @@ export default function ViewTicket(){
               <p className="text-xs text-slate-500">piezas/hr</p>
             </div>
             <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 text-center">
-              <p className="text-xs text-amber-300 mb-1">Minutos de Paro</p>
-              <p className="text-lg font-bold text-amber-400">{ticket.minutos || 'N/A'}</p>
+              <p className="text-xs text-amber-300 mb-1">Tiempo de Paro</p>
+              <p className="text-lg font-bold text-amber-400">{ticket.minutos != null ? formatMinutes(ticket.minutos) : 'N/A'}</p>
             </div>
             <div className="bg-rose-500/10 rounded-xl p-4 border border-rose-500/30 text-center">
               <p className="text-xs text-rose-300 mb-1">Piezas Perdidas</p>
@@ -234,7 +243,7 @@ export default function ViewTicket(){
             </div>
             <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/30 text-center">
               <p className="text-xs text-purple-300 mb-1">Tiempo Perdido</p>
-              <p className="text-lg font-bold text-purple-400">{ticket.deadtime || 'N/A'}</p>
+              <p className="text-lg font-bold text-purple-400">{ticket.deadtime != null ? formatMinutes(ticket.deadtime) : 'N/A'}</p>
             </div>
           </div>
 

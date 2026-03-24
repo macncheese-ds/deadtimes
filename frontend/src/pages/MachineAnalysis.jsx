@@ -4,6 +4,16 @@ import { getEquipos, getTicketsByEquipment, getLineas } from '../api_deadtimes'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
 
+// Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
+function formatMinutes(mins) {
+  if (mins === null || mins === undefined) return 'N/A';
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}:${String(m).padStart(2, '0')} h`;
+}
+
 export default function MachineAnalysis() {
   const navigate = useNavigate()
   const [maquinas, setMaquinas] = useState([])
@@ -120,7 +130,7 @@ export default function MachineAnalysis() {
     return tickets.slice(0, 10).map((ticket, idx) => ({
       name: `#${ticket.id}`,
       fullData: ticket,
-      'Tiempo (min)': ticket.duracion_minutos || 0,
+      'Tiempo (h)': parseFloat(((ticket.duracion_minutos || 0) / 60).toFixed(2)),
       'Piezas Perdidas': ticket.piezas || 0
     }))
   }
@@ -137,6 +147,7 @@ export default function MachineAnalysis() {
       'Modelo': ticket.modelo,
       'Línea': ticket.linea,
       'Duración (min)': ticket.duracion_minutos || 0,
+      'Duración (horas)': parseFloat(((ticket.duracion_minutos || 0) / 60).toFixed(2)),
       'Piezas Perdidas': ticket.piezas || 0,
       'Reportado por': ticket.nombre,
       'Técnico': ticket.tecnico,
@@ -166,7 +177,7 @@ export default function MachineAnalysis() {
         <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
           <p className="text-slate-200 font-medium text-sm mb-2">Ticket #{data.id}</p>
           <p className="text-xs text-slate-400 mb-1">{data.descr}</p>
-          <p className="text-xs text-amber-300">Tiempo: {data.duracion_minutos || 0} min</p>
+          <p className="text-xs text-amber-300">Tiempo: {formatMinutes(data.duracion_minutos || 0)}</p>
           <p className="text-xs text-rose-300">Piezas: {data.piezas || 0}</p>
         </div>
       )
@@ -347,8 +358,7 @@ export default function MachineAnalysis() {
                   <div>
                     <p className="text-amber-300 text-sm font-medium">Tiempo Total</p>
                     <p className="text-3xl font-bold text-amber-100 mt-1">
-                      {tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0)}
-                      <span className="text-lg ml-1">min</span>
+                      {formatMinutes(tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0))}
                     </p>
                   </div>
                   <div className="bg-amber-700/40 p-3 rounded-full">
@@ -364,8 +374,7 @@ export default function MachineAnalysis() {
                   <div>
                     <p className="text-purple-300 text-sm font-medium">Tiempo Promedio</p>
                     <p className="text-3xl font-bold text-purple-100 mt-1">
-                      {Math.round(tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0) / tickets.length)}
-                      <span className="text-lg ml-1">min</span>
+                      {formatMinutes(Math.round(tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0) / tickets.length))}
                     </p>
                   </div>
                   <div className="bg-purple-700/40 p-3 rounded-full">
@@ -403,7 +412,7 @@ export default function MachineAnalysis() {
                   <YAxis dataKey="name" type="category" stroke="#94a3b8" width={60} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend />
-                  <Bar dataKey="Tiempo (min)" fill="#f59e0b" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="Tiempo (h)" fill="#f59e0b" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -451,7 +460,7 @@ export default function MachineAnalysis() {
                         <td className="px-4 py-3 text-slate-300">{ticket.modelo}</td>
                         <td className="px-4 py-3 text-slate-300">Línea {ticket.linea}</td>
                         <td className="px-4 py-3 text-amber-300 font-semibold">
-                          {ticket.duracion_minutos || 0} min
+                          {formatMinutes(ticket.duracion_minutos || 0)}
                         </td>
                         <td className="px-4 py-3 text-rose-300">{ticket.piezas || 0}</td>
                         <td className="px-4 py-3 text-slate-400 text-xs">
@@ -552,7 +561,7 @@ export default function MachineAnalysis() {
                     <div>
                       <span className="text-slate-500 block">Duración Total:</span>
                       <span className="text-amber-300 font-bold text-lg">
-                        {selectedTicket.duracion_minutos || 0} min
+                        {formatMinutes(selectedTicket.duracion_minutos || 0)}
                       </span>
                     </div>
                     <div>
@@ -581,7 +590,7 @@ export default function MachineAnalysis() {
                     <div>
                       <span className="text-slate-500 block">Tiempo Perdido (Deadtime):</span>
                       <span className="text-amber-300 font-bold text-lg">
-                        {selectedTicket.deadtime || 0} min
+                        {formatMinutes(selectedTicket.deadtime || 0)}
                       </span>
                     </div>
                   </div>

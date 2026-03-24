@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { getDisplayTickets, getEstado } from '../api_deadtimes'
 
+// Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
+function formatMinutes(mins) {
+  if (mins === null || mins === undefined) return 'N/A';
+  const total = Math.round(mins);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  return `${h}:${String(m).padStart(2, '0')} h`;
+}
+
 export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {}, auditoriaActivo = {} }) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -206,7 +216,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
               <div className={`mb-2 ${getTimeColor(ticket.duracion_minutos)} rounded p-1.5`}>
                 <p className="text-gray-300 text-xs">TIEMPO</p>
                 <p className="text-lg font-bold">
-                  {ticket.duracion_minutos ? `${Math.round(ticket.duracion_minutos)}m` : 'Reciente'}
+                  {ticket.duracion_minutos ? formatMinutes(Math.round(ticket.duracion_minutos)) : 'Reciente'}
                 </p>
               </div>
 
