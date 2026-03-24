@@ -1174,6 +1174,62 @@ export default function Home() {
   }
 
   // ===== REPORTE DIARIO (special export) =====================================
+  // Helper: draw a horizontal bar chart on a canvas and return PNG base64
+  const renderBarChartPNG = (lineEntries, W = 700, H_PER_BAR = 40, PADDING = 60) => {
+    const bars = lineEntries.map(([linea, tks]) => ({
+      label: linea,
+      value: parseFloat((tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0) / 60).toFixed(2)),
+      tickets: tks.length,
+      piezas: tks.reduce((s, t) => s + (t.piezas || 0), 0),
+    }))
+    const H = PADDING * 2 + bars.length * H_PER_BAR + 20
+    const canvas = document.createElement('canvas')
+    canvas.width  = W
+    canvas.height = H
+    const ctx = canvas.getContext('2d')
+
+    // Background
+    ctx.fillStyle = '#1e293b'
+    ctx.fillRect(0, 0, W, H)
+
+    const maxVal = Math.max(...bars.map(b => b.value), 0.01)
+    const BAR_AREA_W = W - PADDING - 160  // left label + right value space
+    const BAR_COLORS = ['#3b82f6','#22c55e','#f59e0b','#a855f7','#ef4444','#06b6d4']
+
+    // Title
+    ctx.fillStyle = '#f1f5f9'
+    ctx.font = 'bold 14px sans-serif'
+    ctx.fillText('Duracion por Linea (horas)', PADDING, 22)
+
+    bars.forEach((bar, i) => {
+      const y     = PADDING + i * H_PER_BAR
+      const barW  = (bar.value / maxVal) * BAR_AREA_W
+      const color = BAR_COLORS[i % BAR_COLORS.length]
+
+      // Bar background (track)
+      ctx.fillStyle = '#334155'
+      ctx.fillRect(PADDING, y, BAR_AREA_W, H_PER_BAR - 8)
+
+      // Bar fill
+      ctx.fillStyle = color
+      ctx.fillRect(PADDING, y, Math.max(barW, 2), H_PER_BAR - 8)
+
+      // Label (left)
+      ctx.fillStyle = '#e2e8f0'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'right'
+      ctx.fillText(bar.label, PADDING - 6, y + (H_PER_BAR - 8) / 2 + 4)
+
+      // Value (right of bar)
+      ctx.fillStyle = '#fbbf24'
+      ctx.textAlign = 'left'
+      ctx.fillText(`${bar.value} h  |  ${bar.tickets} tkt  |  ${bar.piezas} pzs`,
+        PADDING + BAR_AREA_W + 8, y + (H_PER_BAR - 8) / 2 + 4)
+    })
+
+    return canvas.toDataURL('image/png').split(',')[1] // base64 only
+  }
+
   const specialExportDiario = async () => {
     setSpecialExportLoading(true)
     setSpecialExportProgress('Obteniendo tickets...')
@@ -1189,80 +1245,190 @@ export default function Home() {
 
       const allTickets = await getTicketsByEquipment(params)
       if (!allTickets || allTickets.length === 0) {
-        setSpecialExportProgress('No hay tickets para este período.')
+        setSpecialExportProgress('No hay tickets para este periodo.')
         setTimeout(() => setShowSpecialExportModal(false), 2000)
         return
       }
 
       setSpecialExportProgress(`Procesando ${allTickets.length} tickets...`)
 
-      // Group: day → linea → tickets[]
+      // Group: day -> linea -> tickets[]
       const byDay = {}
       allTickets.forEach(t => {
         const ref    = t.hc || t.hr
         const day    = ref ? new Date(ref).toISOString().split('T')[0] : 'Sin-Fecha'
-        const linKey = `Línea ${t.linea}`
+        const linKey = `Linea ${t.linea}`
         if (!byDay[day]) byDay[day] = {}
         if (!byDay[day][linKey]) byDay[day][linKey] = []
         byDay[day][linKey].push(t)
       })
 
       const days = Object.keys(byDay).sort()
-      const wb   = XLSX.utils.book_new()
 
-      const makeSheet = (rows, colWidths) => {
-        const ws = XLSX.utils.aoa_to_sheet(rows)
-        if (colWidths) ws['!cols'] = colWidths
-        return ws
+      // Load ExcelJS browser build dynamically
+      setSpecialExportProgress('Inicializando exportador...')
+      const ExcelJS = (await import('exceljs')).default
+      const wb = new ExcelJS.Workbook()
+      wb.creator = 'Deadtimes App'
+      wb.created = new Date()
+
+      const applyBorder = cell => {
+        cell.border = {
+          top:    { style: 'thin', color: { argb: 'FF475569' } },
+          left:   { style: 'thin', color: { argb: 'FF475569' } },
+          bottom: { style: 'thin', color: { argb: 'FF475569' } },
+          right:  { style: 'thin', color: { argb: 'FF475569' } },
+        }
       }
 
-      // Resumen sheet
+      // ── Resumen sheet ───────────────────────────────────────────────────────
       setSpecialExportProgress('Generando hoja Resumen...')
-      const summaryRows = [
-        [`REPORTE DIARIO DE TIEMPOS MUERTOS  •  Generado: ${new Date().toLocaleString('es-MX')}`],
-        [`Período: ${days[0]} → ${days[days.length - 1]}   |   Línea${machineLinea ? ': ' + machineLinea : 'a: Todas'}`],
-        [],
-        ['Fecha', 'Línea', 'Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'],
+      const ws0 = wb.addWorksheet('Resumen', { views: [{ showGridLines: false }] })
+      ws0.columns = [
+        { width: 13 }, { width: 12 }, { width: 10 },
+        { width: 18 }, { width: 16 }, { width: 16 },
       ]
+      ws0.mergeCells('A1:F1')
+      const t0 = ws0.getCell('A1')
+      t0.value = `REPORTE DIARIO DE TIEMPOS MUERTOS  |  Generado: ${new Date().toLocaleString('es-MX')}`
+      t0.font  = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } }
+      t0.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }
+      t0.alignment = { horizontal: 'center', vertical: 'middle' }
+      ws0.getRow(1).height = 26
+      ws0.mergeCells('A2:F2')
+      const s0 = ws0.getCell('A2')
+      s0.value = `Periodo: ${days[0]} -> ${days[days.length - 1]}   |   Linea: ${machineLinea || 'Todas'}`
+      s0.font  = { size: 10, color: { argb: 'FF94A3B8' } }
+      s0.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+      s0.alignment = { horizontal: 'center' }
+      ws0.addRow([])
+      const hdr0 = ws0.addRow(['Fecha', 'Linea', 'Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'])
+      hdr0.eachCell(c => {
+        c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
+        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
+        c.alignment = { horizontal: 'center', vertical: 'middle' }
+        applyBorder(c)
+      })
+      const lineColorMap = {}
+      const LC = [
+        { row: 'FFD6E4F7', accent: 'FF2E75B6' }, { row: 'FFD9EAD3', accent: 'FF548235' },
+        { row: 'FFFCE8D5', accent: 'FFC55A11' }, { row: 'FFE8DAEF', accent: 'FF7D3C98' },
+        { row: 'FFFADBD8', accent: 'FFC0392B' }, { row: 'FFD2E6FE', accent: 'FF1A5276' },
+      ]
+      let lcIdx = 0
       days.forEach(day => {
         Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b)).forEach(([linea, tks]) => {
+          if (lineColorMap[linea] === undefined) lineColorMap[linea] = lcIdx++
+          const lc = LC[lineColorMap[linea] % LC.length]
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          summaryRows.push([day, linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          const row = ws0.addRow([day, linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          row.eachCell(c => {
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.row } }
+            c.alignment = { horizontal: 'center', vertical: 'middle' }
+            c.font = { size: 10 }
+            applyBorder(c)
+          })
         })
       })
-      XLSX.utils.book_append_sheet(wb, makeSheet(summaryRows, [
-        { wch: 13 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 16 },
-      ]), 'Resumen')
 
-      // One sheet per day
+      // ── One sheet per day ───────────────────────────────────────────────────
       for (let di = 0; di < days.length; di++) {
         const day = days[di]
         setSpecialExportProgress(`Hoja ${di + 1}/${days.length}: ${day}...`)
 
         const lineEntries = Object.entries(byDay[day]).sort(([a], [b]) => a.localeCompare(b))
-        const rows = []
-        rows.push([`REPORTE DEL DÍA: ${day}`])
-        rows.push([])
+        const ws = wb.addWorksheet(day, { views: [{ showGridLines: false }] })
+        ws.columns = [
+          { width: 5 }, { width: 7 }, { width: 14 }, { width: 32 }, { width: 16 },
+          { width: 12 }, { width: 11 }, { width: 9 }, { width: 16 }, { width: 20 }, { width: 20 }, { width: 35 },
+        ]
 
-        // Chart-data summary
-        rows.push([`📊  DATOS PARA GRÁFICA POR LÍNEA`])
-        rows.push(['Línea', 'Total Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'])
+        // Day title
+        ws.mergeCells('A1:L1')
+        const dayTitle = ws.getCell('A1')
+        dayTitle.value = `REPORTE DEL DIA: ${day}`
+        dayTitle.font  = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } }
+        dayTitle.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }
+        dayTitle.alignment = { horizontal: 'center', vertical: 'middle' }
+        ws.getRow(1).height = 28
+
+        // ── Chart image: one bar chart showing all lines for this day
+        const chartPng = renderBarChartPNG(lineEntries)
+        const imgId = wb.addImage({ base64: chartPng, extension: 'png' })
+        // Chart goes on rows 2-18 (approx 280px tall), columns A-L
+        ws.addImage(imgId, { tl: { col: 0, row: 1 }, br: { col: 11, row: 2 + lineEntries.length * 2 + 2 } })
+
+        // Blank rows to make room for the chart image
+        const chartRows = lineEntries.length * 2 + 3
+        for (let r = 0; r < chartRows; r++) ws.addRow([])
+
+        // Summary data header
+        ws.addRow([])
+        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
+        const summLabel = ws.getCell(`A${ws.rowCount}`)
+        summLabel.value = 'RESUMEN POR LINEA'
+        summLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
+        summLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
+        summLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+        ws.getRow(ws.rowCount).height = 20
+
+        const sHdr = ws.addRow(['Linea', 'Total Tickets', 'Dur. Total (min)', 'Dur. Total (h)', 'Piezas Perdidas'])
+        sHdr.eachCell((c, col) => {
+          if (col <= 5) {
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
+            c.alignment = { horizontal: 'center', vertical: 'middle' }
+            applyBorder(c)
+          }
+        })
+
         lineEntries.forEach(([linea, tks]) => {
+          const lc = LC[lineColorMap[linea] % LC.length]
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          rows.push([linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          const sRow = ws.addRow([linea, tks.length, totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          sRow.eachCell((c, col) => {
+            if (col <= 5) {
+              c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.row } }
+              c.alignment = { horizontal: 'center', vertical: 'middle' }
+              c.font = { size: 10 }
+              applyBorder(c)
+            }
+          })
         })
-        rows.push([])
 
-        // Ticket detail per line
-        rows.push([`📋  DETALLE DE TICKETS POR LÍNEA`])
+        ws.addRow([])
+        ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
+        const detLabel = ws.getCell(`A${ws.rowCount}`)
+        detLabel.value = 'DETALLE DE TICKETS POR LINEA'
+        detLabel.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
+        detLabel.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } }
+        detLabel.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+        ws.getRow(ws.rowCount).height = 20
+
+        // Ticket rows per line
         lineEntries.forEach(([linea, tks]) => {
-          rows.push([])
-          rows.push([`== ${linea.toUpperCase()} == (${tks.length} tickets)`])
-          rows.push(['#', 'ID', 'Equipo', 'Descripción', 'Clasificación', 'Dur (min)', 'Dur (h)', 'Piezas', 'Técnico', 'Apertura', 'Cierre', 'Solución'])
+          const lc = LC[lineColorMap[linea] % LC.length]
+          ws.addRow([])
+          ws.mergeCells(`A${ws.rowCount}:L${ws.rowCount}`)
+          const lHdr = ws.getCell(`A${ws.rowCount}`)
+          lHdr.value = `  ${linea.toUpperCase()}  --  ${tks.length} ticket(s)`
+          lHdr.font  = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } }
+          lHdr.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.accent } }
+          lHdr.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 }
+          ws.getRow(ws.rowCount).height = 22
+
+          const colHdr = ws.addRow(['#', 'ID', 'Equipo', 'Descripcion', 'Clasificacion', 'Dur (min)', 'Dur (h)', 'Piezas', 'Tecnico', 'Apertura', 'Cierre', 'Solucion'])
+          colHdr.eachCell(c => {
+            c.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 }
+            c.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } }
+            c.alignment = { horizontal: 'center', vertical: 'middle' }
+            applyBorder(c)
+          })
+
           tks.forEach((t, i) => {
-            rows.push([
+            const dRow = ws.addRow([
               i + 1, t.id, t.equipo, t.descr, t.clasificacion || 'N/A',
               t.duracion_minutos || 0,
               parseFloat(((t.duracion_minutos || 0) / 60).toFixed(2)),
@@ -1271,25 +1437,41 @@ export default function Home() {
               t.hc ? new Date(t.hc).toLocaleString('es-MX') : '',
               t.solucion || '',
             ])
+            dRow.eachCell((c, col) => {
+              c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i % 2 === 0 ? lc.row : 'FFFFFFFF' } }
+              c.font = { size: 9 }
+              c.alignment = { vertical: 'middle', wrapText: col === 4 || col === 12 }
+              applyBorder(c)
+            })
           })
+
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
           const totalPiezas = tks.reduce((s, t) => s + (t.piezas || 0), 0)
-          rows.push(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          const totRow = ws.addRow(['', '', '', `TOTAL ${linea}`, '', totalMin, parseFloat((totalMin / 60).toFixed(2)), totalPiezas])
+          totRow.eachCell(c => {
+            c.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } }
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: lc.accent } }
+            c.alignment = { horizontal: 'center', vertical: 'middle' }
+            applyBorder(c)
+          })
         })
-
-        XLSX.utils.book_append_sheet(wb, makeSheet(rows, [
-          { wch: 4 }, { wch: 7 }, { wch: 14 }, { wch: 32 }, { wch: 16 },
-          { wch: 11 }, { wch: 10 }, { wch: 9 }, { wch: 16 }, { wch: 20 }, { wch: 20 }, { wch: 35 },
-        ]), day)
       }
 
+      // Write & download
       setSpecialExportProgress('Guardando archivo...')
+      const buf  = await wb.xlsx.writeBuffer()
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
       const period = dateRange === 'custom'
         ? `${customStartDate?.slice(0, 10)}_${customEndDate?.slice(0, 10)}`
         : `ultimos${dateRange}dias`
-      XLSX.writeFile(wb, `Reporte_Diario_${period}.xlsx`)
+      a.download = `Reporte_Diario_${period}.xlsx`
+      a.click()
+      URL.revokeObjectURL(url)
 
-      setSpecialExportProgress('¡Listo! Descarga completada ✓')
+      setSpecialExportProgress('Listo! Descarga completada')
       setTimeout(() => setShowSpecialExportModal(false), 2000)
     } catch (err) {
       console.error('Special export error:', err)
