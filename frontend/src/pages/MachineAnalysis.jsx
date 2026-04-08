@@ -329,10 +329,10 @@ export default function MachineAnalysis() {
     if (active && payload && payload.length) {
       const data = payload[0].payload.fullData
       return (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
-          <p className="text-slate-200 font-medium text-sm mb-2">Ticket #{data.id}</p>
-          <p className="text-xs text-slate-400 mb-1">{data.descr}</p>
-          <p className="text-xs text-amber-300">Tiempo: {formatMinutes(data.duracion_minutos || 0)}</p>
+        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 shadow-xl">
+          <p className="text-neutral-200 font-medium text-sm mb-2">Ticket #{data.id}</p>
+          <p className="text-xs text-neutral-400 mb-1">{data.descr}</p>
+          <p className="text-xs text-neutral-200">Tiempo: {formatMinutes(data.duracion_minutos || 0)}</p>
           <p className="text-xs text-rose-300">Piezas: {data.piezas || 0}</p>
         </div>
       )
@@ -342,20 +342,20 @@ export default function MachineAnalysis() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-slate-400 mb-4"></div>
-          <p className="text-slate-300 text-lg font-medium">Cargando análisis...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-slate-400 mb-4"></div>
+          <p className="text-neutral-300 text-lg font-medium">Cargando análisis...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-3 sm:p-6">
+    <div className="min-h-screen bg-neutral-950 p-3 sm:p-6">
       <div className="w-full">
         {/* Header */}
-        <div className="bg-slate-800 border-l-4 border-orange-600 rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-neutral-900 border-l-4 border-orange-600 rounded-lg shadow-lg p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-xl sm:text-3xl font-semibold text-slate-100 flex items-center gap-3">
@@ -364,13 +364,13 @@ export default function MachineAnalysis() {
                 </svg>
                 Análisis de Máquinas
               </h1>
-              <p className="text-slate-400 mt-1 text-sm sm:text-base">
+              <p className="text-neutral-400 mt-1 text-sm sm:text-base">
                 Visualiza los tickets con mayores tiempos por máquina para identificar errores y tiempos de atención
               </p>
             </div>
             <button 
               onClick={() => navigate('/')} 
-              className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg transition-colors text-sm"
+              className="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 px-4 py-2 rounded-lg transition-colors text-sm"
             >
               Volver
             </button>
@@ -378,14 +378,14 @@ export default function MachineAnalysis() {
         </div>
 
         {/* Filtros */}
-        <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6 mb-4 sm:mb-6">
           <h2 className="text-lg font-semibold text-slate-100 mb-4">Filtros</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Selector de máquina */}
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">Máquina</label>
+              <label className="block text-neutral-300 text-sm font-medium mb-2">Máquina</label>
               <select 
-                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                 value={selectedMaquina}
                 onChange={e => setSelectedMaquina(e.target.value)}
               >
@@ -400,9 +400,9 @@ export default function MachineAnalysis() {
 
             {/* Selector de línea */}
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">Línea (opcional)</label>
+              <label className="block text-neutral-300 text-sm font-medium mb-2">Línea (opcional)</label>
               <select 
-                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                 value={selectedLinea}
                 onChange={e => setSelectedLinea(e.target.value)}
               >
@@ -415,9 +415,9 @@ export default function MachineAnalysis() {
 
             {/* Selector de rango de fechas */}
             <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">Período</label>
+              <label className="block text-neutral-300 text-sm font-medium mb-2">Período</label>
               <select 
-                className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                 value={dateRange}
                 onChange={e => setDateRange(e.target.value)}
               >
@@ -434,7 +434,7 @@ export default function MachineAnalysis() {
               <button
                 onClick={exportToExcel}
                 disabled={!tickets || tickets.length === 0}
-                className="flex-1 bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 px-3 py-2.5 rounded-lg transition-colors border border-emerald-600/50 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-emerald-700/60 hover:bg-emerald-600/70 text-emerald-100 px-3 py-2.5 rounded-lg transition-colors border border-neutral-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -458,19 +458,19 @@ export default function MachineAnalysis() {
             {dateRange === 'custom' && (
               <>
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">Desde</label>
+                  <label className="block text-neutral-300 text-sm font-medium mb-2">Desde</label>
                   <input 
                     type="datetime-local"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                     value={customStartDate}
                     onChange={e => setCustomStartDate(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 text-sm font-medium mb-2">Hasta</label>
+                  <label className="block text-neutral-300 text-sm font-medium mb-2">Hasta</label>
                   <input 
                     type="datetime-local"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                     value={customEndDate}
                     onChange={e => setCustomEndDate(e.target.value)}
                   />
@@ -482,33 +482,33 @@ export default function MachineAnalysis() {
 
         {/* Contenido principal */}
         {!selectedMaquina ? (
-          <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-12 text-center">
+          <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-12 text-center">
             <svg className="w-20 h-20 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <p className="text-slate-400 text-lg">Selecciona una máquina o "Todas las máquinas" para ver el análisis</p>
+            <p className="text-neutral-400 text-lg">Selecciona una máquina o "Todas las máquinas" para ver el análisis</p>
           </div>
         ) : loadingTickets ? (
-          <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-12 text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-orange-400 mb-4"></div>
-            <p className="text-slate-300 text-lg font-medium">Cargando tickets...</p>
+          <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-orange-400 mb-4"></div>
+            <p className="text-neutral-300 text-lg font-medium">Cargando tickets...</p>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-12 text-center">
+          <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-12 text-center">
             <svg className="w-20 h-20 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <p className="text-slate-400 text-lg">No hay tickets para esta máquina</p>
-            <p className="text-slate-500 text-sm mt-1">en el período seleccionado</p>
+            <p className="text-neutral-400 text-lg">No hay tickets para esta máquina</p>
+            <p className="text-neutral-500 text-sm mt-1">en el período seleccionado</p>
           </div>
         ) : (
           <>
             {/* Estadísticas resumidas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-blue-700/50 rounded-lg p-4 shadow-lg">
+              <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 border border-neutral-700 rounded-lg p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-300 text-sm font-medium">Total Tickets</p>
+                    <p className="text-neutral-200 text-sm font-medium">Total Tickets</p>
                     <p className="text-3xl font-bold text-blue-100 mt-1">{tickets.length}</p>
                   </div>
                   <div className="bg-blue-700/40 p-3 rounded-full">
@@ -519,10 +519,10 @@ export default function MachineAnalysis() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-amber-900/40 to-amber-800/20 border border-amber-700/50 rounded-lg p-4 shadow-lg">
+              <div className="bg-gradient-to-br from-amber-900/40 to-amber-800/20 border border-neutral-700 rounded-lg p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-amber-300 text-sm font-medium">Tiempo Total</p>
+                    <p className="text-neutral-200 text-sm font-medium">Tiempo Total</p>
                     <p className="text-3xl font-bold text-amber-100 mt-1">
                       {formatMinutes(tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0))}
                     </p>
@@ -535,10 +535,10 @@ export default function MachineAnalysis() {
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-purple-700/50 rounded-lg p-4 shadow-lg">
+              <div className="bg-gradient-to-br from-purple-900/40 to-purple-800/20 border border-neutral-700 rounded-lg p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-300 text-sm font-medium">Tiempo Promedio</p>
+                    <p className="text-neutral-200 text-sm font-medium">Tiempo Promedio</p>
                     <p className="text-3xl font-bold text-purple-100 mt-1">
                       {formatMinutes(Math.round(tickets.reduce((sum, t) => sum + (t.duracion_minutos || 0), 0) / tickets.length))}
                     </p>
@@ -569,7 +569,7 @@ export default function MachineAnalysis() {
             </div>
 
             {/* Gráfica de Top 10 tickets */}
-            <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 mb-6">
+            <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6 mb-6">
               <h2 className="text-lg font-semibold text-slate-100 mb-4">Top 10 Tickets con Mayor Tiempo</h2>
               <ResponsiveContainer width="100%" height={400}>
                 <BarChart data={prepareChartData()} layout="vertical">
@@ -584,13 +584,13 @@ export default function MachineAnalysis() {
             </div>
 
             {/* Tabla detallada de tickets */}
-            <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+            <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-slate-100 mb-4">
                 Detalle de Tickets - {selectedMaquina}
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-slate-300 uppercase bg-slate-700">
+                  <thead className="text-xs text-neutral-300 uppercase bg-neutral-800">
                     <tr>
                       <th className="px-4 py-3">#</th>
                       <th className="px-4 py-3">ID</th>
@@ -609,33 +609,33 @@ export default function MachineAnalysis() {
                   </thead>
                   <tbody>
                     {tickets.map((ticket, idx) => (
-                      <tr key={ticket.id} className="border-b border-slate-700 hover:bg-slate-700/50">
-                        <td className="px-4 py-3 text-slate-400">{idx + 1}</td>
-                        <td className="px-4 py-3 font-medium text-blue-300">#{ticket.id}</td>
+                      <tr key={ticket.id} className="border-b border-neutral-800 hover:bg-neutral-800/50">
+                        <td className="px-4 py-3 text-neutral-400">{idx + 1}</td>
+                        <td className="px-4 py-3 font-medium text-neutral-200">#{ticket.id}</td>
                         <td className="px-4 py-3 text-orange-300 font-medium">{ticket.equipo}</td>
-                        <td className="px-4 py-3 text-slate-200 max-w-xs truncate" title={ticket.descr}>
+                        <td className="px-4 py-3 text-neutral-200 max-w-xs truncate" title={ticket.descr}>
                           {ticket.descr}
                         </td>
-                        <td className="px-4 py-3 text-slate-300">
-                          <span className="px-2 py-1 bg-slate-600 rounded text-xs">
+                        <td className="px-4 py-3 text-neutral-300">
+                          <span className="px-2 py-1 bg-neutral-700 rounded text-xs">
                             {ticket.clasificacion || 'N/A'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-slate-300 text-xs">{ticket.pa || 'N/A'}</td>
-                        <td className="px-4 py-3 text-slate-300 text-xs">{ticket.pf || 'N/A'}</td>
-                        <td className="px-4 py-3 text-slate-300">{ticket.modelo}</td>
-                        <td className="px-4 py-3 text-slate-300">Línea {ticket.linea}</td>
-                        <td className="px-4 py-3 text-amber-300 font-semibold">
+                        <td className="px-4 py-3 text-neutral-300 text-xs">{ticket.pa || 'N/A'}</td>
+                        <td className="px-4 py-3 text-neutral-300 text-xs">{ticket.pf || 'N/A'}</td>
+                        <td className="px-4 py-3 text-neutral-300">{ticket.modelo}</td>
+                        <td className="px-4 py-3 text-neutral-300">Línea {ticket.linea}</td>
+                        <td className="px-4 py-3 text-neutral-200 font-semibold">
                           {formatMinutes(ticket.duracion_minutos || 0)}
                         </td>
                         <td className="px-4 py-3 text-rose-300">{ticket.piezas || 0}</td>
-                        <td className="px-4 py-3 text-slate-400 text-xs">
+                        <td className="px-4 py-3 text-neutral-400 text-xs">
                           {ticket.hc ? new Date(ticket.hc).toLocaleDateString('es-MX') : 'N/A'}
                         </td>
                         <td className="px-4 py-3">
                           <button
                             onClick={() => openTicketDetail(ticket)}
-                            className="text-blue-400 hover:text-blue-300 text-xs font-medium"
+                            className="text-neutral-200 hover:text-neutral-200 text-xs font-medium"
                           >
                             Ver detalle
                           </button>
@@ -653,18 +653,18 @@ export default function MachineAnalysis() {
       {/* Modal de detalle de ticket */}
       {showModal && selectedTicket && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
-          <div className="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 max-w-3xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-neutral-900 rounded-lg shadow-2xl border border-neutral-800 max-w-3xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-orange-900/60 to-slate-900 border-b border-slate-700 p-4 sm:p-6 flex justify-between items-start">
+            <div className="bg-white text-black hover:bg-neutral-200/60 to-slate-900 border-b border-neutral-800 p-4 sm:p-6 flex justify-between items-start">
               <div>
                 <h2 className="text-xl sm:text-2xl font-semibold text-slate-100 mb-2">
                   Ticket #{selectedTicket.id}
                 </h2>
-                <p className="text-slate-400 text-sm">{selectedTicket.equipo}</p>
+                <p className="text-neutral-400 text-sm">{selectedTicket.equipo}</p>
               </div>
               <button 
                 onClick={() => setShowModal(false)} 
-                className="text-slate-400 hover:text-slate-200 text-2xl leading-none px-3 hover:bg-slate-700/50 rounded-lg transition-colors"
+                className="text-neutral-400 hover:text-neutral-200 text-2xl leading-none px-3 hover:bg-neutral-800/50 rounded-lg transition-colors"
               >
                 ×
               </button>
@@ -674,44 +674,44 @@ export default function MachineAnalysis() {
             <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(80vh-120px)]">
               <div className="space-y-4">
                 {/* Información principal */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="text-slate-300 font-medium mb-3">Información del Ticket</h3>
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-neutral-300 font-medium mb-3">Información del Ticket</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-slate-500 block">Descripción:</span>
-                      <span className="text-slate-200">{selectedTicket.descr}</span>
+                      <span className="text-neutral-500 block">Descripción:</span>
+                      <span className="text-neutral-200">{selectedTicket.descr}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Clasificación:</span>
-                      <span className="text-slate-200">{selectedTicket.clasificacion || 'N/A'}</span>
+                      <span className="text-neutral-500 block">Clasificación:</span>
+                      <span className="text-neutral-200">{selectedTicket.clasificacion || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Modelo:</span>
-                      <span className="text-slate-200">{selectedTicket.modelo}</span>
+                      <span className="text-neutral-500 block">Modelo:</span>
+                      <span className="text-neutral-200">{selectedTicket.modelo}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Línea:</span>
-                      <span className="text-slate-200">Línea {selectedTicket.linea}</span>
+                      <span className="text-neutral-500 block">Línea:</span>
+                      <span className="text-neutral-200">Línea {selectedTicket.linea}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Sección Afectada:</span>
-                      <span className="text-slate-200">{selectedTicket.pa || 'N/A'}</span>
+                      <span className="text-neutral-500 block">Sección Afectada:</span>
+                      <span className="text-neutral-200">{selectedTicket.pa || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Condición de Paro:</span>
-                      <span className="text-slate-200">{selectedTicket.pf || 'N/A'}</span>
+                      <span className="text-neutral-500 block">Condición de Paro:</span>
+                      <span className="text-neutral-200">{selectedTicket.pf || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Montadoras afectadas - Mostrar solo si es NXT */}
                 {selectedTicket.equipo === 'NXT' && (
-                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                    <h3 className="text-cyan-300 font-medium mb-3">Montadoras Afectadas</h3>
+                  <div className="bg-cyan-500/10 border border-neutral-700 rounded-lg p-4">
+                    <h3 className="text-neutral-200 font-medium mb-3">Montadoras Afectadas</h3>
                     <div className="grid grid-cols-6 gap-2">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
                         <div key={i} className={`flex items-center justify-center py-2 px-1 rounded text-sm font-medium ${
-                          selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                          selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-neutral-200 border border-neutral-700' : 'bg-neutral-800/30 text-neutral-500 border border-neutral-700/30'
                         }`}>
                           M{i}
                         </div>
@@ -721,24 +721,24 @@ export default function MachineAnalysis() {
                 )}
 
                 {/* Tiempos */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="text-slate-300 font-medium mb-3">Tiempos</h3>
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-neutral-300 font-medium mb-3">Tiempos</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div>
-                      <span className="text-slate-500 block">Duración Total:</span>
-                      <span className="text-amber-300 font-bold text-lg">
+                      <span className="text-neutral-500 block">Duración Total:</span>
+                      <span className="text-neutral-200 font-bold text-lg">
                         {formatMinutes(selectedTicket.duracion_minutos || 0)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Fecha Apertura:</span>
-                      <span className="text-slate-200">
+                      <span className="text-neutral-500 block">Fecha Apertura:</span>
+                      <span className="text-neutral-200">
                         {selectedTicket.hr ? new Date(selectedTicket.hr).toLocaleString('es-MX') : 'N/A'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Fecha Cierre:</span>
-                      <span className="text-slate-200">
+                      <span className="text-neutral-500 block">Fecha Cierre:</span>
+                      <span className="text-neutral-200">
                         {selectedTicket.hc ? new Date(selectedTicket.hc).toLocaleString('es-MX') : 'N/A'}
                       </span>
                     </div>
@@ -746,16 +746,16 @@ export default function MachineAnalysis() {
                 </div>
 
                 {/* Producción */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="text-slate-300 font-medium mb-3">Impacto en Producción</h3>
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-neutral-300 font-medium mb-3">Impacto en Producción</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-slate-500 block">Piezas Perdidas:</span>
+                      <span className="text-neutral-500 block">Piezas Perdidas:</span>
                       <span className="text-rose-300 font-bold text-lg">{selectedTicket.piezas || 0}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Tiempo Perdido (Deadtime):</span>
-                      <span className="text-amber-300 font-bold text-lg">
+                      <span className="text-neutral-500 block">Tiempo Perdido (Deadtime):</span>
+                      <span className="text-neutral-200 font-bold text-lg">
                         {formatMinutes(selectedTicket.deadtime || 0)}
                       </span>
                     </div>
@@ -763,25 +763,25 @@ export default function MachineAnalysis() {
                 </div>
 
                 {/* Personal */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                  <h3 className="text-slate-300 font-medium mb-3">Personal Involucrado</h3>
+                <div className="bg-neutral-800/50 rounded-lg p-4">
+                  <h3 className="text-neutral-300 font-medium mb-3">Personal Involucrado</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-slate-500 block">Reportado por:</span>
-                      <span className="text-slate-200">{selectedTicket.nombre}</span>
+                      <span className="text-neutral-500 block">Reportado por:</span>
+                      <span className="text-neutral-200">{selectedTicket.nombre}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block">Técnico Asignado:</span>
-                      <span className="text-slate-200">{selectedTicket.tecnico || 'N/A'}</span>
+                      <span className="text-neutral-500 block">Técnico Asignado:</span>
+                      <span className="text-neutral-200">{selectedTicket.tecnico || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Solución */}
                 {selectedTicket.solucion && (
-                  <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-lg p-4">
-                    <h3 className="text-emerald-300 font-medium mb-2">Solución Aplicada</h3>
-                    <p className="text-slate-200 text-sm">{selectedTicket.solucion}</p>
+                  <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
+                    <h3 className="text-neutral-200 font-medium mb-2">Solución Aplicada</h3>
+                    <p className="text-neutral-200 text-sm">{selectedTicket.solucion}</p>
                   </div>
                 )}
               </div>
@@ -793,7 +793,7 @@ export default function MachineAnalysis() {
       {/* Special Export Progress Modal */}
       {showSpecialExportModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl shadow-2xl border border-violet-500/40 p-8 max-w-sm w-full text-center">
+          <div className="bg-neutral-900 rounded-2xl shadow-2xl border border-violet-500/40 p-8 max-w-sm w-full text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-900/50 border border-violet-500/50 flex items-center justify-center">
               {specialExportLoading ? (
                 <svg className="w-8 h-8 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -801,18 +801,18 @@ export default function MachineAnalysis() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : (
-                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
             </div>
             <h3 className="text-white font-bold text-lg mb-2">Reporte Diario</h3>
-            <p className="text-slate-300 text-sm mb-1">Todas las líneas · Separado por día</p>
+            <p className="text-neutral-300 text-sm mb-1">Todas las líneas · Separado por día</p>
             <p className="text-violet-300 text-sm mt-4 font-medium">{specialExportProgress}</p>
             {!specialExportLoading && (
               <button
                 onClick={() => setShowSpecialExportModal(false)}
-                className="mt-5 px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                className="mt-5 px-5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm transition-colors"
               >
                 Cerrar
               </button>

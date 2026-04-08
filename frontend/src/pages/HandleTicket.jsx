@@ -135,8 +135,8 @@ export default function HandleTicket() {
   if (!ticket) return (
     <div className="min-h-screen bg-gradient-to-br from-slate-925 via-slate-900 to-slate-925 flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-blue-400 mb-4"></div>
-        <p className="text-slate-300 font-medium">Cargando ticket...</p>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-blue-400 mb-4"></div>
+        <p className="text-neutral-300 font-medium">Cargando ticket...</p>
       </div>
     </div>
   )
@@ -160,7 +160,7 @@ export default function HandleTicket() {
             </div>
             <button 
               onClick={handleBackWithoutFinish}
-              className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 rounded-xl text-sm font-medium transition-all border border-slate-600/50 flex items-center gap-2"
+              className="px-4 py-2.5 bg-neutral-800/50 hover:bg-neutral-700/50 text-neutral-200 rounded-xl text-sm font-medium transition-all border border-neutral-700/50 flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -170,22 +170,22 @@ export default function HandleTicket() {
           </div>
           
           {/* Información de tiempos */}
-          <div className="mb-6 bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+          <div className="mb-6 bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
             <div className="flex flex-wrap gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-slate-400">Creado:</span>
+                <span className="text-neutral-400">Creado:</span>
                 <span className="text-white font-medium">{formatDateTime(ticket.hr) || 'N/A'}</span>
               </div>
               {ticket.ha && (
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-slate-400">En atención:</span>
-                  <span className="text-emerald-400 font-medium">{formatDateTime(ticket.ha)}</span>
+                  <span className="text-neutral-400">En atención:</span>
+                  <span className="text-neutral-200 font-medium">{formatDateTime(ticket.ha)}</span>
                 </div>
               )}
             </div>
@@ -193,38 +193,38 @@ export default function HandleTicket() {
           
           {/* Información del ticket */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Descripción</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Descripción</p>
               <p className="text-white font-medium">{ticket.descr}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Línea</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Línea</p>
               <p className="text-white font-medium">Línea {ticket.linea}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Equipo</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Equipo</p>
               <p className="text-white font-medium">{ticket.equipo}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Modelo</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Modelo</p>
               <p className="text-white font-medium">{ticket.modelo}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Turno</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Turno</p>
               <p className="text-white font-medium">{ticket.turno}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Sección Afectada</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Sección Afectada</p>
               <p className="text-white font-medium">{ticket.pa || 'N/A'}</p>
             </div>
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-slate-400 text-xs mb-1">Condición de Paro</p>
+            <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
+              <p className="text-neutral-400 text-xs mb-1">Condición de Paro</p>
               <p className="text-white font-medium">{ticket.pf || 'N/A'}</p>
             </div>
             {ticket.rate && (
-              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
-                <p className="text-blue-300 text-xs mb-1">Rate</p>
-                <p className="text-blue-400 font-semibold flex items-center gap-2">
+              <div className="bg-blue-500/10 rounded-xl p-4 border border-neutral-700">
+                <p className="text-neutral-200 text-xs mb-1">Rate</p>
+                <p className="text-neutral-200 font-semibold flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -236,8 +236,8 @@ export default function HandleTicket() {
 
           {/* Montadoras afectadas - Mostrar solo si es NXT */}
           {ticket.equipo === 'NXT' && (
-            <div className="bg-cyan-500/10 rounded-xl p-5 border border-cyan-500/30 mb-6">
-              <p className="text-xs text-cyan-300 mb-4 font-medium flex items-center gap-2">
+            <div className="bg-cyan-500/10 rounded-xl p-5 border border-neutral-700 mb-6">
+              <p className="text-xs text-neutral-200 mb-4 font-medium flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7-12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -246,7 +246,7 @@ export default function HandleTicket() {
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
                   <div key={i} className={`flex items-center justify-center py-2 px-3 rounded-lg text-sm font-medium ${
-                    ticket[`mod${i}`] ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/50' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                    ticket[`mod${i}`] ? 'bg-cyan-500/30 text-neutral-200 border border-neutral-700' : 'bg-neutral-800/30 text-neutral-500 border border-neutral-700/30'
                   }`}>
                     M{i}
                   </div>
@@ -258,8 +258,8 @@ export default function HandleTicket() {
           {/* Botón asignar técnico */}
           {!ticket.ha && (
             <div className="mb-6">
-              <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-500/30 mb-4">
-                <p className="text-blue-300 text-sm flex items-center gap-2">
+              <div className="bg-blue-500/10 rounded-xl p-4 border border-neutral-700 mb-4">
+                <p className="text-neutral-200 text-sm flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -267,7 +267,7 @@ export default function HandleTicket() {
                 </p>
               </div>
               <button 
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2" 
+                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2" 
                 onClick={handleStart}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,14 +282,14 @@ export default function HandleTicket() {
           {ticket.ha && (
             <div className="mt-6">
               <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Información del Técnico
               </h2>
               
-              <div className="bg-amber-500/10 rounded-xl p-4 border border-amber-500/30 mb-4">
-                <p className="text-amber-300 text-sm flex items-center gap-2">
+              <div className="bg-amber-500/10 rounded-xl p-4 border border-neutral-700 mb-4">
+                <p className="text-neutral-200 text-sm flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
@@ -298,14 +298,14 @@ export default function HandleTicket() {
               </div>
               
               {/* Rate del modelo */}
-              <div className="mb-5 bg-blue-500/10 rounded-xl p-4 border border-blue-500/30">
-                <p className="text-xs text-blue-300 mb-2 font-medium">Rate del modelo (automático)</p>
+              <div className="mb-5 bg-blue-500/10 rounded-xl p-4 border border-neutral-700">
+                <p className="text-xs text-neutral-200 mb-2 font-medium">Rate del modelo (automático)</p>
                 {ticket.rate ? (
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span className="text-blue-400 font-semibold">{ticket.rate} piezas/hr</span>
+                    <span className="text-neutral-200 font-semibold">{ticket.rate} piezas/hr</span>
                   </div>
                 ) : (
                   <p className="text-rose-400 text-sm">No se encontró rate. El ticket puede haber sido creado antes de la actualización.</p>
@@ -313,9 +313,9 @@ export default function HandleTicket() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm text-slate-300 mb-2 font-medium">Solución Aplicada *</label>
+                <label className="block text-sm text-neutral-300 mb-2 font-medium">Solución Aplicada *</label>
                 <textarea 
-                  className={`w-full bg-slate-800/50 border text-white p-4 rounded-xl transition-all focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${form.solucion ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-slate-600/50'}`} 
+                  className={`w-full bg-neutral-900/50 border text-white p-4 rounded-xl transition-all focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${form.solucion ? 'border-neutral-700 bg-emerald-500/5' : 'border-neutral-700/50'}`} 
                   rows="4" 
                   placeholder="Describe la solución aplicada..." 
                   value={form.solucion} 
@@ -325,7 +325,7 @@ export default function HandleTicket() {
               </div>
 
               <button 
-                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
+                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
                 onClick={handleFinish} 
                 disabled={!form.solucion || !ticket.rate}
               >
@@ -347,7 +347,7 @@ export default function HandleTicket() {
           {/* Modal de advertencia de cierre de sesión */}
           {showLogoutWarning && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-              <div className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl border border-slate-700/50 animate-slide-up">
+              <div className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl border border-neutral-800/50 animate-slide-up">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center">
                     <svg className="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -356,19 +356,19 @@ export default function HandleTicket() {
                   </div>
                   <h3 className="text-xl font-bold text-white">Advertencia</h3>
                 </div>
-                <p className="text-slate-300 mb-6">
+                <p className="text-neutral-300 mb-6">
                   Has atendido este ticket pero no lo has finalizado. Por seguridad, debes iniciar sesión nuevamente para continuar.
                 </p>
                 <div className="flex gap-3 justify-end">
                   <button 
                     onClick={() => setShowLogoutWarning(false)}
-                    className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 rounded-xl font-medium transition-all border border-slate-600/50"
+                    className="px-4 py-2.5 bg-neutral-800/50 hover:bg-neutral-700/50 text-neutral-200 rounded-xl font-medium transition-all border border-neutral-700/50"
                   >
                     Cancelar
                   </button>
                   <button 
                     onClick={confirmLogoutAndReturn}
-                    className="px-4 py-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
+                    className="px-4 py-2.5 bg-white text-black hover:bg-neutral-200 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
                   >
                     Cerrar Sesión
                   </button>

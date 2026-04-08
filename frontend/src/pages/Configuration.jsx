@@ -499,7 +499,7 @@ export default function Configuration({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
+    <div className="min-h-screen bg-neutral-950 p-6">
       <LoginModal
         visible={showCredentialsModal}
         onClose={() => setShowCredentialsModal(false)}
@@ -542,7 +542,7 @@ export default function Configuration({ onBack }) {
 
       {/* Access Denied Alert */}
       {accessDenied && (
-        <div className="mb-6 p-4 bg-red-900/30 border border-red-600 rounded text-red-400">
+        <div className="mb-6 p-4 bg-red-900/30 border border-neutral-700 rounded text-red-400">
           {authError}
         </div>
       )}
@@ -560,14 +560,14 @@ export default function Configuration({ onBack }) {
         </div>
 
         {/* Credenciales Info */}
-        <div className="mb-6 p-4 bg-slate-800 border border-blue-500/30 rounded">
+        <div className="mb-6 p-4 bg-neutral-900 border border-neutral-700 rounded">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-300">
               {currentCredentials ? (
                 <>
-                  Conectado como: <span className="font-bold text-blue-400">{currentCredentials.nombre}</span>
+                  Conectado como: <span className="font-bold text-neutral-200">{currentCredentials.nombre}</span>
                   {currentCredentials.rol && (
-                    <span className="ml-3 px-2 py-1 bg-blue-900/50 text-blue-300 rounded text-xs font-medium">
+                    <span className="ml-3 px-2 py-1 bg-neutral-800 text-neutral-200 rounded text-xs font-medium">
                       {currentCredentials.rol}
                     </span>
                   )}
@@ -605,7 +605,7 @@ export default function Configuration({ onBack }) {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-slate-700">
+        <div className="flex gap-2 mb-6 border-b border-neutral-800">
           {[
             { key: 'equipos', label: 'Equipos' },
             { key: 'lineas', label: 'Líneas' },
@@ -617,7 +617,7 @@ export default function Configuration({ onBack }) {
               disabled={!currentCredentials}
               className={`px-6 py-3 font-medium transition ${
                 activeTab === tab.key
-                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  ? 'text-neutral-200 border-b-2 border-neutral-700'
                   : 'text-gray-500 hover:text-gray-300'
               } ${!currentCredentials ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
@@ -628,13 +628,13 @@ export default function Configuration({ onBack }) {
 
         {/* EQUIPOS TAB */}
         {activeTab === 'equipos' && currentCredentials && (
-          <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
+          <div className="bg-neutral-900 rounded-lg shadow-lg p-6 border border-neutral-800">
             <h2 className="text-2xl font-bold mb-6 text-white">Gestionar Equipos</h2>
 
             {equipoMessage && (
               <div className={`mb-4 p-4 rounded ${
                 equipoMessage.includes('Error') 
-                  ? 'bg-red-900/30 text-red-300 border border-red-600' 
+                  ? 'bg-red-900/30 text-red-300 border border-neutral-700' 
                   : 'bg-green-900/30 text-green-300 border border-green-600'
               }`}>
                 {equipoMessage}
@@ -642,7 +642,7 @@ export default function Configuration({ onBack }) {
             )}
 
             {/* Agregar Nuevo */}
-            <div className="mb-8 p-4 bg-slate-700/50 rounded border border-slate-600">
+            <div className="mb-8 p-4 bg-neutral-800/50 rounded border border-neutral-700">
               <h3 className="text-lg font-semibold mb-4 text-white">Agregar Nuevo Equipo</h3>
               <div className="flex gap-2">
                 <input
@@ -650,7 +650,7 @@ export default function Configuration({ onBack }) {
                   value={newEquipo}
                   onChange={(e) => setNewEquipo(e.target.value)}
                   placeholder="Nombre del equipo"
-                  className="flex-1 px-4 py-2 border border-slate-600 rounded bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-neutral-700 rounded bg-neutral-800 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddEquipo()}
                 />
                 <button
@@ -670,7 +670,7 @@ export default function Configuration({ onBack }) {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-700 border-b border-slate-600">
+                  <thead className="bg-neutral-800 border-b border-neutral-700">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-white">ID</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-white">Nombre</th>
@@ -679,7 +679,7 @@ export default function Configuration({ onBack }) {
                   </thead>
                   <tbody>
                     {equipos.map(equipo => (
-                      <tr key={equipo.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                      <tr key={equipo.id} className="border-b border-neutral-800 hover:bg-neutral-800/50">
                         <td className="px-4 py-3 text-sm text-gray-300">{equipo.id}</td>
                         <td className="px-4 py-3 text-sm text-gray-300">
                           {editingEquipo === equipo.id ? (
@@ -687,7 +687,7 @@ export default function Configuration({ onBack }) {
                               type="text"
                               value={editingEquipoValue}
                               onChange={(e) => setEditingEquipoValue(e.target.value)}
-                              className="w-full px-2 py-1 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           ) : (
                             equipo.equipo
@@ -737,13 +737,13 @@ export default function Configuration({ onBack }) {
 
         {/* LÍNEAS TAB */}
         {activeTab === 'lineas' && currentCredentials && (
-          <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
+          <div className="bg-neutral-900 rounded-lg shadow-lg p-6 border border-neutral-800">
             <h2 className="text-2xl font-bold mb-6 text-white">Gestionar Líneas</h2>
 
             {lineaMessage && (
               <div className={`mb-4 p-4 rounded ${
                 lineaMessage.includes('Error') 
-                  ? 'bg-red-900/30 text-red-300 border border-red-600' 
+                  ? 'bg-red-900/30 text-red-300 border border-neutral-700' 
                   : 'bg-green-900/30 text-green-300 border border-green-600'
               }`}>
                 {lineaMessage}
@@ -751,7 +751,7 @@ export default function Configuration({ onBack }) {
             )}
 
             {/* Agregar Nuevo */}
-            <div className="mb-8 p-4 bg-slate-700/50 rounded border border-slate-600">
+            <div className="mb-8 p-4 bg-neutral-800/50 rounded border border-neutral-700">
               <h3 className="text-lg font-semibold mb-4 text-white">Agregar Nueva Línea</h3>
               <div className="flex gap-2">
                 <input
@@ -759,7 +759,7 @@ export default function Configuration({ onBack }) {
                   value={newLinea}
                   onChange={(e) => setNewLinea(e.target.value)}
                   placeholder="Nombre de la línea"
-                  className="flex-1 px-4 py-2 border border-slate-600 rounded bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-neutral-700 rounded bg-neutral-800 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddLinea()}
                 />
                 <button
@@ -779,7 +779,7 @@ export default function Configuration({ onBack }) {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-700 border-b border-slate-600">
+                  <thead className="bg-neutral-800 border-b border-neutral-700">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-white">ID</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-white">Nombre</th>
@@ -788,7 +788,7 @@ export default function Configuration({ onBack }) {
                   </thead>
                   <tbody>
                     {lineas.map(linea => (
-                      <tr key={linea.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                      <tr key={linea.id} className="border-b border-neutral-800 hover:bg-neutral-800/50">
                         <td className="px-4 py-3 text-sm text-gray-300">{linea.id}</td>
                         <td className="px-4 py-3 text-sm text-gray-300">
                           {editingLinea === linea.id ? (
@@ -796,7 +796,7 @@ export default function Configuration({ onBack }) {
                               type="text"
                               value={editingLineaValue}
                               onChange={(e) => setEditingLineaValue(e.target.value)}
-                              className="w-full px-2 py-1 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           ) : (
                             linea.linea
@@ -846,13 +846,13 @@ export default function Configuration({ onBack }) {
 
         {/* MODELOS TAB */}
         {activeTab === 'modelos' && currentCredentials && (
-          <div className="bg-slate-800 rounded-lg shadow-lg p-6 border border-slate-700">
+          <div className="bg-neutral-900 rounded-lg shadow-lg p-6 border border-neutral-800">
             <h2 className="text-2xl font-bold mb-6 text-white">Gestionar Modelos</h2>
 
             {modeloMessage && (
               <div className={`mb-4 p-4 rounded ${
                 modeloMessage.includes('Error') 
-                  ? 'bg-red-900/30 text-red-300 border border-red-600' 
+                  ? 'bg-red-900/30 text-red-300 border border-neutral-700' 
                   : 'bg-green-900/30 text-green-300 border border-green-600'
               }`}>
                 {modeloMessage}
@@ -860,7 +860,7 @@ export default function Configuration({ onBack }) {
             )}
 
             {/* Agregar Nuevo */}
-            <div className="mb-8 p-4 bg-slate-700/50 rounded border border-slate-600">
+            <div className="mb-8 p-4 bg-neutral-800/50 rounded border border-neutral-700">
               <h3 className="text-lg font-semibold mb-4 text-white">Agregar Nuevo Modelo</h3>
               <div className="flex gap-2">
                 <input
@@ -868,7 +868,7 @@ export default function Configuration({ onBack }) {
                   value={newModelo}
                   onChange={(e) => setNewModelo(e.target.value)}
                   placeholder="Nombre del modelo"
-                  className="flex-1 px-4 py-2 border border-slate-600 rounded bg-slate-700 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-neutral-700 rounded bg-neutral-800 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddModelo()}
                 />
                 <button
@@ -888,7 +888,7 @@ export default function Configuration({ onBack }) {
             ) : (
               <div className="space-y-4">
                 {modelos.map(modelo => (
-                  <div key={modelo.id} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
+                  <div key={modelo.id} className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-4">
                     {editingModelo === modelo.id ? (
                       // EDIT MODE
                       <div className="space-y-4">
@@ -899,7 +899,7 @@ export default function Configuration({ onBack }) {
                               type="text"
                               value={editingModeloData.modelo}
                               onChange={(e) => setEditingModeloData({ ...editingModeloData, modelo: e.target.value })}
-                              className="w-full px-3 py-2 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
                           <div>
@@ -908,7 +908,7 @@ export default function Configuration({ onBack }) {
                               type="text"
                               value={editingModeloData.producto}
                               onChange={(e) => setEditingModeloData({ ...editingModeloData, producto: e.target.value })}
-                              className="w-full px-3 py-2 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Ej: MGH100 RCU"
                             />
                           </div>
@@ -917,7 +917,7 @@ export default function Configuration({ onBack }) {
                             <select
                               value={editingModeloData.linea}
                               onChange={(e) => setEditingModeloData({ ...editingModeloData, linea: e.target.value })}
-                              className="w-full px-3 py-2 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="">Seleccionar línea</option>
                               {allLineas.map(linea => (
@@ -931,12 +931,12 @@ export default function Configuration({ onBack }) {
                               type="number"
                               value={editingModeloData.rate}
                               onChange={(e) => setEditingModeloData({ ...editingModeloData, rate: e.target.value })}
-                              className="w-full px-3 py-2 border border-slate-600 rounded bg-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-neutral-700 rounded bg-neutral-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Ej: 100"
                             />
                           </div>
                         </div>
-                        <div className="flex gap-2 pt-4 border-t border-slate-600">
+                        <div className="flex gap-2 pt-4 border-t border-neutral-700">
                           <button
                             onClick={handleSaveModelo}
                             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition font-semibold"

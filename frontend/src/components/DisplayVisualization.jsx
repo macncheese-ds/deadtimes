@@ -145,8 +145,8 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
       {mantenimientoActualizado && (
         <div className="animate-pulse-blue fixed inset-0 bg-blue-600/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-blue-500 drop-shadow-2xl transition-all duration-500">{mensajes.mantenimiento[idioma]}</p>
-            <p className="text-2xl text-blue-400 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.mantenimiento[idioma]}</p>
+            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
@@ -155,8 +155,8 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
       {cambioModeloActualizado && (
         <div className="animate-pulse-orange fixed inset-0 bg-amber-500/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-amber-500 drop-shadow-2xl transition-all duration-500">{mensajes.cambio[idioma]}</p>
-            <p className="text-2xl text-amber-400 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.cambio[idioma]}</p>
+            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
@@ -165,8 +165,8 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
       {auditoriaActualizado && (
         <div className="animate-pulse-purple fixed inset-0 bg-purple-600/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-purple-500 drop-shadow-2xl transition-all duration-500">{mensajes.auditoria[idioma]}</p>
-            <p className="text-2xl text-purple-400 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.auditoria[idioma]}</p>
+            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
@@ -190,7 +190,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
           {tickets.map(ticket => (
             <div 
               key={ticket.id} 
-              className={`bg-gray-800 border-2 border-blue-500 rounded-lg p-2 sm:p-3 animate-fade-in-smooth hover:shadow-lg transition-all duration-300 ${
+              className={`bg-gray-800 border-2 border-neutral-700 rounded-lg p-2 sm:p-3 animate-fade-in-smooth hover:shadow-lg transition-all duration-300 ${
                 newTicketIds.has(ticket.id) ? 'ring-2 ring-yellow-400 shadow-lg shadow-yellow-400/50' : ''
               }`}
             >

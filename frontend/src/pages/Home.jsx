@@ -1739,8 +1739,8 @@ export default function Home() {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
-          <p className="text-slate-200 font-medium text-sm mb-2">{data.fullName || label}</p>
+        <div className="bg-neutral-900 border border-neutral-700 rounded-lg p-3 shadow-xl">
+          <p className="text-neutral-200 font-medium text-sm mb-2">{data.fullName || label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-xs" style={{ color: entry.color }}>
               {entry.name}: {entry.value}
@@ -1964,207 +1964,113 @@ export default function Home() {
     }
   }
 
-  const inputClass = (value) => `border p-3 rounded-lg text-sm transition-all ${value ? 'bg-slate-700 border-slate-500 text-slate-200' : 'bg-slate-800 border-slate-600 text-slate-300'}`
+  const inputClass = (value) => `border p-3 rounded-lg text-sm transition-all ${value ? 'bg-neutral-800 border-neutral-600 text-neutral-200' : 'bg-neutral-900 border-neutral-700 text-neutral-300'}`
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-slate-400 mb-4"></div>
-          <p className="text-slate-300 text-lg font-medium">Cargando sistema...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-neutral-400 mb-4"></div>
+          <p className="text-neutral-300 text-lg font-medium">Cargando sistema...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 p-3 sm:p-4 lg:p-6">
-      <div className="max-w-[1920px] mx-auto">
-        {/* Inactivity Warning */}
-        {inactivityWarning && (
-          <div className="mb-4 p-4 bg-orange-900/30 border border-orange-600/50 text-orange-300 rounded-lg flex items-center gap-3 animate-fade-in">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M12 3a9 9 0 100 18 9 9 0 000-18z" />
+    <div className="flex h-screen overflow-hidden bg-neutral-950 text-neutral-200">
+      {/* Sidebar Navigation */}
+      <aside className="w-16 sm:w-64 bg-neutral-900 border-r border-neutral-800 flex flex-col z-20 shrink-0 transition-all duration-300">
+        <div className="h-16 flex items-center justify-center sm:justify-start sm:px-6 border-b border-neutral-800 px-0">
+          <div className="w-8 h-8 rounded bg-neutral-800 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>{t('configurationPage.inactivityWarning')}</span>
           </div>
-        )}
-
-        {/* Header */}
-        <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-6 mb-4 animate-slide-up relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-slate-700"></div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Downtime Manager</h1>
-                  <p className="text-slate-400 text-sm sm:text-base mt-0.5">Sistema de gestión de tiempos muertos</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-500">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700">
-                <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
-                <span>Sistema Activo</span>
-              </div>
-            </div>
-          </div>
+          <span className="ml-3 font-bold text-white tracking-tight hidden sm:block truncate">Downtime Manager</span>
         </div>
+        
+        <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2 sm:px-3">
+          <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block mb-1 mt-2">Principal</p>
+          <button onClick={toggleNew} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showNew ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.newTicket')}</span>
+          </button>
+          <button onClick={toggleOpen} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showOpen ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.open')}</span>
+          </button>
+          <button onClick={toggleClosed} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showClosed ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.closed')}</span>
+          </button>
+          <button onClick={toggleProduccion} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showProduccion ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.produccion')}</span>
+          </button>
 
-        {/* Navigation Buttons */}
-        <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            <button onClick={toggleNew} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showNew ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-              <svg className={`w-6 h-6 transition-transform duration-300 ${showNew ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span>{t('nav.newTicket')}</span>
-            </button>
-            <button onClick={toggleOpen} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showOpen ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-              <svg className={`w-6 h-6 transition-transform duration-300 ${showOpen ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{t('nav.open')}</span>
-            </button>
-            <button onClick={toggleClosed} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showClosed ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-              <svg className={`w-6 h-6 transition-transform duration-300 ${showClosed ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{t('nav.closed')}</span>
-            </button>
-            <button onClick={toggleProduccion} className={`group relative font-semibold py-4 px-5 rounded-xl border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showProduccion ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-              <svg className={`w-6 h-6 transition-transform duration-300 ${showProduccion ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <span>{t('nav.produccion')}</span>
-            </button>
-            <div className="flex justify-center lg:justify-start">
-              <LanguageSwitcher className="w-full sm:w-auto" />
-            </div>
+          <div className="mt-4 mb-1">
+             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">Herramientas</p>
+             <div className="h-px bg-neutral-800 mx-3 my-2 sm:hidden"></div>
           </div>
+          
+          <button onClick={() => { setShowAnalytics(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowConfiguration(false); setShowDisplay(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showAnalytics ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.analytics')}</span>
+          </button>
+          
+          <button onClick={() => { setShowConfiguration(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowDisplay(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showConfiguration ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.configuration')}</span>
+          </button>
+          
+          <button onClick={() => { setShowDisplay(true); setShowConfiguration(false); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showDisplay ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+             <span className="text-sm hidden sm:block">{t('nav.display')}</span>
+          </button>
 
-          {/* Collapsible Tools Menu */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800/30 overflow-hidden">
-            <button
-              onClick={() => setShowToolsMenu(!showToolsMenu)}
-              className="w-full font-semibold py-3 px-5 flex items-center justify-between text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-all duration-300"
-            >
-              <div className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-                <span>{t('nav.tools')}</span>
-              </div>
-              <svg className={`w-5 h-5 transition-transform duration-300 ${showToolsMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-            </button>
-
-            {showToolsMenu && (
-              <div className="border-t border-slate-700 grid grid-cols-1 sm:grid-cols-6 gap-2 p-3">
-                <button onClick={() => {
-                  setShowConfiguration(true)
-                  setShowNew(false)
-                  setShowOpen(false)
-                  setShowClosed(false)
-                  setShowAnalytics(false)
-                  setShowProduccion(false)
-                  setShowDisplay(false)
-                  setShowMantenimiento(false)
-                  setShowCambioModelo(false)
-                  setShowAuditoria(false)
-                  resetFilters()
-                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showConfiguration ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showConfiguration ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>{t('nav.configuration')}</span>
-                </button>
-
-                <button onClick={() => {
-                  setShowAnalytics(true)
-                  setShowNew(false)
-                  setShowOpen(false)
-                  setShowClosed(false)
-                  setShowConfiguration(false)
-                  setShowProduccion(false)
-                  setShowDisplay(false)
-                  setShowMantenimiento(false)
-                  setShowCambioModelo(false)
-                  setShowAuditoria(false)
-                  resetFilters()
-                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showAnalytics ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showAnalytics ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  <span>{t('nav.analytics')}</span>
-                </button>
-
-                <button onClick={() => {
-                  setShowDisplay(true)
-                  setShowNew(false)
-                  setShowOpen(false)
-                  setShowClosed(false)
-                  setShowAnalytics(false)
-                  setShowConfiguration(false)
-                  setShowProduccion(false)
-                  setShowMantenimiento(false)
-                  setShowCambioModelo(false)
-                  setShowAuditoria(false)
-                  resetFilters()
-                }} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${showDisplay ? 'bg-slate-700 border-slate-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showDisplay ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span>{t('nav.display')}</span>
-                </button>
-
-                <button onClick={() => toggleMantenimiento()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(mantenimientoActivo).includes(true) ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-500/50' : showMantenimiento ? 'bg-blue-700 border-blue-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showMantenimiento ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>{t('nav.maintenance')}</span>
-                </button>
-
-                <button onClick={() => toggleCambioModelo()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(cambioModeloActivo).includes(true) ? 'bg-amber-600 border-amber-400 text-white shadow-lg shadow-amber-500/50' : showCambioModelo ? 'bg-amber-700 border-amber-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showCambioModelo ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span>{t('nav.modelChange')}</span>
-                </button>
-
-                <button onClick={() => toggleAuditoria()} className={`group relative font-semibold py-4 px-5 rounded-lg border transition-all duration-300 text-sm flex flex-col items-center gap-2 ${Object.values(auditoriaActivo).includes(true) ? 'bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-500/50' : showAuditoria ? 'bg-purple-700 border-purple-500 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:bg-slate-700/50 hover:border-slate-600 hover:text-white'}`}>
-                  <svg className={`w-5 h-5 transition-transform duration-300 ${showAuditoria ? 'scale-110' : 'group-hover:scale-110'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  <span>{t('nav.audit')}</span>
-                </button>
-              </div>
-            )}
+          <div className="mt-4 mb-1">
+             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">Estados</p>
+             <div className="h-px bg-neutral-800 mx-3 my-2 sm:hidden"></div>
           </div>
+          
+          <button onClick={() => toggleMantenimiento()} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${Object.values(mantenimientoActivo).includes(true) ? 'bg-neutral-200 text-black font-semibold shadow-md' : showMantenimiento ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.maintenance')}</span>
+          </button>
+          <button onClick={() => toggleCambioModelo()} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${Object.values(cambioModeloActivo).includes(true) ? 'bg-neutral-200 text-black font-semibold shadow-md' : showCambioModelo ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.modelChange')}</span>
+          </button>
+          <button onClick={() => toggleAuditoria()} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${Object.values(auditoriaActivo).includes(true) ? 'bg-neutral-200 text-black font-semibold shadow-md' : showAuditoria ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+            <span className="text-sm hidden sm:block">{t('nav.audit')}</span>
+          </button>
         </div>
+        
+        <div className="p-2 sm:p-4 border-t border-neutral-800 hidden sm:block">
+          <LanguageSwitcher className="w-full justify-center" />
+        </div>
+      </aside>
 
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto relative bg-neutral-950 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-[1920px] mx-auto pb-12">
+        
         {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showCambioModelo && !showAuditoria && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">{t('stats.responseTime')}</h2>
-                    <p className="text-slate-400 text-xs">{t('stats.averageLastDays')}</p>
+                    <p className="text-neutral-400 text-xs">{t('stats.averageLastDays')}</p>
                   </div>
                 </div>
                 <span className="badge badge-blue">{t('stats.days30')}</span>
@@ -2176,9 +2082,9 @@ export default function Home() {
                   const widthPercent = (horasValue / maxHoras) * 100
                   return (
                     <div key={idx} className="flex items-center gap-3 group">
-                      <span className="text-slate-500 text-xs w-5 font-bold">#{idx + 1}</span>
-                      <span className="text-slate-400 text-xs w-16 font-medium">{new Date(stat.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' })}</span>
-                      <div className="flex-1 bg-slate-700/50 rounded-full h-7 relative overflow-hidden">
+                      <span className="text-neutral-500 text-xs w-5 font-bold">#{idx + 1}</span>
+                      <span className="text-neutral-400 text-xs w-16 font-medium">{new Date(stat.fecha).toLocaleDateString('es', { month: 'short', day: 'numeric' })}</span>
+                      <div className="flex-1 bg-neutral-800/50 rounded-full h-7 relative overflow-hidden">
                         <div
                           className="bg-cyan-600 h-full rounded-full flex items-center justify-end pr-3 transition-all duration-700 ease-out"
                           style={{ width: `${Math.max(widthPercent, 20)}%` }}
@@ -2186,19 +2092,19 @@ export default function Home() {
                           <span className="text-white text-xs font-bold drop-shadow">{formatHoras(horasValue)}</span>
                         </div>
                       </div>
-                      <span className="text-slate-300 font-semibold text-xs w-16 text-right">{formatHoras(horasValue)}</span>
+                      <span className="text-neutral-300 font-semibold text-xs w-16 text-right">{formatHoras(horasValue)}</span>
                     </div>
                   )
                 })}
                 {statsAtencion.length === 0 && (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-700/50 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800/50 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                     </div>
-                    <p className="text-slate-400 font-medium">{t('common.noDataAvailable')}</p>
-                    <p className="text-slate-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
+                    <p className="text-neutral-400 font-medium">{t('common.noDataAvailable')}</p>
+                    <p className="text-neutral-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
                   </div>
                 )}
               </div>
@@ -2208,14 +2114,14 @@ export default function Home() {
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">{t('stats.equipmentWithMostFailures')}</h2>
-                    <p className="text-slate-400 text-xs">{t('stats.topFailures')}</p>
+                    <p className="text-neutral-400 text-xs">{t('stats.topFailures')}</p>
                   </div>
                 </div>
                 <span className="badge badge-red">{t('stats.topFailures')}</span>
@@ -2226,29 +2132,29 @@ export default function Home() {
                   const widthPercent = (stat.total_fallas / maxFallas) * 100
                   return (
                     <div key={idx} className="flex items-center gap-3 group">
-                      <span className="text-slate-500 text-xs w-5 font-bold">#{idx + 1}</span>
-                      <span className="text-slate-300 text-xs font-medium w-28 truncate" title={stat.equipo}>{stat.equipo}</span>
-                      <div className="flex-1 bg-slate-700/50 rounded-full h-7 relative overflow-hidden">
+                      <span className="text-neutral-500 text-xs w-5 font-bold">#{idx + 1}</span>
+                      <span className="text-neutral-300 text-xs font-medium w-28 truncate" title={stat.equipo}>{stat.equipo}</span>
+                      <div className="flex-1 bg-neutral-800/50 rounded-full h-7 relative overflow-hidden">
                         <div
-                          className="bg-amber-600 h-full rounded-full flex items-center justify-end pr-3 transition-all duration-700 ease-out"
+                          className="bg-neutral-200 text-black h-full rounded-full flex items-center justify-end pr-3 transition-all duration-700 ease-out"
                           style={{ width: `${Math.max(widthPercent, 15)}%` }}
                         >
                           <span className="text-white text-xs font-bold drop-shadow">{stat.total_fallas}</span>
                         </div>
                       </div>
-                      <span className="text-slate-300 font-semibold text-xs w-10 text-right">{stat.total_fallas}</span>
+                      <span className="text-neutral-300 font-semibold text-xs w-10 text-right">{stat.total_fallas}</span>
                     </div>
                   )
                 })}
                 {statsEquipos.length === 0 && (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-700/50 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800/50 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-slate-400 font-medium">{t('common.noDataAvailable')}</p>
-                    <p className="text-slate-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
+                    <p className="text-neutral-400 font-medium">{t('common.noDataAvailable')}</p>
+                    <p className="text-neutral-500 text-xs mt-1">{t('common.dataWhenClosed')}</p>
                   </div>
                 )}
               </div>
@@ -2260,14 +2166,14 @@ export default function Home() {
           <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 mb-6 animate-slide-up">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-white">{t('tickets.newTicketFormTitle')}</h2>
               </div>
-              <button onClick={toggleNew} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={toggleNew} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -2276,9 +2182,9 @@ export default function Home() {
 
             <form onSubmit={submit} className="space-y-6">
               {/* Sección 1: Línea y Modelo */}
-              <div className="bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
+              <div className="bg-neutral-900/50 border border-neutral-800/50 rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-slate-500 text-white text-xs font-bold flex items-center justify-center">1</span>
+                  <span className="w-6 h-6 rounded-full bg-neutral-600 text-white text-xs font-bold flex items-center justify-center">1</span>
                   <h3 className="text-sm font-semibold text-white">{t('tickets.lineModelInfo')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2304,22 +2210,22 @@ export default function Home() {
                 </div>
 
                 {selectedModelo && (
-                  <div className="mt-4 bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-                    <p className="text-xs text-slate-400 mb-2 font-medium">{t('tickets.modelRateAuto')}</p>
+                  <div className="mt-4 bg-neutral-800/50 rounded-lg p-4 border border-neutral-700">
+                    <p className="text-xs text-neutral-400 mb-2 font-medium">{t('tickets.modelRateAuto')}</p>
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                       </svg>
-                      <span className="text-slate-300 font-semibold">{selectedModelo.rate || 'N/A'} {t('tickets.piecesPerHour')}</span>
+                      <span className="text-neutral-300 font-semibold">{selectedModelo.rate || 'N/A'} {t('tickets.piecesPerHour')}</span>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Sección 2: Equipo y Descripción */}
-              <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.linea && form.modelo ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
+              <div className={`bg-neutral-900/50 border rounded-xl p-5 transition-all duration-300 ${form.linea && form.modelo ? 'border-neutral-800/50' : 'border-neutral-800/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.linea && form.modelo ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>2</span>
+                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.linea && form.modelo ? 'bg-neutral-600 text-white' : 'bg-neutral-700 text-neutral-400'}`}>2</span>
                   <h3 className="text-sm font-semibold text-white">{t('tickets.equipmentInfo')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -2354,9 +2260,9 @@ export default function Home() {
               </div>
 
               {/* Sección 3: Condiciones de Paro */}
-              <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
+              <div className={`bg-neutral-900/50 border rounded-xl p-5 transition-all duration-300 ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'border-neutral-800/50' : 'border-neutral-800/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>3</span>
+                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.equipo && form.descr && (form.descr !== '__OTROS__' || form.descr_otros) ? 'bg-neutral-600 text-white' : 'bg-neutral-700 text-neutral-400'}`}>3</span>
                   <h3 className="text-sm font-semibold text-white">{t('tickets.stopConditions')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -2375,9 +2281,9 @@ export default function Home() {
               </div>
 
               {/* Sección 4: Clasificación */}
-              <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.pf && form.pa ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
+              <div className={`bg-neutral-900/50 border rounded-xl p-5 transition-all duration-300 ${form.pf && form.pa ? 'border-neutral-800/50' : 'border-neutral-800/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.pf && form.pa ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>4</span>
+                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.pf && form.pa ? 'bg-neutral-600 text-white' : 'bg-neutral-700 text-neutral-400'}`}>4</span>
                   <h3 className="text-sm font-semibold text-white">{t('tickets.classification')}</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
@@ -2393,16 +2299,16 @@ export default function Home() {
               </div>
 
               {/* Sección 5: Montadoras */}
-              <div className={`bg-slate-800/50 border rounded-xl p-5 transition-all duration-300 ${form.equipo === 'NXT' && form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others) ? 'border-slate-700/50' : 'border-slate-700/30 opacity-50'}`}>
+              <div className={`bg-neutral-900/50 border rounded-xl p-5 transition-all duration-300 ${form.equipo === 'NXT' && form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others) ? 'border-neutral-800/50' : 'border-neutral-800/30 opacity-50'}`}>
                 <div className="flex items-center gap-2 mb-4">
-                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.equipo === 'NXT' ? 'bg-slate-500 text-white' : 'bg-slate-600 text-slate-400'}`}>5</span>
+                  <span className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${form.equipo === 'NXT' ? 'bg-neutral-600 text-white' : 'bg-neutral-700 text-neutral-400'}`}>5</span>
                   <h3 className="text-sm font-semibold text-white">Montadoras Afectadas {form.equipo === 'NXT' ? '' : '(Solo NXT)'}</h3>
                 </div>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
-                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-slate-700 border-slate-500' : 'bg-slate-800 border-slate-600 hover:border-slate-500'} ${form.equipo !== 'NXT' || !(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others)) ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <label key={i} className={`flex items-center p-2 rounded-lg cursor-pointer transition-all border ${form.mods[`Montadora${i}`] ? 'bg-neutral-800 border-neutral-600' : 'bg-neutral-900 border-neutral-700 hover:border-neutral-600'} ${form.equipo !== 'NXT' || !(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others)) ? 'opacity-50 pointer-events-none' : ''}`}>
                       <input type="checkbox" className="mr-1.5 sm:mr-2 w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-500" checked={form.mods[`Montadora${i}`] || false} onChange={e => setForm({ ...form, mods: { ...form.mods, [`Montadora${i}`]: e.target.checked } })} disabled={form.equipo !== 'NXT' || !(form.clasificacion && (form.clasificacion !== 'Otros' || form.clas_others))} />
-                      <span className="text-slate-300 text-xs sm:text-sm font-medium">M{i}</span>
+                      <span className="text-neutral-300 text-xs sm:text-sm font-medium">M{i}</span>
                     </label>
                   ))}
                 </div>
@@ -2410,7 +2316,7 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="w-full bg-slate-600 hover:bg-slate-500 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others) || (form.equipo === 'NXT' && !Object.values(form.mods).some(m => m === true))}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2426,14 +2332,14 @@ export default function Home() {
           <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-white">Tickets Abiertos</h2>
               </div>
-              <button onClick={toggleOpen} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={toggleOpen} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -2441,10 +2347,10 @@ export default function Home() {
             </div>
 
             {/* Filtro por Línea */}
-            <div className="mb-5 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-              <label className="block text-slate-300 text-xs font-medium mb-2">Filtrar por Línea</label>
+            <div className="mb-5 p-4 bg-neutral-900/50 rounded-xl border border-neutral-800/50">
+              <label className="block text-neutral-300 text-xs font-medium mb-2">Filtrar por Línea</label>
               <select
-                className="w-full sm:w-48 bg-slate-700/50 border border-slate-600/50 text-slate-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full sm:w-48 bg-neutral-800/50 border border-neutral-700/50 text-neutral-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 value={filterOpenLinea}
                 onChange={e => setFilterOpenLinea(e.target.value)}
               >
@@ -2457,29 +2363,29 @@ export default function Home() {
 
             {loading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-700 border-t-amber-400"></div>
-                <p className="text-slate-400 mt-4">Cargando tickets...</p>
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-amber-400"></div>
+                <p className="text-neutral-400 mt-4">Cargando tickets...</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {getFilteredOpenTickets().map((t, idx) => (
-                  <div key={t.id} className={`bg-slate-800/80 rounded-xl p-4 hover:bg-slate-700/80 transition-all duration-300 border-l-4 border-slate-500 card-hover ${t._isNew ? 'animate-slide-up' : ''}`} style={t._isNew ? { animationDelay: `${idx * 50}ms` } : {}}>
+                  <div key={t.id} className={`bg-neutral-900/80 rounded-xl p-4 hover:bg-neutral-800/80 transition-all duration-300 border-l-4 border-neutral-600 card-hover ${t._isNew ? 'animate-slide-up' : ''}`} style={t._isNew ? { animationDelay: `${idx * 50}ms` } : {}}>
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="badge badge-amber">#{t.id}</span>
-                          <span className="w-2 h-2 rounded-full bg-slate-400 animate-pulse"></span>
+                          <span className="w-2 h-2 rounded-full bg-neutral-500 animate-pulse"></span>
                         </div>
                         <h3 className="text-white font-semibold text-sm sm:text-base mb-1">{t.descr}</h3>
-                        <p className="text-slate-400 text-xs sm:text-sm">Línea {t.linea} • {t.modelo} • {t.equipo}</p>
-                        <p className="text-slate-500 text-xs mt-2 flex items-center gap-2">
+                        <p className="text-neutral-400 text-xs sm:text-sm">Línea {t.linea} • {t.modelo} • {t.equipo}</p>
+                        <p className="text-neutral-500 text-xs mt-2 flex items-center gap-2">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
                           {t.nombre} • {new Date(t.hr).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <button onClick={() => openHandleModal(t.id)} className="bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-300 text-sm w-full sm:w-auto flex items-center justify-center gap-2">
+                      <button onClick={() => openHandleModal(t.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-300 text-sm w-full sm:w-auto flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
@@ -2490,13 +2396,13 @@ export default function Home() {
                 ))}
                 {getFilteredOpenTickets().length === 0 && (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-700 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-800 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <p className="text-slate-300 font-medium">{filterOpenLinea ? 'No hay tickets para esta línea' : 'No hay tickets abiertos'}</p>
-                    <p className="text-slate-500 text-sm mt-1">¡Excelente trabajo!</p>
+                    <p className="text-neutral-300 font-medium">{filterOpenLinea ? 'No hay tickets para esta línea' : 'No hay tickets abiertos'}</p>
+                    <p className="text-neutral-500 text-sm mt-1">¡Excelente trabajo!</p>
                   </div>
                 )}
               </div>
@@ -2508,14 +2414,14 @@ export default function Home() {
           <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-white">Tickets Cerrados</h2>
               </div>
-              <button onClick={toggleClosed} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={toggleClosed} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -2523,10 +2429,10 @@ export default function Home() {
             </div>
 
             {/* Filtros multicriterio */}
-            <div className="mb-5 p-5 bg-slate-800/50 rounded-xl border border-slate-700/50">
+            <div className="mb-5 p-5 bg-neutral-900/50 rounded-xl border border-neutral-800/50">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-white text-sm font-semibold flex items-center gap-2">
-                  <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
                   Filtros
@@ -2540,7 +2446,7 @@ export default function Home() {
                     setFilterClosedStartDate('')
                     setFilterClosedEndDate('')
                   }}
-                  className="text-xs text-slate-400 hover:text-slate-300 font-medium transition-colors"
+                  className="text-xs text-neutral-400 hover:text-neutral-300 font-medium transition-colors"
                 >
                   Limpiar filtros
                 </button>
@@ -2548,10 +2454,10 @@ export default function Home() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                 {/* Filtro por ID de Ticket */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">ID Ticket</label>
+                  <label className="block text-neutral-400 text-xs mb-1">ID Ticket</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     placeholder="#123"
                     value={filterClosedTicketId}
                     onChange={e => setFilterClosedTicketId(e.target.value)}
@@ -2560,9 +2466,9 @@ export default function Home() {
 
                 {/* Filtro por Línea */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Línea</label>
+                  <label className="block text-neutral-400 text-xs mb-1">Línea</label>
                   <select
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     value={filterClosedLinea}
                     onChange={e => setFilterClosedLinea(e.target.value)}
                   >
@@ -2575,10 +2481,10 @@ export default function Home() {
 
                 {/* Filtro por Equipo */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Equipo</label>
+                  <label className="block text-neutral-400 text-xs mb-1">Equipo</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     placeholder="Buscar equipo..."
                     value={filterClosedEquipo}
                     onChange={e => setFilterClosedEquipo(e.target.value)}
@@ -2587,10 +2493,10 @@ export default function Home() {
 
                 {/* Filtro por Descripción */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Descripción</label>
+                  <label className="block text-neutral-400 text-xs mb-1">Descripción</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     placeholder="Buscar descripción..."
                     value={filterClosedDescr}
                     onChange={e => setFilterClosedDescr(e.target.value)}
@@ -2599,10 +2505,10 @@ export default function Home() {
 
                 {/* Filtro por Fecha Inicio */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Desde</label>
+                  <label className="block text-neutral-400 text-xs mb-1">Desde</label>
                   <input
                     type="datetime-local"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     value={filterClosedStartDate}
                     onChange={e => setFilterClosedStartDate(e.target.value)}
                   />
@@ -2610,10 +2516,10 @@ export default function Home() {
 
                 {/* Filtro por Fecha Fin */}
                 <div>
-                  <label className="block text-slate-400 text-xs mb-1">Hasta</label>
+                  <label className="block text-neutral-400 text-xs mb-1">Hasta</label>
                   <input
                     type="datetime-local"
-                    className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     value={filterClosedEndDate}
                     onChange={e => setFilterClosedEndDate(e.target.value)}
                   />
@@ -2623,9 +2529,9 @@ export default function Home() {
               {/* Sorting and Export Controls */}
               <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div className="flex items-center gap-3">
-                  <label className="text-slate-400 text-xs font-medium">Ordenar por:</label>
+                  <label className="text-neutral-400 text-xs font-medium">Ordenar por:</label>
                   <select
-                    className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                    className="bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     value={sortClosedBy}
                     onChange={e => setSortClosedBy(e.target.value)}
                   >
@@ -2638,7 +2544,7 @@ export default function Home() {
                 <button
                   onClick={exportClosedTicketsToExcel}
                   disabled={tickets.length === 0}
-                  className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg transition-colors border border-slate-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded-lg transition-colors border border-neutral-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -2648,36 +2554,36 @@ export default function Home() {
               </div>
 
               {/* Mostrar cantidad de resultados */}
-              <div className="mt-3 text-xs text-slate-400">
+              <div className="mt-3 text-xs text-neutral-400">
                 Mostrando {tickets.length} de {closedTotal} tickets {closedTotalPages > 1 && `(Página ${closedPage} de ${closedTotalPages})`}
               </div>
             </div>
 
             {loading ? (
               <div className="text-center py-8 sm:py-12">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-slate-700 border-t-slate-400"></div>
-                <p className="text-slate-400 mt-4 text-sm sm:text-base">Cargando tickets...</p>
+                <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-neutral-800 border-t-neutral-400"></div>
+                <p className="text-neutral-400 mt-4 text-sm sm:text-base">Cargando tickets...</p>
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
                 {tickets.map(t => {
                   const duracionHrs = calcularHoras(t.hr, t.hc)
                   return (
-                    <div key={t.id} className="bg-slate-700 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-slate-500">
+                    <div key={t.id} className="bg-neutral-800 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-neutral-600">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-slate-100 font-semibold text-sm sm:text-base">#{t.id} - {t.descr}</h3>
-                          <p className="text-slate-300 text-xs sm:text-sm mt-1">Linea {t.linea} - {t.modelo} - {t.equipo}</p>
-                          <p className="text-slate-400 text-xs mt-1">
+                          <p className="text-neutral-300 text-xs sm:text-sm mt-1">Linea {t.linea} - {t.modelo} - {t.equipo}</p>
+                          <p className="text-neutral-400 text-xs mt-1">
                             Cerrado: {new Date(t.hc).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} - {t.tecnico}
                           </p>
                           {duracionHrs !== null && (
-                            <p className="text-slate-300 text-xs mt-1 font-medium">
+                            <p className="text-neutral-300 text-xs mt-1 font-medium">
                               Duracion: {formatHoras(duracionHrs)}
                             </p>
                           )}
                         </div>
-                        <button onClick={() => openViewModal(t.id)} className="bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-slate-500 text-sm w-full sm:w-auto">
+                        <button onClick={() => openViewModal(t.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-neutral-600 text-sm w-full sm:w-auto">
                           Ver
                         </button>
                       </div>
@@ -2686,7 +2592,7 @@ export default function Home() {
                 })}
                 {tickets.length === 0 && (
                   <div className="text-center py-8 sm:py-12">
-                    <p className="text-slate-500 text-sm sm:text-base">
+                    <p className="text-neutral-500 text-sm sm:text-base">
                       {(filterClosedTicketId || filterClosedLinea || filterClosedEquipo || filterClosedDescr || filterClosedStartDate || filterClosedEndDate)
                         ? 'No hay tickets que coincidan con los filtros'
                         : 'No hay tickets cerrados'}
@@ -2701,21 +2607,21 @@ export default function Home() {
 
                 {/* Pagination Controls */}
                 {closedTotalPages > 1 && (
-                  <div className="flex items-center justify-center gap-3 mt-6 pt-4 border-t border-slate-700">
+                  <div className="flex items-center justify-center gap-3 mt-6 pt-4 border-t border-neutral-800">
                     <button
                       onClick={() => { setClosedPage(p => Math.max(1, p - 1)); loadTickets('closed', { page: closedPage - 1 }) }}
                       disabled={closedPage <= 1}
-                      className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg transition-colors border border-neutral-700 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       ← Anterior
                     </button>
-                    <span className="text-slate-300 text-sm font-medium">
+                    <span className="text-neutral-300 text-sm font-medium">
                       Página {closedPage} de {closedTotalPages}
                     </span>
                     <button
                       onClick={() => { setClosedPage(p => Math.min(closedTotalPages, p + 1)); loadTickets('closed', { page: closedPage + 1 }) }}
                       disabled={closedPage >= closedTotalPages}
-                      className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="bg-neutral-800 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg transition-colors border border-neutral-700 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Siguiente →
                     </button>
@@ -2729,28 +2635,28 @@ export default function Home() {
         {showAnalytics && (
           <div className="space-y-4 sm:space-y-6">
             {/* Header de Analytics */}
-            <div className="bg-slate-800 rounded-lg shadow-lg border-l-4 border-purple-600 p-4 sm:p-6">
+            <div className="bg-neutral-900 rounded-lg shadow-lg border-l-4 border-neutral-700 p-4 sm:p-6">
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <h2 className="text-lg sm:text-xl font-semibold text-slate-100">Analytics Dashboard</h2>
-                    <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                    <p className="text-neutral-400 text-xs sm:text-sm mt-1">
                       Estadísticas y análisis de downtime
                       {selectedLinea !== 'all' && analyticsTab === 'general' && (
-                        <span className="ml-2 px-2 py-1 bg-purple-900/40 text-purple-300 rounded text-xs font-medium">
+                        <span className="ml-2 px-2 py-1 bg-neutral-800 text-neutral-200 rounded text-xs font-medium">
                           Línea {selectedLinea}
                         </span>
                       )}
                     </p>
                   </div>
-                  <button onClick={toggleAnalytics} className="text-slate-400 hover:text-slate-200 text-2xl leading-none">&times;</button>
+                  <button onClick={toggleAnalytics} className="text-neutral-400 hover:text-neutral-200 text-2xl leading-none">&times;</button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 border-t border-slate-700 pt-4 flex-wrap">
+                <div className="flex gap-2 border-t border-neutral-800 pt-4 flex-wrap">
                   <button
                     onClick={() => setAnalyticsTab('general')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'general' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'general' ? 'bg-neutral-200 text-black shadow-lg shadow-purple-500/25' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2761,7 +2667,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => { setAnalyticsTab('horas'); setStatus('closed'); loadTickets('closed'); }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'horas' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'horas' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/25' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2772,7 +2678,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setAnalyticsTab('maquinas')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'maquinas' ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'maquinas' ? 'bg-orange-600 text-white shadow-lg shadow-orange-500/25' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2784,7 +2690,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setAnalyticsTab('mttr')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'mttr' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'mttr' ? 'bg-neutral-200 text-black shadow-lg shadow-blue-500/25' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2795,7 +2701,7 @@ export default function Home() {
                   </button>
                   <button
                     onClick={() => setAnalyticsTab('downtime')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'downtime' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${analyticsTab === 'downtime' ? 'bg-red-600 text-white shadow-lg shadow-red-500/25' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'}`}
                   >
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2812,21 +2718,21 @@ export default function Home() {
             {analyticsTab === 'general' && (
               <>
                 {/* Filtros */}
-                <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-sm font-semibold text-slate-100">Filtros</h2>
                     {refreshing && (
-                      <div className="flex items-center gap-2 text-slate-400 text-xs">
-                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-slate-600 border-t-slate-400"></div>
+                      <div className="flex items-center gap-2 text-neutral-400 text-xs">
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-neutral-700 border-t-neutral-400"></div>
                         <span>Actualizando...</span>
                       </div>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Línea</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Línea</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={selectedLinea}
                         onChange={e => setSelectedLinea(e.target.value)}
                       >
@@ -2838,9 +2744,9 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Período</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Período</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={dateRange}
                         onChange={e => setDateRange(e.target.value)}
                       >
@@ -2855,19 +2761,19 @@ export default function Home() {
                     {dateRange === 'custom' && (
                       <>
                         <div>
-                          <label className="block text-slate-300 text-xs font-medium mb-2">Desde</label>
+                          <label className="block text-neutral-300 text-xs font-medium mb-2">Desde</label>
                           <input
                             type="datetime-local"
-                            className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                            className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                             value={customStartDate}
                             onChange={e => setCustomStartDate(e.target.value)}
                           />
                         </div>
                         <div>
-                          <label className="block text-slate-300 text-xs font-medium mb-2">Hasta</label>
+                          <label className="block text-neutral-300 text-xs font-medium mb-2">Hasta</label>
                           <input
                             type="datetime-local"
-                            className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                            className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                             value={customEndDate}
                             onChange={e => setCustomEndDate(e.target.value)}
                           />
@@ -2879,29 +2785,29 @@ export default function Home() {
 
                 {/* Tarjetas de resumen */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">
                       Total Tickets {selectedLinea !== 'all' ? `(Línea ${selectedLinea})` : ''}
                     </p>
                     <p className="text-2xl font-bold text-white mt-1">{totales.total_tickets || 0}</p>
                   </div>
 
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">
                       Cerrados {selectedLinea !== 'all' ? `(Línea ${selectedLinea})` : ''}
                     </p>
                     <p className="text-2xl font-bold text-white mt-1">{totales.cerrados || 0}</p>
                   </div>
 
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">
                       Abiertos {selectedLinea !== 'all' ? `(Línea ${selectedLinea})` : ''}
                     </p>
                     <p className="text-2xl font-bold text-white mt-1">{totales.abiertos || 0}</p>
                   </div>
 
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">
                       Tiempo Prom {selectedLinea !== 'all' ? `(Línea ${selectedLinea})` : ''}
                     </p>
                     <p className="text-2xl font-bold text-white mt-1">{formatHoras(minutosAHoras(totales.promedio_minutos_global || 0))}<span className="text-sm ml-1">hrs</span></p>
@@ -2911,7 +2817,7 @@ export default function Home() {
                 {/* Gráficas principales */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                   {/* Gráfica de tickets por línea */}
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-4">
                       {selectedLinea !== 'all' ? `Tickets Línea ${selectedLinea}` : 'Tickets por Línea'}
                     </h2>
@@ -2933,7 +2839,7 @@ export default function Home() {
                   </div>
 
                   {/* Gráfica de tendencia en el tiempo */}
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-4">
                       {selectedLinea !== 'all' ? `Tendencia Línea ${selectedLinea}` : 'Tendencia de Tickets'}
                     </h2>
@@ -2954,7 +2860,7 @@ export default function Home() {
                   </div>
 
                   {/* Gráfica de clasificación */}
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-4">
                       {selectedLinea !== 'all' ? `Clasificación Línea ${selectedLinea}` : 'Tickets por Clasificación'}
                     </h2>
@@ -2981,7 +2887,7 @@ export default function Home() {
                         <Legend
                           wrapperStyle={{ fontSize: '11px' }}
                           formatter={(value) => (
-                            <span className="text-slate-300 text-xs">{value}</span>
+                            <span className="text-neutral-300 text-xs">{value}</span>
                           )}
                         />
                       </PieChart>
@@ -2989,7 +2895,7 @@ export default function Home() {
                   </div>
 
                   {/* Gráfica de equipos con más fallas */}
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6 xl:col-span-3">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6 xl:col-span-3">
                     <h2 className="text-base font-semibold text-slate-100 mb-4">
                       {selectedLinea !== 'all' ? `Top 10 Equipos Línea ${selectedLinea}` : 'Top 10 Equipos con Más Fallas'}
                     </h2>
@@ -3018,9 +2924,9 @@ export default function Home() {
 
                 {/* Graficas adicionales */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-2">Tiempos de Atencion por Dia</h2>
-                    <p className="text-slate-400 text-xs mb-4">Ultimos 30 dias</p>
+                    <p className="text-neutral-400 text-xs mb-4">Ultimos 30 dias</p>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={prepareAtencionData()}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -3043,9 +2949,9 @@ export default function Home() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-2">Equipos con Mas Fallas (General)</h2>
-                    <p className="text-slate-400 text-xs mb-4">Top 10 ultimos 30 dias</p>
+                    <p className="text-neutral-400 text-xs mb-4">Top 10 ultimos 30 dias</p>
                     <ResponsiveContainer width="100%" height={400}>
                       <BarChart data={prepareEquiposFallasData()} layout="vertical" margin={{ left: 20, right: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -3077,29 +2983,29 @@ export default function Home() {
                 {/* Resumen por turnos */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {getDistribucionTurnos().map((turno, idx) => (
-                    <div key={idx} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">{turno.name}</p>
+                    <div key={idx} className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">{turno.name}</p>
                       <p className="text-2xl font-bold text-white mt-1">{turno.tickets} <span className="text-sm">tickets</span></p>
-                      <p className="text-slate-400 text-xs mt-1">{formatHoras(turno.horas)} totales</p>
+                      <p className="text-neutral-400 text-xs mt-1">{formatHoras(turno.horas)} totales</p>
                     </div>
                   ))}
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">Total Analizado</p>
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">Total Analizado</p>
                     <p className="text-2xl font-bold text-white mt-1">{tickets.filter(t => t.hc).length} <span className="text-sm">tickets</span></p>
-                    <p className="text-slate-400 text-xs mt-1">cerrados</p>
+                    <p className="text-neutral-400 text-xs mt-1">cerrados</p>
                   </div>
-                  <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                    <p className="text-slate-400 text-xs font-medium">Tiempo Total</p>
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                    <p className="text-neutral-400 text-xs font-medium">Tiempo Total</p>
                     <p className="text-2xl font-bold text-white mt-1">{formatHoras(prepareHourlyAnalysis().reduce((acc, d) => acc + d.totalHoras, 0))} <span className="text-sm">hrs</span></p>
-                    <p className="text-slate-400 text-xs mt-1">downtime acumulado</p>
+                    <p className="text-neutral-400 text-xs mt-1">downtime acumulado</p>
                   </div>
                 </div>
 
                 {/* Grafica de distribucion por hora */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-2">Tickets por Hora del Dia</h2>
-                    <p className="text-slate-400 text-xs mb-4">Distribucion de incidencias (0-23 hrs)</p>
+                    <p className="text-neutral-400 text-xs mb-4">Distribucion de incidencias (0-23 hrs)</p>
                     <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={prepareHourlyAnalysis()}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -3119,9 +3025,9 @@ export default function Home() {
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-2">Tiempo de Downtime por Hora</h2>
-                    <p className="text-slate-400 text-xs mb-4">Horas acumuladas de downtime</p>
+                    <p className="text-neutral-400 text-xs mb-4">Horas acumuladas de downtime</p>
                     <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={prepareHourlyAnalysis()}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -3141,7 +3047,7 @@ export default function Home() {
 
                 {/* Horas criticas y promedio */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-4">Horas Criticas (Mas Tickets)</h2>
                     <div className="space-y-3">
                       {getHorasCriticas().map((hora, idx) => {
@@ -3149,9 +3055,9 @@ export default function Home() {
                         const widthPercent = (hora.totalTickets / maxTickets) * 100
                         return (
                           <div key={idx} className="flex items-center gap-3 group">
-                            <span className="text-slate-500 text-xs w-5 font-bold">#{idx + 1}</span>
-                            <span className="text-slate-300 text-sm font-medium w-14">{hora.horaLabel}</span>
-                            <div className="flex-1 bg-slate-700/50 rounded-full h-7 relative overflow-hidden">
+                            <span className="text-neutral-500 text-xs w-5 font-bold">#{idx + 1}</span>
+                            <span className="text-neutral-300 text-sm font-medium w-14">{hora.horaLabel}</span>
+                            <div className="flex-1 bg-neutral-800/50 rounded-full h-7 relative overflow-hidden">
                               <div
                                 className="bg-red-600 h-full rounded-full flex items-center justify-end pr-3 transition-all duration-700 ease-out"
                                 style={{ width: `${Math.max(widthPercent, 15)}%` }}
@@ -3159,19 +3065,19 @@ export default function Home() {
                                 <span className="text-white text-xs font-bold drop-shadow">{hora.totalTickets}</span>
                               </div>
                             </div>
-                            <span className="text-slate-300 font-semibold text-xs w-20 text-right">{hora.totalTickets} tickets</span>
+                            <span className="text-neutral-300 font-semibold text-xs w-20 text-right">{hora.totalTickets} tickets</span>
                           </div>
                         )
                       })}
                       {getHorasCriticas().length === 0 && (
-                        <p className="text-slate-500 text-center py-4">No hay datos disponibles</p>
+                        <p className="text-neutral-500 text-center py-4">No hay datos disponibles</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h2 className="text-base font-semibold text-slate-100 mb-2">Tiempo Promedio de Atencion por Hora</h2>
-                    <p className="text-slate-400 text-xs mb-4">Promedio de horas por ticket en cada hora del dia</p>
+                    <p className="text-neutral-400 text-xs mb-4">Promedio de horas por ticket en cada hora del dia</p>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={prepareHourlyAnalysis()}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -3197,30 +3103,30 @@ export default function Home() {
                 </div>
 
                 {/* Tabla completa de distribucion */}
-                <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                   <h2 className="text-base font-semibold text-slate-100 mb-4">Tabla Completa de Distribucion por Hora</h2>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-slate-700">
-                          <th className="text-left py-2 px-3 text-slate-400 font-medium">Hora</th>
-                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Tickets</th>
-                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Horas Totales</th>
-                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Promedio (hrs)</th>
-                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Piezas Perdidas</th>
-                          <th className="text-center py-2 px-3 text-slate-400 font-medium">Turno</th>
+                        <tr className="border-b border-neutral-800">
+                          <th className="text-left py-2 px-3 text-neutral-400 font-medium">Hora</th>
+                          <th className="text-center py-2 px-3 text-neutral-400 font-medium">Tickets</th>
+                          <th className="text-center py-2 px-3 text-neutral-400 font-medium">Horas Totales</th>
+                          <th className="text-center py-2 px-3 text-neutral-400 font-medium">Promedio (hrs)</th>
+                          <th className="text-center py-2 px-3 text-neutral-400 font-medium">Piezas Perdidas</th>
+                          <th className="text-center py-2 px-3 text-neutral-400 font-medium">Turno</th>
                         </tr>
                       </thead>
                       <tbody>
                         {prepareHourlyAnalysis().map((hora, idx) => (
-                          <tr key={idx} className={`border-b border-slate-700/50 ${hora.totalTickets > 0 ? 'hover:bg-slate-700/30' : 'opacity-50'}`}>
-                            <td className="py-2 px-3 text-slate-200 font-medium">{hora.horaLabel}</td>
-                            <td className="py-2 px-3 text-center text-slate-300">{hora.totalTickets}</td>
-                            <td className="py-2 px-3 text-center text-slate-300">{formatHoras(hora.totalHoras)}</td>
-                            <td className="py-2 px-3 text-center text-slate-400">{formatHoras(hora.promedioHoras)}</td>
-                            <td className="py-2 px-3 text-center text-slate-400">{hora.piezasPerdidas}</td>
+                          <tr key={idx} className={`border-b border-neutral-800/50 ${hora.totalTickets > 0 ? 'hover:bg-neutral-800/30' : 'opacity-50'}`}>
+                            <td className="py-2 px-3 text-neutral-200 font-medium">{hora.horaLabel}</td>
+                            <td className="py-2 px-3 text-center text-neutral-300">{hora.totalTickets}</td>
+                            <td className="py-2 px-3 text-center text-neutral-300">{formatHoras(hora.totalHoras)}</td>
+                            <td className="py-2 px-3 text-center text-neutral-400">{formatHoras(hora.promedioHoras)}</td>
+                            <td className="py-2 px-3 text-center text-neutral-400">{hora.piezasPerdidas}</td>
                             <td className="py-2 px-3 text-center">
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${hora.hora >= 8 && hora.hora < 20 ? 'bg-slate-700 text-slate-300' : 'bg-slate-600 text-slate-200'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${hora.hora >= 8 && hora.hora < 20 ? 'bg-neutral-800 text-neutral-300' : 'bg-neutral-700 text-neutral-200'}`}>
                                 {hora.hora >= 8 && hora.hora < 20 ? 'T1' : 'T2'}
                               </span>
                             </td>
@@ -3237,7 +3143,7 @@ export default function Home() {
             {analyticsTab === 'maquinas' && (
               <>
                 {/* Filtros de Máquinas */}
-                <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
                       <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3247,17 +3153,17 @@ export default function Home() {
                       Filtros de Análisis por Máquina
                     </h2>
                     {machineLoading && (
-                      <div className="flex items-center gap-2 text-slate-400 text-xs">
-                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-slate-600 border-t-orange-400"></div>
+                      <div className="flex items-center gap-2 text-neutral-400 text-xs">
+                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-neutral-700 border-t-orange-400"></div>
                         <span>Cargando...</span>
                       </div>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Equipo/Máquina</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Equipo/Máquina</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={machineEquipo}
                         onChange={e => setMachineEquipo(e.target.value)}
                       >
@@ -3271,9 +3177,9 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Línea (opcional)</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Línea (opcional)</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={machineLinea}
                         onChange={e => setMachineLinea(e.target.value)}
                       >
@@ -3285,9 +3191,9 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Período</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Período</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={dateRange}
                         onChange={e => setDateRange(e.target.value)}
                       >
@@ -3302,19 +3208,19 @@ export default function Home() {
                     {dateRange === 'custom' && (
                       <>
                         <div>
-                          <label className="block text-slate-300 text-xs font-medium mb-2">Desde</label>
+                          <label className="block text-neutral-300 text-xs font-medium mb-2">Desde</label>
                           <input
                             type="datetime-local"
-                            className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                            className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                             value={customStartDate}
                             onChange={e => setCustomStartDate(e.target.value)}
                           />
                         </div>
                         <div>
-                          <label className="block text-slate-300 text-xs font-medium mb-2">Hasta</label>
+                          <label className="block text-neutral-300 text-xs font-medium mb-2">Hasta</label>
                           <input
                             type="datetime-local"
-                            className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                            className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                             value={customEndDate}
                             onChange={e => setCustomEndDate(e.target.value)}
                           />
@@ -3328,7 +3234,7 @@ export default function Home() {
                       <button
                         onClick={exportMachineToExcel}
                         disabled={machineTickets.length === 0}
-                        className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg transition-colors border border-slate-500 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2 rounded-lg transition-colors border border-neutral-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -3353,24 +3259,24 @@ export default function Home() {
                 {/* Resumen de máquina */}
                 {machineEquipo && machineTickets.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">Total Tickets</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">Total Tickets</p>
                       <p className="text-2xl font-bold text-white mt-1">{machineTickets.length}</p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">Tiempo Total</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">Tiempo Total</p>
                       <p className="text-2xl font-bold text-white mt-1">
                         {formatHoras(minutosAHoras(machineTickets.reduce((acc, t) => acc + (t.duracion_minutos || 0), 0)))} <span className="text-sm">hrs</span>
                       </p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">Tiempo Promedio</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">Tiempo Promedio</p>
                       <p className="text-2xl font-bold text-white mt-1">
                         {formatHoras(minutosAHoras(machineTickets.reduce((acc, t) => acc + (t.duracion_minutos || 0), 0) / machineTickets.length))} <span className="text-sm">hrs</span>
                       </p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">Piezas Perdidas</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">Piezas Perdidas</p>
                       <p className="text-2xl font-bold text-white mt-1">{machineTickets.reduce((acc, t) => acc + (t.piezas || 0), 0)}</p>
                     </div>
                   </div>
@@ -3380,9 +3286,9 @@ export default function Home() {
                 {machineEquipo && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Gráfica de barras */}
-                    <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                    <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                       <h2 className="text-base font-semibold text-slate-100 mb-2">Top 10 Tickets por Duración</h2>
-                      <p className="text-slate-400 text-xs mb-4">Click en una barra para ver detalles</p>
+                      <p className="text-neutral-400 text-xs mb-4">Click en una barra para ver detalles</p>
                       {machineTickets.length > 0 ? (
                         <ResponsiveContainer width="100%" height={350}>
                           <BarChart
@@ -3419,26 +3325,26 @@ export default function Home() {
                             <svg className="w-12 h-12 mx-auto text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             </svg>
-                            <p className="text-slate-400">No hay datos para mostrar</p>
+                            <p className="text-neutral-400">No hay datos para mostrar</p>
                           </div>
                         </div>
                       )}
                     </div>
 
                     {/* Lista de tickets - siempre visible */}
-                    <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                    <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                       <h2 className="text-base font-semibold text-slate-100 mb-4">Lista de Tickets</h2>
                       <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                         {machineTickets.slice(0, 20).map((ticket, idx) => (
                           <div
                             key={ticket.id}
-                            className="bg-slate-700/50 rounded-lg p-3 cursor-pointer hover:bg-slate-600/50 transition-colors border-l-2 border-orange-500"
+                            className="bg-neutral-800/50 rounded-lg p-3 cursor-pointer hover:bg-neutral-700/50 transition-colors border-l-2 border-orange-500"
                             onClick={() => setMachineDetailTicket(ticket)}
                           >
                             <div className="flex justify-between items-start">
                               <div>
                                 <p className="text-white text-sm font-medium">#{ticket.id} - {ticket.descr}</p>
-                                <p className="text-slate-400 text-xs mt-1">Linea {ticket.linea} - {ticket.modelo}</p>
+                                <p className="text-neutral-400 text-xs mt-1">Linea {ticket.linea} - {ticket.modelo}</p>
                               </div>
                               <div className="text-right">
                                 <p className="text-orange-400 font-semibold text-sm">{formatHoras(minutosAHoras(ticket.duracion_minutos || 0))} hrs</p>
@@ -3449,11 +3355,11 @@ export default function Home() {
                         ))}
                         {machineTickets.length === 0 && (
                           <div className="text-center py-8">
-                            <p className="text-slate-400">Selecciona un equipo para ver sus tickets</p>
+                            <p className="text-neutral-400">Selecciona un equipo para ver sus tickets</p>
                           </div>
                         )}
                         {machineTickets.length > 20 && (
-                          <p className="text-center text-slate-500 text-xs py-2">
+                          <p className="text-center text-neutral-500 text-xs py-2">
                             Mostrando 20 de {machineTickets.length} tickets
                           </p>
                         )}
@@ -3465,22 +3371,22 @@ export default function Home() {
                 {/* Modal de detalle de ticket de máquina */}
                 {machineDetailTicket && (
                   <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-slate-700">
-                      <div className="sticky top-0 bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center">
+                    <div className="bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-neutral-800">
+                      <div className="sticky top-0 bg-neutral-900 p-5 border-b border-neutral-800 flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                            <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                           </div>
                           <div>
                             <h2 className="text-xl font-bold text-white">Ticket #{machineDetailTicket.id}</h2>
-                            <p className="text-slate-400 text-sm">{machineEquipo}</p>
+                            <p className="text-neutral-400 text-sm">{machineEquipo}</p>
                           </div>
                         </div>
                         <button
                           onClick={() => setMachineDetailTicket(null)}
-                          className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                          className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -3491,62 +3397,62 @@ export default function Home() {
                       <div className="p-5 space-y-4">
                         {/* Métricas principales */}
                         <div className="grid grid-cols-2 gap-3">
-                          <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                            <p className="text-slate-400 text-xs">Duración</p>
+                          <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                            <p className="text-neutral-400 text-xs">Duración</p>
                             <p className="text-xl font-bold text-white">{formatHoras(minutosAHoras(machineDetailTicket.duracion_minutos || 0))} hrs</p>
                           </div>
-                          <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                            <p className="text-slate-400 text-xs">Piezas Perdidas</p>
+                          <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                            <p className="text-neutral-400 text-xs">Piezas Perdidas</p>
                             <p className="text-xl font-bold text-white">{machineDetailTicket.piezas || 0}</p>
                           </div>
                         </div>
 
                         {/* Información del ticket */}
                         <div className="space-y-3">
-                          <div className="bg-slate-700/50 rounded-lg p-3">
-                            <p className="text-slate-400 text-xs mb-1">Equipo / Máquina</p>
+                          <div className="bg-neutral-800/50 rounded-lg p-3">
+                            <p className="text-neutral-400 text-xs mb-1">Equipo / Máquina</p>
                             <p className="text-white font-semibold">{machineDetailTicket.equipo}</p>
                           </div>
 
-                          <div className="bg-slate-700/50 rounded-lg p-3">
-                            <p className="text-slate-400 text-xs mb-1">Descripción del Problema</p>
+                          <div className="bg-neutral-800/50 rounded-lg p-3">
+                            <p className="text-neutral-400 text-xs mb-1">Descripción del Problema</p>
                             <p className="text-white">{machineDetailTicket.descr}</p>
                           </div>
 
-                          <div className="bg-slate-700/50 rounded-lg p-3">
-                            <p className="text-slate-400 text-xs mb-1">Clasificación</p>
+                          <div className="bg-neutral-800/50 rounded-lg p-3">
+                            <p className="text-neutral-400 text-xs mb-1">Clasificación</p>
                             <p className="text-white">{machineDetailTicket.clasificacion || 'N/A'}</p>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Sección Afectada</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Sección Afectada</p>
                               <p className="text-white font-semibold">{machineDetailTicket.pa || 'N/A'}</p>
                             </div>
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Condición de Paro</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Condición de Paro</p>
                               <p className="text-white font-semibold">{machineDetailTicket.pf || 'N/A'}</p>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Línea</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Línea</p>
                               <p className="text-white font-semibold">Línea {machineDetailTicket.linea}</p>
                             </div>
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Modelo</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Modelo</p>
                               <p className="text-white font-semibold">{machineDetailTicket.modelo}</p>
                             </div>
                           </div>
 
                           {/* Montadoras afectadas - solo si es NXT */}
                           {machineDetailTicket.equipo === 'NXT' && (
-                            <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
-                              <p className="text-cyan-300 text-xs font-medium mb-2">Montadoras Afectadas</p>
+                            <div className="bg-cyan-500/10 border border-neutral-700 rounded-lg p-3">
+                              <p className="text-neutral-200 text-xs font-medium mb-2">Montadoras Afectadas</p>
                               <div className="grid grid-cols-6 gap-2">
                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-                                  <div key={i} className={`flex items-center justify-center py-1.5 rounded text-xs font-medium ${machineDetailTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                                  <div key={i} className={`flex items-center justify-center py-1.5 rounded text-xs font-medium ${machineDetailTicket[`mod${i}`] ? 'bg-cyan-500/40 text-neutral-200 border border-neutral-700' : 'bg-neutral-800/30 text-neutral-500 border border-neutral-700/30'
                                     }`}>
                                     M{i}
                                   </div>
@@ -3555,29 +3461,29 @@ export default function Home() {
                             </div>
                           )}
 
-                          <div className="bg-slate-700/50 rounded-lg p-3">
-                            <p className="text-slate-400 text-xs mb-1">Solución Aplicada</p>
+                          <div className="bg-neutral-800/50 rounded-lg p-3">
+                            <p className="text-neutral-400 text-xs mb-1">Solución Aplicada</p>
                             <p className="text-white">{machineDetailTicket.solucion || 'Sin solución registrada'}</p>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Reportado por</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Reportado por</p>
                               <p className="text-white">{machineDetailTicket.nombre}</p>
                             </div>
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Técnico</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Técnico</p>
                               <p className="text-white">{machineDetailTicket.tecnico || 'N/A'}</p>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Apertura</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Apertura</p>
                               <p className="text-white text-sm">{machineDetailTicket.hr ? new Date(machineDetailTicket.hr).toLocaleString('es-MX') : 'N/A'}</p>
                             </div>
-                            <div className="bg-slate-700/50 rounded-lg p-3">
-                              <p className="text-slate-400 text-xs mb-1">Cierre</p>
+                            <div className="bg-neutral-800/50 rounded-lg p-3">
+                              <p className="text-neutral-400 text-xs mb-1">Cierre</p>
                               <p className="text-white text-sm">{machineDetailTicket.hc ? new Date(machineDetailTicket.hc).toLocaleString('es-MX') : 'N/A'}</p>
                             </div>
                           </div>
@@ -3588,13 +3494,13 @@ export default function Home() {
                 )}
 
                 {!machineEquipo && (
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 text-center">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
                     <svg className="w-16 h-16 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p className="text-slate-300 font-medium">Selecciona un equipo para analizar</p>
-                    <p className="text-slate-500 text-sm mt-1">Usa los filtros de arriba para ver el análisis por máquina</p>
+                    <p className="text-neutral-300 font-medium">Selecciona un equipo para analizar</p>
+                    <p className="text-neutral-500 text-sm mt-1">Usa los filtros de arriba para ver el análisis por máquina</p>
                   </div>
                 )}
               </>
@@ -3602,9 +3508,9 @@ export default function Home() {
 
             {/* MTTR/MTBF TAB */}
             {analyticsTab === 'mttr' && (
-              <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+              <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                 <h2 className="text-xl font-semibold text-slate-100 mb-6 flex items-center gap-2">
-                  <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
                   MTTR/MTBF - Análisis de Confiabilidad
@@ -3615,7 +3521,7 @@ export default function Home() {
                   {/* Period Selector and Navigation Combined */}
                   <div className="flex flex-wrap items-center gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-neutral-300 mb-2">
                         Período:
                       </label>
                       <select
@@ -3626,7 +3532,7 @@ export default function Home() {
                           setCurrentMonthOffset(0)
                           setCurrentYearOffset(0)
                         }}
-                        className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-neutral-700"
                       >
                         <option value="weekly">Semanal</option>
                         <option value="monthly">Mensual</option>
@@ -3636,13 +3542,13 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                      <label className="block text-sm font-medium text-neutral-300 mb-2">
                         Máquina:
                       </label>
                       <select
                         value={selectedMttrMachine}
                         onChange={(e) => setSelectedMttrMachine(e.target.value)}
-                        className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-neutral-700"
                       >
                         <option value="">Todas las Máquinas</option>
                         {mttrMachines.map((machine) => (
@@ -3654,19 +3560,19 @@ export default function Home() {
                     {mttrPeriod === 'custom' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Desde:</label>
+                          <label className="block text-sm font-medium text-neutral-300 mb-2">Desde:</label>
                           <input
                             type="date"
-                            className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                            className="bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                             value={customStartDate}
                             onChange={(e) => setCustomStartDate(e.target.value)}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Hasta:</label>
+                          <label className="block text-sm font-medium text-neutral-300 mb-2">Hasta:</label>
                           <input
                             type="date"
-                            className="bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2.5 text-sm"
+                            className="bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2.5 text-sm"
                             value={customEndDate}
                             onChange={(e) => setCustomEndDate(e.target.value)}
                           />
@@ -3683,12 +3589,12 @@ export default function Home() {
                             else if (mttrPeriod === 'monthly') setCurrentMonthOffset(currentMonthOffset - 1)
                             else if (mttrPeriod === 'annual') setCurrentYearOffset(currentYearOffset - 1)
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                          className="bg-neutral-200 text-black hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
                         >
                           ← Anterior
                         </button>
 
-                        <div className="text-center px-4 py-2 bg-slate-700/50 rounded-lg min-w-[180px]">
+                        <div className="text-center px-4 py-2 bg-neutral-800/50 rounded-lg min-w-[180px]">
                           {mttrPeriod === 'weekly' && (
                             (() => {
                               const today = new Date()
@@ -3703,7 +3609,7 @@ export default function Home() {
 
                               return (
                                 <div>
-                                  <p className="text-slate-200 text-sm font-medium">
+                                  <p className="text-neutral-200 text-sm font-medium">
                                     {mondayDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} - {sundayDate.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
                                   </p>
                                 </div>
@@ -3718,7 +3624,7 @@ export default function Home() {
                               const monthName = targetDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
 
                               return (
-                                <p className="text-slate-200 text-sm font-medium capitalize">{monthName}</p>
+                                <p className="text-neutral-200 text-sm font-medium capitalize">{monthName}</p>
                               )
                             })()
                           )}
@@ -3729,7 +3635,7 @@ export default function Home() {
                               const targetYear = today.getFullYear() + currentYearOffset
 
                               return (
-                                <p className="text-slate-200 text-sm font-medium">{targetYear}</p>
+                                <p className="text-neutral-200 text-sm font-medium">{targetYear}</p>
                               )
                             })()
                           )}
@@ -3743,8 +3649,8 @@ export default function Home() {
                           }}
                           disabled={(mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)}
                           className={`px-4 py-2.5 rounded-lg text-sm font-medium transition ${(mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)
-                              ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700 text-white'
+                              ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                              : 'bg-neutral-200 text-black hover:bg-blue-700 text-white'
                             }`}
                         >
                           Siguiente →
@@ -3757,7 +3663,7 @@ export default function Home() {
                               setCurrentMonthOffset(0)
                               setCurrentYearOffset(0)
                             }}
-                            className="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                            className="bg-neutral-700 hover:bg-neutral-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
                           >
                             Actual
                           </button>
@@ -3771,8 +3677,8 @@ export default function Home() {
                 {mttrLoading ? (
                   <div className="flex items-center justify-center h-80">
                     <div className="text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-slate-400 mb-3"></div>
-                      <p className="text-slate-400">Cargando datos MTTR/MTBF...</p>
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-neutral-800 border-t-neutral-400 mb-3"></div>
+                      <p className="text-neutral-400">Cargando datos MTTR/MTBF...</p>
                     </div>
                   </div>
                 ) : mttrMtbfData && mttrMtbfData.length > 0 ? (
@@ -3780,10 +3686,10 @@ export default function Home() {
                     <div className="grid grid-cols-1 gap-6">
                       {/* MTTR Chart */}
                       <div>
-                        <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-medium text-neutral-200 mb-4 flex items-center gap-2">
                           <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                           MTTR (Mean Time To Repair) - {mttrPeriod === 'annual' ? 'Por Semanas del Año' : mttrPeriod === 'monthly' ? 'Por Mes' : 'Por Equipos'}
-                          <span className="text-sm text-slate-400 ml-2">Target: {mttrPeriod === 'monthly' ? '3.6' : '0.8'}h (menor es mejor)</span>
+                          <span className="text-sm text-neutral-400 ml-2">Target: {mttrPeriod === 'monthly' ? '3.6' : '0.8'}h (menor es mejor)</span>
                         </h3>
                         <div className="h-[500px] w-full">
                           {mttrPeriod === 'weekly' ? (
@@ -3847,10 +3753,10 @@ export default function Home() {
 
                       {/* MTBF Chart */}
                       <div>
-                        <h3 className="text-lg font-medium text-slate-200 mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-medium text-neutral-200 mb-4 flex items-center gap-2">
                           <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
                           MTBF (Mean Time Between Failures) - {mttrPeriod === 'annual' ? 'Por Semanas del Año' : mttrPeriod === 'monthly' ? 'Por Mes' : 'Por Equipos'}
-                          <span className="text-sm text-slate-400 ml-2">Target: {mttrPeriod === 'monthly' ? '48' : '12'}h (mayor es mejor)</span>
+                          <span className="text-sm text-neutral-400 ml-2">Target: {mttrPeriod === 'monthly' ? '48' : '12'}h (mayor es mejor)</span>
                         </h3>
                         <div className="h-[500px] w-full">
                           {mttrPeriod === 'weekly' ? (
@@ -3914,8 +3820,8 @@ export default function Home() {
                     </div>
 
                     {/* Debug: Full Data Details */}
-                    <div className="mt-6 bg-slate-700/30 border border-slate-600 rounded-lg p-4">
-                      <h3 className="text-lg font-medium text-slate-200 mb-4">Datos Detallados (Debug)</h3>
+                    <div className="mt-6 bg-neutral-800/30 border border-neutral-700 rounded-lg p-4">
+                      <h3 className="text-lg font-medium text-neutral-200 mb-4">Datos Detallados (Debug)</h3>
 
                       {mttrPeriod === 'monthly' ? (
                         // Monthly view: Show aggregated data per month
@@ -3946,43 +3852,43 @@ export default function Home() {
 
                             return (
                               <div key={monthKey} className="mb-6 last:mb-0">
-                                <h4 className="text-md font-semibold text-cyan-400 mb-2">{monthName} {year}</h4>
+                                <h4 className="text-md font-semibold text-neutral-200 mb-2">{monthName} {year}</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-sm">
-                                  <div className="bg-slate-800 p-2 rounded">
-                                    <p className="text-slate-400 text-xs">Total Downtime</p>
+                                  <div className="bg-neutral-900 p-2 rounded">
+                                    <p className="text-neutral-400 text-xs">Total Downtime</p>
                                     <p className="text-white font-bold">{data.totalDowntime.toFixed(2)}h</p>
                                   </div>
-                                  <div className="bg-slate-800 p-2 rounded">
-                                    <p className="text-slate-400 text-xs">Total Eventos</p>
+                                  <div className="bg-neutral-900 p-2 rounded">
+                                    <p className="text-neutral-400 text-xs">Total Eventos</p>
                                     <p className="text-white font-bold">{data.totalEvents}</p>
                                   </div>
-                                  <div className="bg-slate-800 p-2 rounded">
-                                    <p className="text-slate-400 text-xs">Tiempo Disponible</p>
+                                  <div className="bg-neutral-900 p-2 rounded">
+                                    <p className="text-neutral-400 text-xs">Tiempo Disponible</p>
                                     <p className="text-white font-bold">{availableTime}h</p>
                                   </div>
-                                  <div className="bg-slate-800 p-2 rounded">
-                                    <p className="text-slate-400 text-xs">Máquinas con datos</p>
+                                  <div className="bg-neutral-900 p-2 rounded">
+                                    <p className="text-neutral-400 text-xs">Máquinas con datos</p>
                                     <p className="text-white font-bold">{data.machines.length}</p>
                                   </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-                                  <div className="bg-red-900/30 border border-red-700 p-2 rounded">
+                                  <div className="bg-red-900/30 border border-neutral-700 p-2 rounded">
                                     <p className="text-red-300 text-xs">MTTR = Total Downtime / Total Eventos</p>
                                     <p className="text-red-400 font-bold">{data.totalDowntime.toFixed(2)} / {data.totalEvents} = {mttr.toFixed(2)}h</p>
-                                    <p className="text-slate-400 text-xs mt-1">Target: 3.6h</p>
+                                    <p className="text-neutral-400 text-xs mt-1">Target: 3.6h</p>
                                   </div>
-                                  <div className="bg-emerald-900/30 border border-emerald-700 p-2 rounded">
-                                    <p className="text-emerald-300 text-xs">MTBF = Tiempo Disponible / Total Eventos</p>
-                                    <p className="text-emerald-400 font-bold">{availableTime} / {data.totalEvents} = {mtbf.toFixed(2)}h</p>
-                                    <p className="text-slate-400 text-xs mt-1">Target: 48h</p>
+                                  <div className="bg-neutral-800 border border-neutral-700 p-2 rounded">
+                                    <p className="text-neutral-200 text-xs">MTBF = Tiempo Disponible / Total Eventos</p>
+                                    <p className="text-neutral-200 font-bold">{availableTime} / {data.totalEvents} = {mtbf.toFixed(2)}h</p>
+                                    <p className="text-neutral-400 text-xs mt-1">Target: 48h</p>
                                   </div>
                                 </div>
                                 <details className="text-xs">
-                                  <summary className="text-slate-400 cursor-pointer hover:text-slate-300">Ver datos por máquina ({data.machines.length})</summary>
+                                  <summary className="text-neutral-400 cursor-pointer hover:text-neutral-300">Ver datos por máquina ({data.machines.length})</summary>
                                   <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
                                     {data.machines.map((m, i) => (
-                                      <div key={i} className="bg-slate-800/50 p-2 rounded text-slate-300">
-                                        <p className="font-medium text-slate-200">{m.machine}</p>
+                                      <div key={i} className="bg-neutral-900/50 p-2 rounded text-neutral-300">
+                                        <p className="font-medium text-neutral-200">{m.machine}</p>
                                         <p>Downtime: {m.downtime?.toFixed(2) || 0}h</p>
                                         <p>Eventos: {m.events || 0}</p>
                                       </div>
@@ -4014,30 +3920,30 @@ export default function Home() {
                           return (
                             <div>
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4 text-sm">
-                                <div className="bg-slate-800 p-2 rounded">
-                                  <p className="text-slate-400 text-xs">Tiempo Disponible (semanal)</p>
+                                <div className="bg-neutral-900 p-2 rounded">
+                                  <p className="text-neutral-400 text-xs">Tiempo Disponible (semanal)</p>
                                   <p className="text-white font-bold">{availableTime}h</p>
                                 </div>
-                                <div className="bg-slate-800 p-2 rounded">
-                                  <p className="text-slate-400 text-xs">Total Downtime (todas las máquinas)</p>
+                                <div className="bg-neutral-900 p-2 rounded">
+                                  <p className="text-neutral-400 text-xs">Total Downtime (todas las máquinas)</p>
                                   <p className="text-white font-bold">{totalDowntime.toFixed(2)}h</p>
                                 </div>
-                                <div className="bg-slate-800 p-2 rounded">
-                                  <p className="text-slate-400 text-xs">Total Eventos (todas las máquinas)</p>
+                                <div className="bg-neutral-900 p-2 rounded">
+                                  <p className="text-neutral-400 text-xs">Total Eventos (todas las máquinas)</p>
                                   <p className="text-white font-bold">{totalEvents}</p>
                                 </div>
                               </div>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                   <thead>
-                                    <tr className="border-b border-slate-600">
-                                      <th className="text-left text-slate-400 p-2">Máquina</th>
-                                      <th className="text-right text-slate-400 p-2">Downtime (h)</th>
-                                      <th className="text-right text-slate-400 p-2">Eventos</th>
+                                    <tr className="border-b border-neutral-700">
+                                      <th className="text-left text-neutral-400 p-2">Máquina</th>
+                                      <th className="text-right text-neutral-400 p-2">Downtime (h)</th>
+                                      <th className="text-right text-neutral-400 p-2">Eventos</th>
                                       <th className="text-right text-red-400 p-2">MTTR (h)</th>
-                                      <th className="text-right text-slate-400 p-2">Fórmula MTTR</th>
-                                      <th className="text-right text-emerald-400 p-2">MTBF (h)</th>
-                                      <th className="text-right text-slate-400 p-2">Fórmula MTBF</th>
+                                      <th className="text-right text-neutral-400 p-2">Fórmula MTTR</th>
+                                      <th className="text-right text-neutral-200 p-2">MTBF (h)</th>
+                                      <th className="text-right text-neutral-400 p-2">Fórmula MTBF</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -4046,21 +3952,21 @@ export default function Home() {
                                       const mttr = d.totalEvents > 0 ? d.totalDowntime / d.totalEvents : 0;
                                       const mtbf = d.totalEvents > 0 ? availableTime / d.totalEvents : availableTime;
                                       return (
-                                        <tr key={m} className="border-b border-slate-700">
-                                          <td className="text-slate-200 p-2">{m}</td>
-                                          <td className="text-right text-slate-300 p-2">{d.totalDowntime.toFixed(2)}</td>
-                                          <td className="text-right text-slate-300 p-2">{d.totalEvents}</td>
-                                          <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
-                                          <td className="text-right text-slate-500 p-2">{d.totalDowntime.toFixed(2)} / {d.totalEvents}</td>
-                                          <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
-                                          <td className="text-right text-slate-500 p-2">{availableTime} / {d.totalEvents}</td>
+                                        <tr key={m} className="border-b border-neutral-800">
+                                          <td className="text-neutral-200 p-2">{m}</td>
+                                          <td className="text-right text-neutral-300 p-2">{d.totalDowntime.toFixed(2)}</td>
+                                          <td className="text-right text-neutral-300 p-2">{d.totalEvents}</td>
+                                          <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-neutral-200' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
+                                          <td className="text-right text-neutral-500 p-2">{d.totalDowntime.toFixed(2)} / {d.totalEvents}</td>
+                                          <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-neutral-200' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
+                                          <td className="text-right text-neutral-500 p-2">{availableTime} / {d.totalEvents}</td>
                                         </tr>
                                       );
                                     })}
                                   </tbody>
                                 </table>
                               </div>
-                              <p className="text-slate-400 text-xs mt-3">Target MTTR: 0.8h | Target MTBF: 12h</p>
+                              <p className="text-neutral-400 text-xs mt-3">Target MTTR: 0.8h | Target MTBF: 12h</p>
                             </div>
                           );
                         })()
@@ -4090,14 +3996,14 @@ export default function Home() {
                             <div className="overflow-x-auto">
                               <table className="w-full text-xs">
                                 <thead>
-                                  <tr className="border-b border-slate-600">
-                                    <th className="text-left text-slate-400 p-2">Semana</th>
-                                    <th className="text-right text-slate-400 p-2">Downtime Total (h)</th>
-                                    <th className="text-right text-slate-400 p-2">Eventos Total</th>
+                                  <tr className="border-b border-neutral-700">
+                                    <th className="text-left text-neutral-400 p-2">Semana</th>
+                                    <th className="text-right text-neutral-400 p-2">Downtime Total (h)</th>
+                                    <th className="text-right text-neutral-400 p-2">Eventos Total</th>
                                     <th className="text-right text-red-400 p-2">MTTR (h)</th>
-                                    <th className="text-right text-slate-400 p-2">Fórmula</th>
-                                    <th className="text-right text-emerald-400 p-2">MTBF (h)</th>
-                                    <th className="text-right text-slate-400 p-2">Fórmula</th>
+                                    <th className="text-right text-neutral-400 p-2">Fórmula</th>
+                                    <th className="text-right text-neutral-200 p-2">MTBF (h)</th>
+                                    <th className="text-right text-neutral-400 p-2">Fórmula</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -4108,20 +4014,20 @@ export default function Home() {
                                     const mttr = data.totalEvents > 0 ? data.totalDowntime / data.totalEvents : 0;
                                     const mtbf = data.totalEvents > 0 ? availableTime / data.totalEvents : availableTime;
                                     return (
-                                      <tr key={weekKey} className="border-b border-slate-700">
-                                        <td className="text-slate-200 p-2">{label}</td>
-                                        <td className="text-right text-slate-300 p-2">{data.totalDowntime.toFixed(2)}</td>
-                                        <td className="text-right text-slate-300 p-2">{data.totalEvents}</td>
-                                        <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
-                                        <td className="text-right text-slate-500 p-2">{data.totalDowntime.toFixed(2)} / {data.totalEvents}</td>
-                                        <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
-                                        <td className="text-right text-slate-500 p-2">{availableTime} / {data.totalEvents}</td>
+                                      <tr key={weekKey} className="border-b border-neutral-800">
+                                        <td className="text-neutral-200 p-2">{label}</td>
+                                        <td className="text-right text-neutral-300 p-2">{data.totalDowntime.toFixed(2)}</td>
+                                        <td className="text-right text-neutral-300 p-2">{data.totalEvents}</td>
+                                        <td className={`text-right p-2 font-bold ${mttr <= 0.8 ? 'text-neutral-200' : 'text-red-400'}`}>{mttr.toFixed(2)}</td>
+                                        <td className="text-right text-neutral-500 p-2">{data.totalDowntime.toFixed(2)} / {data.totalEvents}</td>
+                                        <td className={`text-right p-2 font-bold ${mtbf >= 12 ? 'text-neutral-200' : 'text-red-400'}`}>{mtbf.toFixed(2)}</td>
+                                        <td className="text-right text-neutral-500 p-2">{availableTime} / {data.totalEvents}</td>
                                       </tr>
                                     );
                                   })}
                                 </tbody>
                               </table>
-                              <p className="text-slate-400 text-xs mt-3">Tiempo disponible por semana: {availableTime}h | Target MTTR: 0.8h | Target MTBF: 12h</p>
+                              <p className="text-neutral-400 text-xs mt-3">Tiempo disponible por semana: {availableTime}h | Target MTTR: 0.8h | Target MTBF: 12h</p>
                             </div>
                           );
                         })()
@@ -4131,28 +4037,28 @@ export default function Home() {
                     {/* Summary Statistics - Only for weekly view */}
                     {mttrPeriod === 'weekly' && prepareWeeklyChartData().mttr.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-lg font-medium text-slate-200 mb-4">Resumen por Equipo</h3>
+                        <h3 className="text-lg font-medium text-neutral-200 mb-4">Resumen por Equipo</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                           {prepareWeeklyChartData().mttr.map((eq, idx) => {
                             const mtbfData = prepareWeeklyChartData().mtbf.find(m => m.name === eq.name);
                             return (
-                              <div key={idx} className="bg-slate-700/50 border border-slate-600 rounded-lg p-4">
-                                <p className="text-slate-300 text-sm font-medium mb-2">{eq.name}</p>
+                              <div key={idx} className="bg-neutral-800/50 border border-neutral-700 rounded-lg p-4">
+                                <p className="text-neutral-300 text-sm font-medium mb-2">{eq.name}</p>
                                 <div className="grid grid-cols-2 gap-2">
                                   <div>
-                                    <p className="text-xs text-slate-400">MTTR</p>
-                                    <p className={`text-lg font-bold ${eq.MTTR <= 0.8 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    <p className="text-xs text-neutral-400">MTTR</p>
+                                    <p className={`text-lg font-bold ${eq.MTTR <= 0.8 ? 'text-neutral-200' : 'text-red-400'}`}>
                                       {eq.MTTR?.toFixed(2) || '0.00'}h
                                     </p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-slate-400">MTBF</p>
-                                    <p className={`text-lg font-bold ${(mtbfData?.MTBF || 0) >= 12 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    <p className="text-xs text-neutral-400">MTBF</p>
+                                    <p className={`text-lg font-bold ${(mtbfData?.MTBF || 0) >= 12 ? 'text-neutral-200' : 'text-red-400'}`}>
                                       {mtbfData?.MTBF?.toFixed(2) || '0.00'}h
                                     </p>
                                   </div>
                                 </div>
-                                <p className="text-xs text-slate-400 mt-2">Incidentes: {eq.Incidentes || 0}</p>
+                                <p className="text-xs text-neutral-400 mt-2">Incidentes: {eq.Incidentes || 0}</p>
                               </div>
                             );
                           })}
@@ -4165,7 +4071,7 @@ export default function Home() {
                     <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <p className="text-slate-500">No hay datos MTTR/MTBF disponibles</p>
+                    <p className="text-neutral-500">No hay datos MTTR/MTBF disponibles</p>
                     <p className="text-slate-600 text-sm mt-1">Verifica que existan registros en la base de datos</p>
                   </div>
                 )}
@@ -4176,21 +4082,21 @@ export default function Home() {
             {analyticsTab === 'downtime' && (
               <div className="space-y-4">
                 {/* Filters */}
-                <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                   <h2 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
                     <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Downtime por Intervalo de Producción
                   </h2>
-                  <p className="text-slate-400 text-xs mb-4">
+                  <p className="text-neutral-400 text-xs mb-4">
                     Muestra el DT de producción menos el tiempo de tickets registrados en cada intervalo horario. Solo visual — no modifica la base de datos.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Línea</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Línea</label>
                       <select
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={downtimeLinea}
                         onChange={e => setDowntimeLinea(e.target.value)}
                       >
@@ -4201,10 +4107,10 @@ export default function Home() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-slate-300 text-xs font-medium mb-2">Fecha</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">Fecha</label>
                       <input
                         type="date"
-                        className="w-full bg-slate-700 border border-slate-600 text-slate-200 rounded-lg p-2 text-sm"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={downtimeFecha}
                         onChange={e => setDowntimeFecha(e.target.value)}
                       />
@@ -4213,7 +4119,7 @@ export default function Home() {
                       <button
                         onClick={loadDowntimeAnalytics}
                         disabled={!downtimeLinea || !downtimeFecha || downtimeLoading}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-neutral-700 text-white rounded-lg text-sm font-medium transition-colors"
                       >
                         {downtimeLoading ? 'Cargando...' : 'Consultar'}
                       </button>
@@ -4224,27 +4130,27 @@ export default function Home() {
                 {/* Summary Cards */}
                 {downtimeData && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">DT Total (Producción)</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">DT Total (Producción)</p>
                       <p className="text-2xl font-bold text-white mt-1">
-                        {downtimeData.summary.totalDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                        {downtimeData.summary.totalDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
                       </p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">DT Justificado (Tickets)</p>
-                      <p className="text-2xl font-bold text-cyan-400 mt-1">
-                        {downtimeData.summary.totalTicketDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">DT Justificado (Tickets)</p>
+                      <p className="text-2xl font-bold text-neutral-200 mt-1">
+                        {downtimeData.summary.totalTicketDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
                       </p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">DT Sin Justificar</p>
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">DT Sin Justificar</p>
                       <p className="text-2xl font-bold text-red-400 mt-1">
-                        {downtimeData.summary.totalAdjustedDt.toFixed(2)} <span className="text-sm text-slate-400">min</span>
+                        {downtimeData.summary.totalAdjustedDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
                       </p>
                     </div>
-                    <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-                      <p className="text-slate-400 text-xs font-medium">Tickets Totales</p>
-                      <p className="text-2xl font-bold text-purple-400 mt-1">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
+                      <p className="text-neutral-400 text-xs font-medium">Tickets Totales</p>
+                      <p className="text-2xl font-bold text-neutral-200 mt-1">
                         {downtimeData.summary.totalTickets}
                       </p>
                     </div>
@@ -4253,7 +4159,7 @@ export default function Home() {
 
                 {/* Bar Chart */}
                 {downtimeData && downtimeData.intervals.length > 0 && (
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h3 className="text-sm font-semibold text-slate-100 mb-4">DT vs Tickets por Intervalo</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={downtimeData.intervals.map(i => ({
@@ -4277,55 +4183,55 @@ export default function Home() {
 
                 {/* Table */}
                 {downtimeData && (
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-4 sm:p-6">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
                     <h3 className="text-sm font-semibold text-slate-100 mb-4">Detalle por Intervalo Horario</h3>
                     {downtimeData.intervals.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-slate-500">No hay registros de producción para esta línea y fecha</p>
+                        <p className="text-neutral-500">No hay registros de producción para esta línea y fecha</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-slate-700">
-                              <th className="text-left text-slate-400 font-medium py-2 px-3">Hora</th>
-                              <th className="text-left text-slate-400 font-medium py-2 px-3">Modelo</th>
-                              <th className="text-right text-slate-400 font-medium py-2 px-3">Cap</th>
-                              <th className="text-right text-slate-400 font-medium py-2 px-3">Prod</th>
-                              <th className="text-right text-slate-400 font-medium py-2 px-3">Delta</th>
-                              <th className="text-right text-slate-400 font-medium py-2 px-3">DT (min)</th>
-                              <th className="text-right text-cyan-400 font-medium py-2 px-3">Tickets (min)</th>
+                            <tr className="border-b border-neutral-800">
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Hora</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Modelo</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Cap</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Prod</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Delta</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">DT (min)</th>
+                              <th className="text-right text-neutral-200 font-medium py-2 px-3">Tickets (min)</th>
                               <th className="text-right text-red-400 font-medium py-2 px-3">DT Ajustado</th>
-                              <th className="text-center text-slate-400 font-medium py-2 px-3">Tickets</th>
-                              <th className="text-center text-slate-400 font-medium py-2 px-3"></th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3">Tickets</th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3"></th>
                             </tr>
                           </thead>
                           <tbody>
                             {downtimeData.intervals.map((interval, idx) => (
                               <React.Fragment key={interval.id || idx}>
                                 <tr
-                                  className={`border-b border-slate-700/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-slate-700/50' : ''} ${downtimeExpandedRow === idx ? 'bg-slate-700/30' : ''}`}
+                                  className={`border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === idx ? 'bg-neutral-800/30' : ''}`}
                                   onClick={() => {
                                     if (interval.ticketCount > 0) {
                                       setDowntimeExpandedRow(downtimeExpandedRow === idx ? null : idx)
                                     }
                                   }}
                                 >
-                                  <td className="py-2 px-3 text-slate-200 font-mono text-xs">
+                                  <td className="py-2 px-3 text-neutral-200 font-mono text-xs">
                                     {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}
                                   </td>
-                                  <td className="py-2 px-3 text-slate-300 text-xs">{interval.modelo || '-'}</td>
-                                  <td className="py-2 px-3 text-right text-slate-300">{interval.capacidad || 0}</td>
-                                  <td className="py-2 px-3 text-right text-slate-300">{interval.produccion || 0}</td>
-                                  <td className="py-2 px-3 text-right text-slate-300">{interval.delta || 0}</td>
+                                  <td className="py-2 px-3 text-neutral-300 text-xs">{interval.modelo || '-'}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.capacidad || 0}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.produccion || 0}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.delta || 0}</td>
                                   <td className="py-2 px-3 text-right text-yellow-300 font-medium">{interval.dt.toFixed(2)}</td>
-                                  <td className="py-2 px-3 text-right text-cyan-400 font-medium">{interval.ticketDeadtimeMin.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-200 font-medium">{interval.ticketDeadtimeMin.toFixed(2)}</td>
                                   <td className={`py-2 px-3 text-right font-bold ${interval.adjustedDt > 0 ? 'text-red-400' : 'text-green-400'}`}>
                                     {interval.adjustedDt.toFixed(2)}
                                   </td>
                                   <td className="py-2 px-3 text-center">
                                     {interval.ticketCount > 0 ? (
-                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-cyan-900/50 text-cyan-300 text-xs font-bold">
+                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-neutral-200 text-xs font-bold">
                                         {interval.ticketCount}
                                       </span>
                                     ) : (
@@ -4334,7 +4240,7 @@ export default function Home() {
                                   </td>
                                   <td className="py-2 px-3 text-center">
                                     {interval.ticketCount > 0 && (
-                                      <svg className={`w-4 h-4 text-slate-400 transition-transform inline-block ${downtimeExpandedRow === idx ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className={`w-4 h-4 text-neutral-400 transition-transform inline-block ${downtimeExpandedRow === idx ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                       </svg>
                                     )}
@@ -4344,8 +4250,8 @@ export default function Home() {
                                 {downtimeExpandedRow === idx && interval.ticketCount > 0 && (
                                   <tr>
                                     <td colSpan={10} className="p-0">
-                                      <div className="bg-slate-900/60 border-l-4 border-cyan-500 mx-2 my-1 rounded-lg p-4">
-                                        <h4 className="text-cyan-300 text-xs font-semibold mb-3 flex items-center gap-2">
+                                      <div className="bg-neutral-950/60 border-l-4 border-neutral-700 mx-2 my-1 rounded-lg p-4">
+                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3 flex items-center gap-2">
                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                           </svg>
@@ -4355,18 +4261,18 @@ export default function Home() {
                                           {interval.tickets.map(t => (
                                             <div
                                               key={t.id}
-                                              className="bg-slate-800/80 rounded-lg p-3 border border-slate-700/50 cursor-pointer hover:border-cyan-500/50 hover:bg-slate-700/60 transition-colors"
+                                              className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors"
                                               onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}
                                             >
                                               <div className="flex justify-between items-start flex-wrap gap-2">
                                                 <div className="flex-1 min-w-0">
                                                   <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-xs font-mono text-slate-500">#{t.id}</span>
-                                                    <span className="text-sm font-medium text-slate-200">{t.equipo || 'Sin equipo'}</span>
+                                                    <span className="text-xs font-mono text-neutral-500">#{t.id}</span>
+                                                    <span className="text-sm font-medium text-neutral-200">{t.equipo || 'Sin equipo'}</span>
                                                     {t.clasificacion && (
-                                                      <span className="px-2 py-0.5 rounded text-xs bg-purple-900/40 text-purple-300">{t.clasificacion}</span>
+                                                      <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>
                                                     )}
-                                                    <span className="text-xs text-cyan-400 ml-auto flex items-center gap-1">
+                                                    <span className="text-xs text-neutral-200 ml-auto flex items-center gap-1">
                                                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -4374,17 +4280,17 @@ export default function Home() {
                                                       Ver detalle
                                                     </span>
                                                   </div>
-                                                  <p className="text-xs text-slate-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
-                                                  {t.solucion && <p className="text-xs text-slate-500 mt-1 truncate">Solución: {t.solucion}</p>}
-                                                  <div className="flex gap-4 mt-2 text-xs text-slate-500 flex-wrap">
+                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
+                                                  {t.solucion && <p className="text-xs text-neutral-500 mt-1 truncate">Solución: {t.solucion}</p>}
+                                                  <div className="flex gap-4 mt-2 text-xs text-neutral-500 flex-wrap">
                                                     <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                                                     <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                                                     {t.tecnico && <span>Técnico: {t.tecnico}</span>}
                                                   </div>
                                                 </div>
                                                 <div className="text-right">
-                                                  <p className="text-sm font-bold text-cyan-400">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
-                                                  {t.piezas > 0 && <p className="text-xs text-slate-500">{t.piezas} pzas perdidas</p>}
+                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
+                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
                                                 </div>
                                               </div>
                                             </div>
@@ -4399,12 +4305,12 @@ export default function Home() {
                           </tbody>
                           {/* Totals row */}
                           <tfoot>
-                            <tr className="border-t-2 border-slate-600">
-                              <td colSpan={5} className="py-2 px-3 text-right text-slate-300 font-semibold">Totales:</td>
+                            <tr className="border-t-2 border-neutral-700">
+                              <td colSpan={5} className="py-2 px-3 text-right text-neutral-300 font-semibold">Totales:</td>
                               <td className="py-2 px-3 text-right text-yellow-300 font-bold">{downtimeData.summary.totalDt.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right text-cyan-400 font-bold">{downtimeData.summary.totalTicketDt.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right text-neutral-200 font-bold">{downtimeData.summary.totalTicketDt.toFixed(2)}</td>
                               <td className="py-2 px-3 text-right text-red-400 font-bold">{downtimeData.summary.totalAdjustedDt.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-center text-purple-400 font-bold">{downtimeData.summary.totalTickets}</td>
+                              <td className="py-2 px-3 text-center text-neutral-200 font-bold">{downtimeData.summary.totalTickets}</td>
                               <td></td>
                             </tr>
                           </tfoot>
@@ -4416,20 +4322,20 @@ export default function Home() {
 
                 {/* Empty state */}
                 {!downtimeData && !downtimeLoading && (
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 text-center">
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
                     <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-slate-400">Selecciona una línea y fecha para ver el análisis de downtime</p>
-                    <p className="text-slate-500 text-sm mt-1">Compara el DT de producción contra los tickets registrados</p>
+                    <p className="text-neutral-400">Selecciona una línea y fecha para ver el análisis de downtime</p>
+                    <p className="text-neutral-500 text-sm mt-1">Compara el DT de producción contra los tickets registrados</p>
                   </div>
                 )}
 
                 {/* Loading state */}
                 {downtimeLoading && (
-                  <div className="bg-slate-800 rounded-lg shadow-lg border border-slate-700 p-8 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-600 border-t-red-400 mx-auto mb-4"></div>
-                    <p className="text-slate-400">Cargando análisis de downtime...</p>
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-neutral-700 border-t-red-400 mx-auto mb-4"></div>
+                    <p className="text-neutral-400">Cargando análisis de downtime...</p>
                   </div>
                 )}
               </div>
@@ -4445,14 +4351,14 @@ export default function Home() {
           <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <h2 className="text-xl font-bold text-white">Modo Visualización</h2>
               </div>
-              <button onClick={() => setShowDisplay(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={() => setShowDisplay(false)} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -4460,15 +4366,15 @@ export default function Home() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-slate-300 text-sm">Selecciona una línea para mostrar el modo visualización:</p>
+              <p className="text-neutral-300 text-sm">Selecciona una línea para mostrar el modo visualización:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 {lineas.map(linea => (
                   <button
                     key={linea.id}
                     onClick={() => setDisplayLineaSelected(linea.linea)}
-                    className="bg-slate-800/50 border border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group"
+                    className="bg-neutral-900/50 border border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group"
                   >
-                    <svg className="w-5 h-5 text-slate-400 group-hover:text-slate-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-neutral-400 group-hover:text-neutral-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                     <span>Línea {linea.linea}</span>
@@ -4493,7 +4399,7 @@ export default function Home() {
                   setShowDisplay(false)
                   setDisplayLineaSelected('')
                 }}
-                className="w-10 h-10 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -4514,20 +4420,20 @@ export default function Home() {
       {/* Modal para Manejar Ticket */}
       {showHandleModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700">
-            <div className="sticky top-0 bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center">
+          <div className="bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-neutral-800">
+            <div className="sticky top-0 bg-neutral-900 p-5 border-b border-neutral-800 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Manejar Ticket #{selectedTicketId}</h2>
-                  <p className="text-slate-400 text-sm">Atender y cerrar ticket</p>
+                  <p className="text-neutral-400 text-sm">Atender y cerrar ticket</p>
                 </div>
               </div>
-              <button onClick={closeHandleModal} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeHandleModal} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -4537,56 +4443,56 @@ export default function Home() {
             <div className="p-5">
               {ticketLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-700 border-t-slate-400"></div>
-                  <p className="text-slate-400 mt-4">Cargando ticket...</p>
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-neutral-800 border-t-neutral-400"></div>
+                  <p className="text-neutral-400 mt-4">Cargando ticket...</p>
                 </div>
               ) : selectedTicket ? (
                 <div className="space-y-5">
                   {/* Info del ticket */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Línea</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Línea</p>
                       <p className="text-white font-semibold">Línea {selectedTicket.linea}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Modelo</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Modelo</p>
                       <p className="text-white font-semibold">{selectedTicket.modelo}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Equipo</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Equipo</p>
                       <p className="text-white font-semibold">{selectedTicket.equipo}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Rate</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Rate</p>
                       <p className="text-white font-semibold">{selectedTicket.rate || 'N/A'} pzs/hr</p>
                     </div>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-lg p-3">
-                    <p className="text-slate-400 text-xs">Descripción del problema</p>
+                  <div className="bg-neutral-800/50 rounded-lg p-3">
+                    <p className="text-neutral-400 text-xs">Descripción del problema</p>
                     <p className="text-white font-medium mt-1">{selectedTicket.descr}</p>
                   </div>
 
-                  <div className="bg-slate-700/50 rounded-lg p-3">
-                    <p className="text-slate-400 text-xs">Reportado por</p>
+                  <div className="bg-neutral-800/50 rounded-lg p-3">
+                    <p className="text-neutral-400 text-xs">Reportado por</p>
                     <p className="text-white">{selectedTicket.nombre} - {selectedTicket.hr ? new Date(selectedTicket.hr).toLocaleString('es-MX') : ''}</p>
                   </div>
 
                   {/* Estado del técnico */}
                   {selectedTicket.tecnico ? (
-                    <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-lg p-4">
-                      <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
+                      <div className="flex items-center gap-2 text-neutral-200 mb-2">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="font-semibold">En atención</span>
                       </div>
-                      <p className="text-slate-300 text-sm">Técnico: {selectedTicket.tecnico}</p>
+                      <p className="text-neutral-300 text-sm">Técnico: {selectedTicket.tecnico}</p>
                     </div>
                   ) : (
                     <button
                       onClick={handleStartTicket}
-                      className="w-full bg-slate-600 hover:bg-slate-500 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+                      className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -4599,9 +4505,9 @@ export default function Home() {
                   {selectedTicket.tecnico && (
                     <div className="space-y-4 pt-2">
                       <div>
-                        <label className="block text-slate-300 text-sm font-medium mb-2">Solución aplicada *</label>
+                        <label className="block text-neutral-300 text-sm font-medium mb-2">Solución aplicada *</label>
                         <textarea
-                          className="w-full bg-slate-700/50 border border-slate-600 text-slate-200 rounded-lg p-3 text-sm min-h-[120px] focus:ring-2 focus:ring-slate-500 focus:border-transparent"
+                          className="w-full bg-neutral-800/50 border border-neutral-700 text-neutral-200 rounded-lg p-3 text-sm min-h-[120px] focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                           placeholder="Describe la solución aplicada al problema..."
                           value={handleForm.solucion}
                           onChange={e => setHandleForm({ ...handleForm, solucion: e.target.value })}
@@ -4611,7 +4517,7 @@ export default function Home() {
                       <button
                         onClick={handleFinishTicket}
                         disabled={!handleForm.solucion}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold py-3 rounded-lg transition-all duration-300 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 rounded-lg transition-all duration-300 shadow-lg border border-transparent flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -4623,7 +4529,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-slate-400">No se pudo cargar el ticket</p>
+                  <p className="text-neutral-400">No se pudo cargar el ticket</p>
                 </div>
               )}
             </div>
@@ -4652,21 +4558,21 @@ export default function Home() {
       {/* Modal para Ver Ticket */}
       {showViewModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-700">
-            <div className="sticky top-0 bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center">
+          <div className="bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-neutral-800">
+            <div className="sticky top-0 bg-neutral-900 p-5 border-b border-neutral-800 flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-white">Ticket #{selectedTicketId}</h2>
-                  <p className="text-slate-400 text-sm">Detalles del ticket cerrado</p>
+                  <p className="text-neutral-400 text-sm">Detalles del ticket cerrado</p>
                 </div>
               </div>
-              <button onClick={closeViewModal} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeViewModal} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -4676,58 +4582,58 @@ export default function Home() {
             <div className="p-5">
               {ticketLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-slate-700 border-t-slate-400"></div>
-                  <p className="text-slate-400 mt-4">Cargando ticket...</p>
+                  <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-neutral-800 border-t-neutral-400"></div>
+                  <p className="text-neutral-400 mt-4">Cargando ticket...</p>
                 </div>
               ) : selectedTicket ? (
                 <div className="space-y-5">
                   {/* Metricas principales */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                      <p className="text-slate-400 text-xs">Duracion</p>
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                      <p className="text-neutral-400 text-xs">Duracion</p>
                       <p className="text-xl font-bold text-white">{formatHoras(minutosAHoras(selectedTicket.duracion_minutos || calcularMinutos(selectedTicket.hr, selectedTicket.hc) || 0))} hrs</p>
                     </div>
-                    <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                      <p className="text-slate-400 text-xs">Piezas Perdidas</p>
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                      <p className="text-neutral-400 text-xs">Piezas Perdidas</p>
                       <p className="text-xl font-bold text-white">{selectedTicket.piezas || 0}</p>
                     </div>
-                    <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                      <p className="text-slate-400 text-xs">Deadtime</p>
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                      <p className="text-neutral-400 text-xs">Deadtime</p>
                       <p className="text-xl font-bold text-white">{formatMinutes(selectedTicket.deadtime)}</p>
                     </div>
-                    <div className="bg-slate-700 border border-slate-600 rounded-lg p-3 text-center">
-                      <p className="text-slate-400 text-xs">Linea</p>
+                    <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-3 text-center">
+                      <p className="text-neutral-400 text-xs">Linea</p>
                       <p className="text-xl font-bold text-white">{selectedTicket.linea}</p>
                     </div>
                   </div>
 
                   {/* Info del equipo */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Modelo</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Modelo</p>
                       <p className="text-white font-semibold">{selectedTicket.modelo}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Equipo</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Equipo</p>
                       <p className="text-white font-semibold">{selectedTicket.equipo}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Sección Afectada</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Sección Afectada</p>
                       <p className="text-white font-semibold">{selectedTicket.pa || 'N/A'}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Condición de Paro</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Condición de Paro</p>
                       <p className="text-white font-semibold">{selectedTicket.pf || 'N/A'}</p>
                     </div>
                   </div>
 
                   {/* Montadoras afectadas - Mostrar solo si es NXT */}
                   {selectedTicket.equipo === 'NXT' && (
-                    <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
-                      <p className="text-cyan-300 text-xs font-medium mb-3">Montadoras Afectadas</p>
+                    <div className="bg-cyan-500/10 border border-neutral-700 rounded-lg p-4">
+                      <p className="text-neutral-200 text-xs font-medium mb-3">Montadoras Afectadas</p>
                       <div className="grid grid-cols-6 gap-2">
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
-                          <div key={i} className={`flex items-center justify-center py-2 rounded text-sm font-medium ${selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-cyan-300 border border-cyan-500/60' : 'bg-slate-700/30 text-slate-500 border border-slate-600/30'
+                          <div key={i} className={`flex items-center justify-center py-2 rounded text-sm font-medium ${selectedTicket[`mod${i}`] ? 'bg-cyan-500/40 text-neutral-200 border border-neutral-700' : 'bg-neutral-800/30 text-neutral-500 border border-neutral-700/30'
                             }`}>
                             M{i}
                           </div>
@@ -4736,43 +4642,43 @@ export default function Home() {
                     </div>
                   )}
 
-                  <div className="bg-slate-700/50 rounded-lg p-3">
-                    <p className="text-slate-400 text-xs">Descripción del problema</p>
+                  <div className="bg-neutral-800/50 rounded-lg p-3">
+                    <p className="text-neutral-400 text-xs">Descripción del problema</p>
                     <p className="text-white font-medium mt-1">{selectedTicket.descr}</p>
                   </div>
 
                   {selectedTicket.clasificacion && (
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Clasificación</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Clasificación</p>
                       <p className="text-white">{selectedTicket.clasificacion}</p>
                     </div>
                   )}
 
-                  <div className="bg-emerald-900/30 border border-emerald-700/50 rounded-lg p-4">
-                    <p className="text-emerald-400 text-xs font-medium mb-1">Solución aplicada</p>
+                  <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
+                    <p className="text-neutral-200 text-xs font-medium mb-1">Solución aplicada</p>
                     <p className="text-white">{selectedTicket.solucion || 'Sin solución registrada'}</p>
                   </div>
 
                   {/* Tiempos */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Apertura</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Apertura</p>
                       <p className="text-white text-sm">{selectedTicket.hr ? new Date(selectedTicket.hr).toLocaleString('es-MX') : 'N/A'}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Cierre</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Cierre</p>
                       <p className="text-white text-sm">{selectedTicket.hc ? new Date(selectedTicket.hc).toLocaleString('es-MX') : 'N/A'}</p>
                     </div>
                   </div>
 
                   {/* Personal */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Reportado por</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Reportado por</p>
                       <p className="text-white">{selectedTicket.nombre}</p>
                     </div>
-                    <div className="bg-slate-700/50 rounded-lg p-3">
-                      <p className="text-slate-400 text-xs">Técnico</p>
+                    <div className="bg-neutral-800/50 rounded-lg p-3">
+                      <p className="text-neutral-400 text-xs">Técnico</p>
                       <p className="text-white">{selectedTicket.tecnico || 'N/A'}</p>
                     </div>
                   </div>
@@ -4780,7 +4686,7 @@ export default function Home() {
                   {/* Action Button */}
                   <button
                     onClick={openEditModal}
-                    className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
+                    className="w-full bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -4790,7 +4696,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-slate-400">No se pudo cargar el ticket</p>
+                  <p className="text-neutral-400">No se pudo cargar el ticket</p>
                 </div>
               )}
             </div>
@@ -4801,10 +4707,10 @@ export default function Home() {
       {/* Edit Ticket Modal */}
       {showEditModal && editForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-700">
-            <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-6 flex justify-between items-center">
+          <div className="bg-neutral-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-neutral-800">
+            <div className="sticky top-0 bg-neutral-900 border-b border-neutral-800 p-6 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">Editar Ticket #{editForm.id}</h2>
-              <button onClick={closeEditModal} className="text-slate-400 hover:text-white transition-colors">
+              <button onClick={closeEditModal} className="text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -4813,38 +4719,38 @@ export default function Home() {
 
             <div className="p-6 space-y-4">
               {editError && (
-                <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-red-900/30 border border-neutral-700 text-red-300 px-4 py-3 rounded-lg text-sm">
                   {editError}
                 </div>
               )}
 
               {editSuccess && (
-                <div className="bg-emerald-900/30 border border-emerald-700 text-emerald-300 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-neutral-800 border border-neutral-700 text-neutral-200 px-4 py-3 rounded-lg text-sm">
                   ✓ Ticket actualizado exitosamente
                 </div>
               )}
 
               {editLoading ? (
                 <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-700 border-t-slate-400"></div>
-                  <p className="text-slate-400 mt-2">Guardando cambios...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-neutral-800 border-t-neutral-400"></div>
+                  <p className="text-neutral-400 mt-2">Guardando cambios...</p>
                 </div>
               ) : (
                 <>
                   <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">Descripción</label>
+                    <label className="block text-neutral-300 text-sm font-medium mb-2">Descripción</label>
                     <input
                       type="text"
-                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       value={editForm.descr}
                       onChange={e => setEditForm({ ...editForm, descr: e.target.value })}
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">Modelo</label>
+                    <label className="block text-neutral-300 text-sm font-medium mb-2">Modelo</label>
                     <select
-                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       value={editForm.modelo}
                       onChange={e => setEditForm({ ...editForm, modelo: e.target.value })}
                     >
@@ -4856,9 +4762,9 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">Equipo</label>
+                    <label className="block text-neutral-300 text-sm font-medium mb-2">Equipo</label>
                     <select
-                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                       value={editForm.equipo}
                       onChange={e => setEditForm({ ...editForm, equipo: e.target.value })}
                     >
@@ -4871,19 +4777,19 @@ export default function Home() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">Hora de Apertura</label>
+                      <label className="block text-neutral-300 text-sm font-medium mb-2">Hora de Apertura</label>
                       <input
                         type="datetime-local"
-                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         value={editForm.hr}
                         onChange={e => setEditForm({ ...editForm, hr: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="block text-slate-300 text-sm font-medium mb-2">Hora de Cierre</label>
+                      <label className="block text-neutral-300 text-sm font-medium mb-2">Hora de Cierre</label>
                       <input
                         type="datetime-local"
-                        className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         value={editForm.hc}
                         onChange={e => setEditForm({ ...editForm, hc: e.target.value })}
                       />
@@ -4891,19 +4797,19 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 text-sm font-medium mb-2">Solución</label>
+                    <label className="block text-neutral-300 text-sm font-medium mb-2">Solución</label>
                     <textarea
-                      className="w-full bg-slate-700 border border-slate-600 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                      className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
                       rows="3"
                       value={editForm.solucion}
                       onChange={e => setEditForm({ ...editForm, solucion: e.target.value })}
                     />
                   </div>
 
-                  <div className="flex gap-3 pt-4 border-t border-slate-700">
+                  <div className="flex gap-3 pt-4 border-t border-neutral-800">
                     <button
                       onClick={saveEditTicket}
-                      className="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-white text-black hover:bg-neutral-200 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       disabled={editLoading}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -4913,7 +4819,7 @@ export default function Home() {
                     </button>
                     <button
                       onClick={closeEditModal}
-                      className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                       disabled={editLoading}
                     >
                       Cancelar
@@ -4943,7 +4849,7 @@ export default function Home() {
               </div>
               <h2 className="text-xl font-bold text-white">Mantenimiento</h2>
             </div>
-            <button onClick={() => setShowMantenimiento(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => setShowMantenimiento(false)} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -4951,24 +4857,24 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-slate-300 text-sm">Selecciona las líneas en mantenimiento:</p>
+            <p className="text-neutral-300 text-sm">Selecciona las líneas en mantenimiento:</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {lineas.map(linea => (
                 <button
                   key={`mant-${linea.id}`}
                   onClick={() => handleMantenimientoToggle(linea.linea, mantenimientoActivo[linea.linea])}
                   className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${mantenimientoActivo[linea.linea]
-                      ? 'bg-blue-900/40 border-blue-500 text-blue-200 shadow-lg shadow-blue-500/50'
-                      : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                      ? 'bg-neutral-800 border-neutral-700 text-blue-200 shadow-lg shadow-md shadow-black/50 border border-neutral-700'
+                      : 'bg-neutral-900/50 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700 text-white'
                     }`}
                 >
-                  <svg className={`w-5 h-5 transition-colors ${mantenimientoActivo[linea.linea] ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'
+                  <svg className={`w-5 h-5 transition-colors ${mantenimientoActivo[linea.linea] ? 'text-neutral-200' : 'text-neutral-400 group-hover:text-neutral-200'
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
                   <span>Línea {linea.linea}</span>
                   {mantenimientoActivo[linea.linea] && (
-                    <span className="text-xs bg-blue-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}
                 </button>
               ))}
@@ -4981,14 +4887,14 @@ export default function Home() {
         <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-900/50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-white">Cambio de Modelo</h2>
             </div>
-            <button onClick={() => setShowCambioModelo(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => setShowCambioModelo(false)} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -4996,24 +4902,24 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-slate-300 text-sm">Selecciona las líneas en cambio de modelo:</p>
+            <p className="text-neutral-300 text-sm">Selecciona las líneas en cambio de modelo:</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {lineas.map(linea => (
                 <button
                   key={`cambio-${linea.id}`}
                   onClick={() => handleCambioModeloToggle(linea.linea, cambioModeloActivo[linea.linea])}
                   className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${cambioModeloActivo[linea.linea]
-                      ? 'bg-amber-900/40 border-amber-500 text-amber-200 shadow-lg shadow-amber-500/50'
-                      : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                      ? 'bg-neutral-800 border-neutral-700 text-amber-200 shadow-lg shadow-md shadow-black/50 border border-neutral-700'
+                      : 'bg-neutral-900/50 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700 text-white'
                     }`}
                 >
-                  <svg className={`w-5 h-5 transition-colors ${cambioModeloActivo[linea.linea] ? 'text-amber-400' : 'text-slate-400 group-hover:text-slate-200'
+                  <svg className={`w-5 h-5 transition-colors ${cambioModeloActivo[linea.linea] ? 'text-neutral-200' : 'text-neutral-400 group-hover:text-neutral-200'
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                   <span>Línea {linea.linea}</span>
                   {cambioModeloActivo[linea.linea] && (
-                    <span className="text-xs bg-amber-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}
                 </button>
               ))}
@@ -5026,14 +4932,14 @@ export default function Home() {
         <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-900/50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
+                <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
               </div>
               <h2 className="text-xl font-bold text-white">Auditoría</h2>
             </div>
-            <button onClick={() => setShowAuditoria(false)} className="w-8 h-8 rounded-lg bg-slate-700/50 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <button onClick={() => setShowAuditoria(false)} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -5041,24 +4947,24 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-slate-300 text-sm">Selecciona las líneas en auditoría:</p>
+            <p className="text-neutral-300 text-sm">Selecciona las líneas en auditoría:</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {lineas.map(linea => (
                 <button
                   key={`auditoria-${linea.id}`}
                   onClick={() => handleAuditoriaToggle(linea.linea, auditoriaActivo[linea.linea])}
                   className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${auditoriaActivo[linea.linea]
-                      ? 'bg-purple-900/40 border-purple-500 text-purple-200 shadow-lg shadow-purple-500/50'
-                      : 'bg-slate-800/50 border-slate-700 hover:bg-slate-700 hover:border-slate-600 text-white'
+                      ? 'bg-neutral-800 border-neutral-700 text-purple-200 shadow-lg shadow-md shadow-black/50 border border-neutral-700'
+                      : 'bg-neutral-900/50 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700 text-white'
                     }`}
                 >
-                  <svg className={`w-5 h-5 transition-colors ${auditoriaActivo[linea.linea] ? 'text-purple-400' : 'text-slate-400 group-hover:text-slate-200'
+                  <svg className={`w-5 h-5 transition-colors ${auditoriaActivo[linea.linea] ? 'text-neutral-200' : 'text-neutral-400 group-hover:text-neutral-200'
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                   <span>Línea {linea.linea}</span>
                   {auditoriaActivo[linea.linea] && (
-                    <span className="text-xs bg-purple-600 px-2 py-1 rounded-full mt-1">Activo</span>
+                    <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}
                 </button>
               ))}
@@ -5069,7 +4975,7 @@ export default function Home() {
 
       {/* Mensaje de éxito */}
       {showSuccessMessage && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-5 py-4 rounded-xl shadow-2xl z-50 border border-emerald-400/30 animate-slide-in">
+        <div className="fixed top-4 right-4 left-4 sm:left-auto sm:top-6 sm:right-6 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-5 py-4 rounded-xl shadow-2xl z-50 border border-neutral-700 animate-slide-in">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5084,7 +4990,7 @@ export default function Home() {
       {/* Reporte Diario Progress Modal */}
       {showSpecialExportModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-800 rounded-2xl shadow-2xl border border-violet-500/40 p-8 max-w-sm w-full text-center">
+          <div className="bg-neutral-900 rounded-2xl shadow-2xl border border-violet-500/40 p-8 max-w-sm w-full text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-violet-900/50 border border-violet-500/50 flex items-center justify-center">
               {specialExportLoading ? (
                 <svg className="w-8 h-8 text-violet-400 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -5092,18 +4998,18 @@ export default function Home() {
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
               ) : (
-                <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
             </div>
             <h3 className="text-white font-bold text-lg mb-1">Reporte Diario</h3>
-            <p className="text-slate-400 text-sm">Todas las líneas · Separado por día</p>
+            <p className="text-neutral-400 text-sm">Todas las líneas · Separado por día</p>
             <p className="text-violet-300 text-sm mt-4 font-medium min-h-[20px]">{specialExportProgress}</p>
             {!specialExportLoading && (
               <button
                 onClick={() => setShowSpecialExportModal(false)}
-                className="mt-5 px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm transition-colors"
+                className="mt-5 px-5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-sm transition-colors"
               >
                 Cerrar
               </button>
@@ -5111,6 +5017,7 @@ export default function Home() {
           </div>
         </div>
       )}
-    </div>
+        </main>
+  </div>
   )
 }
