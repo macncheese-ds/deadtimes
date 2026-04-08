@@ -33,11 +33,11 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
 
   // Función para determinar el color según la duración
   const getTimeColor = (duracionMinutos) => {
-    if (!duracionMinutos) return 'bg-gray-900 text-gray-200'
+    if (!duracionMinutos) return 'bg-neutral-950 text-neutral-200'
     const mins = Math.round(duracionMinutos)
-    if (mins <= 15) return 'bg-green-900 text-green-200'
-    if (mins <= 30) return 'bg-yellow-900 text-yellow-200'
-    return 'bg-red-900 text-red-200'
+    if (mins <= 15) return 'bg-neutral-800 border border-neutral-700 text-neutral-200'
+    if (mins <= 30) return 'bg-neutral-700 border border-neutral-600 text-white font-medium'
+    return 'bg-white text-black font-bold shadow-md shadow-white/20'
   }
 
   // Detectar cambio en estado y reproducir/detener sonido
@@ -140,7 +140,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
+      <div className="flex items-center justify-center h-screen bg-neutral-950">
         <div className="text-white text-2xl">Cargando...</div>
       </div>
     )
@@ -158,12 +158,12 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 p-4 relative">
+    <div className="min-h-screen bg-neutral-950 p-4 relative">
       {/* Overlay de Mantenimiento */}
       {mantenimientoActualizado && (
-        <div className="animate-pulse-blue fixed inset-0 bg-blue-600/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
+        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.mantenimiento[idioma]}</p>
+            <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.mantenimiento[idioma]}</p>
             <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
@@ -171,9 +171,9 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
 
       {/* Overlay de Cambio de Modelo */}
       {cambioModeloActualizado && (
-        <div className="animate-pulse-orange fixed inset-0 bg-amber-500/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
+        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.cambio[idioma]}</p>
+            <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.cambio[idioma]}</p>
             <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
@@ -181,9 +181,9 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
 
       {/* Overlay de Auditoría */}
       {auditoriaActualizado && (
-        <div className="animate-pulse-purple fixed inset-0 bg-purple-600/30 flex items-center justify-center z-40 pointer-events-none rounded-lg">
+        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
-            <p className="text-5xl font-black text-neutral-200 drop-shadow-2xl transition-all duration-500">{mensajes.auditoria[idioma]}</p>
+            <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.auditoria[idioma]}</p>
             <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
@@ -193,46 +193,46 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
       <div className="mb-3 sm:mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Línea: {linea}</h1>
         <div className="flex justify-between items-center text-xs sm:text-sm">
-          <p className="text-gray-300">Activos: {tickets.length}</p>
-          <p className="text-gray-400">{new Date().toLocaleTimeString('es-MX')}</p>
+          <p className="text-neutral-300">Activos: {tickets.length}</p>
+          <p className="text-neutral-400">{new Date().toLocaleTimeString('es-MX')}</p>
         </div>
       </div>
 
       {/* Grid de Tickets */}
       {tickets.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-300 text-2xl">Sin tickets activos</p>
+          <p className="text-neutral-300 text-2xl">Sin tickets activos</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
           {tickets.map(ticket => (
             <div 
               key={ticket.id} 
-              className={`bg-gray-800 border-2 border-neutral-700 rounded-lg p-2 sm:p-3 animate-fade-in-smooth hover:shadow-lg transition-all duration-300 ${
+              className={`bg-neutral-900 border-2 border-neutral-700 rounded-lg p-2 sm:p-3 animate-fade-in-smooth hover:shadow-lg transition-all duration-300 ${
                 newTicketIds.has(ticket.id) ? 'ring-2 ring-yellow-400 shadow-lg shadow-yellow-400/50' : ''
               }`}
             >
               {/* Equipo */}
               <div className="mb-2">
-                <p className="text-gray-400 text-xs font-semibold">EQUIPO</p>
+                <p className="text-neutral-400 text-xs font-semibold">EQUIPO</p>
                 <p className="text-white text-sm font-bold truncate">{ticket.equipo}</p>
               </div>
 
               {/* Descripción */}
               <div className="mb-2">
-                <p className="text-gray-400 text-xs font-semibold">PROBLEMA</p>
+                <p className="text-neutral-400 text-xs font-semibold">PROBLEMA</p>
                 <p className="text-white text-xs line-clamp-2">{ticket.descr || 'N/A'}</p>
               </div>
 
               {/* Modelo */}
               <div className="mb-2">
-                <p className="text-gray-400 text-xs font-semibold">MODELO</p>
+                <p className="text-neutral-400 text-xs font-semibold">MODELO</p>
                 <p className="text-white text-xs truncate">{ticket.modelo || 'N/A'}</p>
               </div>
 
               {/* Duración */}
               <div className={`mb-2 ${getTimeColor(ticket.duracion_minutos)} rounded p-1.5`}>
-                <p className="text-gray-300 text-xs">TIEMPO</p>
+                <p className="text-neutral-300 text-xs">TIEMPO</p>
                 <p className="text-lg font-bold">
                   {ticket.duracion_minutos ? formatMinutes(Math.round(ticket.duracion_minutos)) : 'Reciente'}
                 </p>
@@ -241,13 +241,13 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
               {/* Clasificación */}
               {ticket.clasificacion && (
                 <div className="mb-2">
-                  <p className="text-gray-400 text-xs font-semibold">CLASIF.</p>
-                  <p className="text-yellow-300 text-xs font-semibold truncate">{ticket.clasificacion}</p>
+                  <p className="text-neutral-400 text-xs font-semibold">CLASIF.</p>
+                  <p className="text-white text-xs font-semibold truncate">{ticket.clasificacion}</p>
                 </div>
               )}
 
               {/* Turno */}
-              <div className="text-gray-400 text-xs">
+              <div className="text-neutral-400 text-xs">
                 T{ticket.turno}
               </div>
             </div>
