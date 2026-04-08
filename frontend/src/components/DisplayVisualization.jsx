@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { getDisplayTickets, getEstado } from '../api_deadtimes'
 
 // Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
@@ -22,6 +22,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   const [idioma, setIdioma] = useState(0) // 0: Español, 1: English, 2: 한국어
   const [prevTickets, setPrevTickets] = useState([])
   const [newTicketIds, setNewTicketIds] = useState(new Set())
+  const audioRef = useRef(null)
 
   const mensajes = {
     mantenimiento: ['MANTENIMIENTO', 'MAINTENANCE', '유지보수'],
@@ -38,6 +39,23 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
     if (mins <= 30) return 'bg-yellow-900 text-yellow-200'
     return 'bg-red-900 text-red-200'
   }
+
+  // Detectar cambio en estado y reproducir/detener sonido
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio('/sonido.mp3')
+    }
+
+    if (cambioModeloActualizado) {
+      // Cambio de modelo activado: reproducir sonido en loop
+      audioRef.current.loop = true
+      audioRef.current.play().catch(err => console.error('Error reproduciendo sonido:', err))
+    } else {
+      // Cambio de modelo desactivado: detener sonido
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }, [cambioModeloActualizado])
 
   // Auto-refresh cada 5 segundos para tickets
   useEffect(() => {
