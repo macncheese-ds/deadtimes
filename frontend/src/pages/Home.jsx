@@ -4382,6 +4382,9 @@ export default function Home() {
                                                 </div>
                                                 <div className="text-right">
                                                   <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
+                                                  {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
+                                                    <p className="text-xs text-neutral-500">Total ticket: {parseFloat(t.fullDeadtime || 0).toFixed(2)} min</p>
+                                                  )}
                                                   {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
                                                 </div>
                                               </div>
@@ -4492,6 +4495,9 @@ export default function Home() {
                                                 </div>
                                                 <div className="text-right">
                                                   <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
+                                                  {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
+                                                    <p className="text-xs text-neutral-500">Total ticket: {parseFloat(t.fullDeadtime || 0).toFixed(2)} min</p>
+                                                  )}
                                                   {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
                                                 </div>
                                               </div>
@@ -4512,9 +4518,9 @@ export default function Home() {
                 })()}
 
                 {/* No data states */}
-                {downtimeData && downtimeData.intervals.length === 0 && (
+                {downtimeData && downtimeData.summary.totalDt === 0 && downtimeData.summary.totalTickets === 0 && (
                   <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
-                    <p className="text-neutral-500">No hay registros de producción para esta línea y fecha</p>
+                    <p className="text-neutral-500">No hay registros de producción ni tickets para esta línea y fecha</p>
                   </div>
                 )}
 

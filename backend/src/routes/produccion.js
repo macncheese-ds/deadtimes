@@ -216,10 +216,11 @@ async function recalcularAcumulados(linea, fecha) {
 
 // ============================================================================
 // GET /api/produccion/downtime-analytics
-// Returns production intervals for a line+date with DT values, and for each
-// interval the matching closed tickets (from deadtimes table) whose hr falls
-// within that hour range. The "adjusted DT" (dt minus ticket time) is computed
-// here for convenience but nothing is written back to the DB.
+// Returns ALL 24 hourly intervals for a line+date with DT values. For each
+// interval, closed tickets that OVERLAP with that hour range are included,
+// with their deadtime split proportionally across multiple intervals.
+// E.g. a ticket from 13:00-14:30 contributes 60min to 13:00-14:00 and
+// 30min to 14:00-15:00. Nothing is written back to the DB.
 // Query params: linea, fecha
 // ============================================================================
 router.get('/downtime-analytics', async (req, res) => {
@@ -243,8 +244,14 @@ router.get('/downtime-analytics', async (req, res) => {
       [linea, fecha]
     );
 
+    // Build a lookup by hour for production data
+    const prodByHour = {};
+    for (const row of produccionRows) {
+      const h = parseInt(row.inicio.split(':')[0], 10);
+      prodByHour[h] = row;
+    }
+
     // 2. Get all closed tickets for this line on this date
-    //    A ticket matches if it was opened (hr) on the same date and same line
     const [ticketRows] = await db.query(
       `SELECT id, hr, ha, hc, descr, modelo, turno, linea, nombre,
               equipo, pf, pa, clasificacion, tecnico, solucion, rate,
@@ -255,77 +262,95 @@ router.get('/downtime-analytics', async (req, res) => {
       [linea, fecha]
     );
 
-    // 3. For each production interval, find matching tickets and compute adjusted DT
-    const intervals = produccionRows.map(row => {
-      const inicioStr = row.inicio; // e.g. "07:00:00"
-      const finalStr = row.final;   // e.g. "08:00:00"
+    // 3. Generate all 24 hourly intervals, merging production data where it exists
+    const intervals = [];
+    for (let h = 0; h < 24; h++) {
+      const hNext = (h + 1) % 24;
+      const inicioStr = String(h).padStart(2, '0') + ':00:00';
+      const finalStr = String(hNext).padStart(2, '0') + ':00:00';
+      const prod = prodByHour[h];
 
-      // Parse interval hours for comparison
-      const inicioH = parseInt(inicioStr.split(':')[0], 10);
-      const inicioM = parseInt(inicioStr.split(':')[1], 10);
-      const finalH = parseInt(finalStr.split(':')[0], 10);
-      const finalM = parseInt(finalStr.split(':')[1], 10);
+      const intervalStartMin = h * 60;
+      const intervalEndMin = (h + 1) * 60; // always h+1 even for hour 23 (=1440)
 
-      const inicioMinutes = inicioH * 60 + inicioM;
-      // Handle midnight wrap (23:00 -> 00:00 means finalMinutes = 1440)
-      let finalMinutes = finalH * 60 + finalM;
-      if (finalMinutes <= inicioMinutes) finalMinutes += 1440;
+      // Find tickets that OVERLAP with this interval and compute proportional time
+      const matchingTickets = [];
+      let ticketDeadtimeMin = 0;
 
-      // Find tickets whose hr (open time) falls within this interval
-      const matchingTickets = ticketRows.filter(t => {
-        if (!t.hr) return false;
-        const ticketDate = new Date(t.hr);
-        const ticketH = ticketDate.getHours();
-        const ticketM = ticketDate.getMinutes();
-        const ticketMinutes = ticketH * 60 + ticketM;
-        // Also handle midnight wrap for ticket time
-        const ticketMinutesAdj = ticketMinutes < inicioMinutes ? ticketMinutes + 1440 : ticketMinutes;
-        return ticketMinutesAdj >= inicioMinutes && ticketMinutesAdj < finalMinutes;
-      });
+      for (const t of ticketRows) {
+        if (!t.hr || !t.hc) continue;
 
-      // Sum ticket deadtime in minutes
-      const ticketDeadtimeMin = matchingTickets.reduce((sum, t) => {
-        return sum + (parseFloat(t.deadtime) || 0);
-      }, 0);
+        const openDate = new Date(t.hr);
+        const closeDate = new Date(t.hc);
 
-      const dtValue = parseFloat(row.dt) || 0;
-      // Adjusted DT = DT - ticket deadtime, minimum 0
+        // Get ticket start/end in minutes-of-day
+        let ticketStartMin = openDate.getHours() * 60 + openDate.getMinutes();
+        let ticketEndMin = closeDate.getHours() * 60 + closeDate.getMinutes();
+
+        // Handle tickets that cross midnight or close on the next day
+        if (ticketEndMin <= ticketStartMin) {
+          ticketEndMin += 1440;
+        }
+
+        // Also handle case where close date is next day
+        const openDay = openDate.toISOString().slice(0, 10);
+        const closeDay = closeDate.toISOString().slice(0, 10);
+        if (closeDay > openDay && ticketEndMin < ticketStartMin + 1440) {
+          ticketEndMin = closeDate.getHours() * 60 + closeDate.getMinutes() + 1440;
+        }
+
+        // Check overlap between ticket [ticketStartMin, ticketEndMin] and interval [intervalStartMin, intervalEndMin]
+        const overlapStart = Math.max(ticketStartMin, intervalStartMin);
+        const overlapEnd = Math.min(ticketEndMin, intervalEndMin);
+        const overlapMinutes = Math.max(0, overlapEnd - overlapStart);
+
+        if (overlapMinutes > 0) {
+          matchingTickets.push({
+            id: t.id,
+            hr: t.hr,
+            hc: t.hc,
+            equipo: t.equipo,
+            descr: t.descr,
+            clasificacion: t.clasificacion,
+            tecnico: t.tecnico,
+            solucion: t.solucion,
+            deadtime: parseFloat(overlapMinutes.toFixed(2)), // proportional time for THIS interval
+            fullDeadtime: t.deadtime, // original total deadtime
+            piezas: t.piezas
+          });
+          ticketDeadtimeMin += overlapMinutes;
+        }
+      }
+
+      const dtValue = prod ? (parseFloat(prod.dt) || 0) : 0;
       const adjustedDt = Math.max(0, parseFloat((dtValue - ticketDeadtimeMin).toFixed(2)));
 
-      return {
-        id: row.id,
-        modelo: row.modelo,
-        inicio: row.inicio,
-        final: row.final,
-        fecha: row.fecha,
-        capacidad: row.capacidad,
-        produccion: row.produccion,
-        delta: row.delta,
+      intervals.push({
+        id: prod ? prod.id : null,
+        modelo: prod ? prod.modelo : null,
+        inicio: inicioStr,
+        final: finalStr,
+        fecha: fecha,
+        capacidad: prod ? prod.capacidad : 0,
+        produccion: prod ? prod.produccion : 0,
+        delta: prod ? prod.delta : 0,
         dt: dtValue,
-        scrap: row.scrap,
+        scrap: prod ? prod.scrap : 0,
         ticketDeadtimeMin: parseFloat(ticketDeadtimeMin.toFixed(2)),
         adjustedDt,
         ticketCount: matchingTickets.length,
-        tickets: matchingTickets.map(t => ({
-          id: t.id,
-          hr: t.hr,
-          hc: t.hc,
-          equipo: t.equipo,
-          descr: t.descr,
-          clasificacion: t.clasificacion,
-          tecnico: t.tecnico,
-          solucion: t.solucion,
-          deadtime: t.deadtime,
-          piezas: t.piezas
-        }))
-      };
-    });
+        tickets: matchingTickets
+      });
+    }
 
     // Summary totals
     const totalDt = intervals.reduce((s, i) => s + i.dt, 0);
     const totalTicketDt = intervals.reduce((s, i) => s + i.ticketDeadtimeMin, 0);
     const totalAdjustedDt = intervals.reduce((s, i) => s + i.adjustedDt, 0);
-    const totalTickets = intervals.reduce((s, i) => s + i.ticketCount, 0);
+    // Count unique tickets (same ticket can appear in multiple intervals)
+    const uniqueTicketIds = new Set();
+    intervals.forEach(i => i.tickets.forEach(t => uniqueTicketIds.add(t.id)));
+    const totalTickets = uniqueTicketIds.size;
 
     res.json({
       success: true,
