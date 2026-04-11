@@ -92,33 +92,35 @@ function formatHoras(horas) {
   return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
-// Helper: get shift info for a given date
-// Shifts: Day = 8AM-8PM, Night = 8PM-8AM
-// When operator selects a date (e.g. April 11), the data corresponds to:
-//   Turno Día: 8:00 AM - 8:00 PM of the PREVIOUS day
-//   Turno Noche: 8:00 PM of the PREVIOUS day - 8:00 AM of SELECTED day
+// Helper: shift info for display
+// Day shift: 8AM-8PM of SELECTED day
+// Night shift: 8PM of SELECTED day - 8AM of NEXT day
 function getShiftInfo(fechaStr) {
   if (!fechaStr) return null;
   const selected = new Date(fechaStr + 'T00:00:00');
-  const prevDay = new Date(selected);
-  prevDay.setDate(prevDay.getDate() - 1);
+  const nextDay = new Date(selected);
+  nextDay.setDate(nextDay.getDate() + 1);
   const fmt = (d) => d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
   return {
     dayShift: {
       label: 'Turno Día',
-      range: `8:00 AM — 8:00 PM  •  ${fmt(prevDay)}`,
-      startHour: 8,
-      endHour: 20
+      range: `8:00 AM — 8:00 PM  •  ${fmt(selected)}`
     },
     nightShift: {
       label: 'Turno Noche',
-      range: `8:00 PM ${fmt(prevDay)} — 8:00 AM ${fmt(selected)}`,
-      startHour: 20,
-      endHour: 8
+      range: `8:00 PM ${fmt(selected)} — 8:00 AM ${fmt(nextDay)}`
     },
-    prevDay: fmt(prevDay),
-    selectedDay: fmt(selected)
+    selectedDay: fmt(selected),
+    nextDay: fmt(nextDay)
   };
+}
+
+// Get next calendar date string
+function getNextDate(fechaStr) {
+  if (!fechaStr) return '';
+  const d = new Date(fechaStr + 'T00:00:00');
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
 }
 
 // Returns which shift an hour belongs to: 'day' (8-19) or 'night' (20-23, 0-7)
@@ -254,6 +256,7 @@ export default function Home() {
   const [downtimeLinea, setDowntimeLinea] = useState('')
   const [downtimeFecha, setDowntimeFecha] = useState(new Date().toISOString().slice(0, 10))
   const [downtimeData, setDowntimeData] = useState(null)
+  const [downtimeDataNext, setDowntimeDataNext] = useState(null)
   const [downtimeLoading, setDowntimeLoading] = useState(false)
   const [downtimeExpandedRow, setDowntimeExpandedRow] = useState(null)
 
@@ -609,9 +612,18 @@ export default function Home() {
     setDowntimeLoading(true)
     setDowntimeExpandedRow(null)
     try {
-      const result = await getDowntimeAnalytics(downtimeLinea, downtimeFecha)
+      const nextDate = getNextDate(downtimeFecha)
+      const [result, resultNext] = await Promise.all([
+        getDowntimeAnalytics(downtimeLinea, downtimeFecha),
+        getDowntimeAnalytics(downtimeLinea, nextDate)
+      ])
       if (result.success) {
         setDowntimeData(result.data)
+      }
+      if (resultNext.success) {
+        setDowntimeDataNext(resultNext.data)
+      } else {
+        setDowntimeDataNext(null)
       }
     } catch (error) {
       console.error('Error cargando downtime analytics:', error)
@@ -4284,43 +4296,28 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Bar Chart */}
-                {downtimeData && downtimeData.intervals.length > 0 && (
-                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
-                    <h3 className="text-sm font-semibold text-slate-100 mb-4">DT vs Tickets por Intervalo</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={downtimeData.intervals.map(i => ({
-                        name: `${i.inicio?.substring(0, 5) || ''}-${i.final?.substring(0, 5) || ''}`,
-                        'DT Producción': i.dt,
-                        'Tickets': i.ticketDeadtimeMin,
-                        'DT Ajustado': i.adjustedDt
-                      }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} label={{ value: 'Minutos', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 12 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#e2e8f0' }} />
-                        <Legend />
-                        <Bar dataKey="DT Producción" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="Tickets" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="DT Ajustado" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-
-                {/* Table */}
-                {downtimeData && (
-                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
-                    <h3 className="text-sm font-semibold text-slate-100 mb-4">Detalle por Intervalo Horario</h3>
-                    {downtimeData.intervals.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-neutral-500">No hay registros de producción para esta línea y fecha</p>
+                {/* ====== DAY SHIFT SECTION ====== */}
+                {downtimeData && (() => {
+                  const shiftInfo = getShiftInfo(downtimeFecha);
+                  // Day shift: hours 8-19 from selected date
+                  const dayIntervals = downtimeData.intervals.filter(i => {
+                    const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
+                    return h >= 8 && h < 20;
+                  });
+                  if (dayIntervals.length === 0) return null;
+                  return (
+                    <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
+                      <div className="flex items-center gap-3 bg-amber-900/30 border border-amber-700/40 rounded-xl px-4 py-3 mb-4">
+                        <span className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0"></span>
+                        <div>
+                          <span className="text-amber-200 text-sm font-bold">TURNO DÍA</span>
+                          {shiftInfo && <span className="text-amber-300/70 text-xs ml-3">{shiftInfo.dayShift.range}</span>}
+                        </div>
                       </div>
-                    ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
-                            <tr className="border-b border-neutral-800">
+                            <tr className="border-b border-amber-800/30">
                               <th className="text-left text-neutral-400 font-medium py-2 px-3">Hora</th>
                               <th className="text-left text-neutral-400 font-medium py-2 px-3">Modelo</th>
                               <th className="text-right text-neutral-400 font-medium py-2 px-3">Cap</th>
@@ -4334,104 +4331,49 @@ export default function Home() {
                             </tr>
                           </thead>
                           <tbody>
-                            {downtimeData.intervals.map((interval, idx) => {
-                              const h = interval.inicio ? parseInt(interval.inicio.substring(0, 2), 10) : -1;
-                              const shift = getShiftForHour(h);
-                              const isShiftBoundary = h === 8 || h === 20;
-                              const shiftInfo = getShiftInfo(downtimeFecha);
-                              const shiftBorderClass = shift === 'day' ? 'border-l-2 border-l-amber-500/40' : 'border-l-2 border-l-indigo-500/40';
-                              const rowBgShift = shift === 'day' ? 'bg-amber-950/10' : 'bg-indigo-950/10';
-                              return (
-                              <React.Fragment key={interval.id || idx}>
-                                {isShiftBoundary && (
-                                  <tr className={shift === 'day' ? 'bg-amber-900/30' : 'bg-indigo-900/30'}>
-                                    <td colSpan={10} className="px-3 py-1.5 text-xs font-bold tracking-wide">
-                                      <div className="flex items-center gap-2">
-                                        <span className={`w-2 h-2 rounded-full ${shift === 'day' ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
-                                        <span className={shift === 'day' ? 'text-amber-300' : 'text-indigo-300'}>
-                                          {shift === 'day' ? '☀️ TURNO DÍA' : '🌙 TURNO NOCHE'}
-                                        </span>
-                                        <span className={`text-xs font-normal ${shift === 'day' ? 'text-amber-400/70' : 'text-indigo-400/70'}`}>
-                                          {shift === 'day' && shiftInfo ? shiftInfo.dayShift.range : ''}
-                                          {shift === 'night' && shiftInfo ? shiftInfo.nightShift.range : ''}
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                )}
+                            {dayIntervals.map((interval, idx) => (
+                              <React.Fragment key={`day-${interval.id || idx}`}>
                                 <tr
-                                  className={`${shiftBorderClass} ${rowBgShift} border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === idx ? 'bg-neutral-800/30' : ''}`}
-                                  onClick={() => {
-                                    if (interval.ticketCount > 0) {
-                                      setDowntimeExpandedRow(downtimeExpandedRow === idx ? null : idx)
-                                    }
-                                  }}
+                                  className={`border-l-2 border-l-amber-500/40 bg-amber-950/10 border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === `day-${idx}` ? 'bg-neutral-800/30' : ''}`}
+                                  onClick={() => { if (interval.ticketCount > 0) setDowntimeExpandedRow(downtimeExpandedRow === `day-${idx}` ? null : `day-${idx}`) }}
                                 >
-                                  <td className="py-2 px-3 text-neutral-200 font-mono text-xs">
-                                    {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}
-                                  </td>
+                                  <td className="py-2 px-3 text-neutral-200 font-mono text-xs">{interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</td>
                                   <td className="py-2 px-3 text-neutral-300 text-xs">{interval.modelo || '-'}</td>
                                   <td className="py-2 px-3 text-right text-neutral-300">{interval.capacidad || 0}</td>
                                   <td className="py-2 px-3 text-right text-neutral-300">{interval.produccion || 0}</td>
                                   <td className="py-2 px-3 text-right text-neutral-300">{interval.delta || 0}</td>
                                   <td className="py-2 px-3 text-right text-yellow-300 font-medium">{interval.dt.toFixed(2)}</td>
                                   <td className="py-2 px-3 text-right text-neutral-200 font-medium">{interval.ticketDeadtimeMin.toFixed(2)}</td>
-                                  <td className={`py-2 px-3 text-right font-bold ${interval.adjustedDt > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                                    {interval.adjustedDt.toFixed(2)}
-                                  </td>
+                                  <td className={`py-2 px-3 text-right font-bold ${interval.adjustedDt > 0 ? 'text-red-400' : 'text-green-400'}`}>{interval.adjustedDt.toFixed(2)}</td>
                                   <td className="py-2 px-3 text-center">
                                     {interval.ticketCount > 0 ? (
-                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-neutral-200 text-xs font-bold">
-                                        {interval.ticketCount}
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-600">-</span>
-                                    )}
+                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-neutral-200 text-xs font-bold">{interval.ticketCount}</span>
+                                    ) : <span className="text-slate-600">-</span>}
                                   </td>
                                   <td className="py-2 px-3 text-center">
                                     {interval.ticketCount > 0 && (
-                                      <svg className={`w-4 h-4 text-neutral-400 transition-transform inline-block ${downtimeExpandedRow === idx ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <svg className={`w-4 h-4 text-neutral-400 transition-transform inline-block ${downtimeExpandedRow === `day-${idx}` ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                       </svg>
                                     )}
                                   </td>
                                 </tr>
-                                {/* Expanded ticket details */}
-                                {downtimeExpandedRow === idx && interval.ticketCount > 0 && (
+                                {downtimeExpandedRow === `day-${idx}` && interval.ticketCount > 0 && (
                                   <tr>
                                     <td colSpan={10} className="p-0">
-                                      <div className="bg-neutral-950/60 border-l-4 border-neutral-700 mx-2 my-1 rounded-lg p-4">
-                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3 flex items-center gap-2">
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                          </svg>
-                                          Tickets en este intervalo ({interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)})
-                                        </h4>
+                                      <div className="bg-neutral-950/60 border-l-4 border-amber-700 mx-2 my-1 rounded-lg p-4">
+                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">Tickets en {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
                                         <div className="space-y-2">
                                           {interval.tickets.map(t => (
-                                            <div
-                                              key={t.id}
-                                              className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors"
-                                              onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}
-                                            >
+                                            <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
                                               <div className="flex justify-between items-start flex-wrap gap-2">
                                                 <div className="flex-1 min-w-0">
                                                   <div className="flex items-center gap-2 flex-wrap">
                                                     <span className="text-xs font-mono text-neutral-500">#{t.id}</span>
                                                     <span className="text-sm font-medium text-neutral-200">{t.equipo || 'Sin equipo'}</span>
-                                                    {t.clasificacion && (
-                                                      <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>
-                                                    )}
-                                                    <span className="text-xs text-neutral-200 ml-auto flex items-center gap-1">
-                                                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                      </svg>
-                                                      Ver detalle
-                                                    </span>
+                                                    {t.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>}
                                                   </div>
                                                   <p className="text-xs text-neutral-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
-                                                  {t.solucion && <p className="text-xs text-neutral-500 mt-1 truncate">Solución: {t.solucion}</p>}
                                                   <div className="flex gap-4 mt-2 text-xs text-neutral-500 flex-wrap">
                                                     <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                                                     <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
@@ -4451,23 +4393,128 @@ export default function Home() {
                                   </tr>
                                 )}
                               </React.Fragment>
-                              );
-                            })}
+                            ))}
                           </tbody>
-                          {/* Totals row */}
-                          <tfoot>
-                            <tr className="border-t-2 border-neutral-700">
-                              <td colSpan={5} className="py-2 px-3 text-right text-neutral-300 font-semibold">Totales:</td>
-                              <td className="py-2 px-3 text-right text-yellow-300 font-bold">{downtimeData.summary.totalDt.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right text-neutral-200 font-bold">{downtimeData.summary.totalTicketDt.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right text-red-400 font-bold">{downtimeData.summary.totalAdjustedDt.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-center text-neutral-200 font-bold">{downtimeData.summary.totalTickets}</td>
-                              <td></td>
-                            </tr>
-                          </tfoot>
                         </table>
                       </div>
-                    )}
+                    </div>
+                  );
+                })()}
+
+                {/* ====== NIGHT SHIFT SECTION ====== */}
+                {(downtimeData || downtimeDataNext) && (() => {
+                  const shiftInfo = getShiftInfo(downtimeFecha);
+                  // Night shift: hours 20-23 from selected date + hours 0-7 from next date
+                  const nightIntervalsSelected = downtimeData ? downtimeData.intervals.filter(i => {
+                    const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
+                    return h >= 20;
+                  }) : [];
+                  const nightIntervalsNext = downtimeDataNext ? downtimeDataNext.intervals.filter(i => {
+                    const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
+                    return h >= 0 && h < 8;
+                  }) : [];
+                  const nightIntervals = [...nightIntervalsSelected, ...nightIntervalsNext];
+                  if (nightIntervals.length === 0) return null;
+                  return (
+                    <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
+                      <div className="flex items-center gap-3 bg-indigo-900/30 border border-indigo-700/40 rounded-xl px-4 py-3 mb-4">
+                        <span className="w-3 h-3 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                        <div>
+                          <span className="text-indigo-200 text-sm font-bold">TURNO NOCHE</span>
+                          {shiftInfo && <span className="text-indigo-300/70 text-xs ml-3">{shiftInfo.nightShift.range}</span>}
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-indigo-800/30">
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Hora</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Modelo</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Cap</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Prod</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Delta</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">DT (min)</th>
+                              <th className="text-right text-neutral-200 font-medium py-2 px-3">Tickets (min)</th>
+                              <th className="text-right text-red-400 font-medium py-2 px-3">DT Ajustado</th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3">Tickets</th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {nightIntervals.map((interval, idx) => (
+                              <React.Fragment key={`night-${interval.id || idx}`}>
+                                <tr
+                                  className={`border-l-2 border-l-indigo-500/40 bg-indigo-950/10 border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === `night-${idx}` ? 'bg-neutral-800/30' : ''}`}
+                                  onClick={() => { if (interval.ticketCount > 0) setDowntimeExpandedRow(downtimeExpandedRow === `night-${idx}` ? null : `night-${idx}`) }}
+                                >
+                                  <td className="py-2 px-3 text-neutral-200 font-mono text-xs">{interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</td>
+                                  <td className="py-2 px-3 text-neutral-300 text-xs">{interval.modelo || '-'}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.capacidad || 0}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.produccion || 0}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-300">{interval.delta || 0}</td>
+                                  <td className="py-2 px-3 text-right text-yellow-300 font-medium">{interval.dt.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-200 font-medium">{interval.ticketDeadtimeMin.toFixed(2)}</td>
+                                  <td className={`py-2 px-3 text-right font-bold ${interval.adjustedDt > 0 ? 'text-red-400' : 'text-green-400'}`}>{interval.adjustedDt.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-center">
+                                    {interval.ticketCount > 0 ? (
+                                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 text-neutral-200 text-xs font-bold">{interval.ticketCount}</span>
+                                    ) : <span className="text-slate-600">-</span>}
+                                  </td>
+                                  <td className="py-2 px-3 text-center">
+                                    {interval.ticketCount > 0 && (
+                                      <svg className={`w-4 h-4 text-neutral-400 transition-transform inline-block ${downtimeExpandedRow === `night-${idx}` ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    )}
+                                  </td>
+                                </tr>
+                                {downtimeExpandedRow === `night-${idx}` && interval.ticketCount > 0 && (
+                                  <tr>
+                                    <td colSpan={10} className="p-0">
+                                      <div className="bg-neutral-950/60 border-l-4 border-indigo-700 mx-2 my-1 rounded-lg p-4">
+                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">Tickets en {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
+                                        <div className="space-y-2">
+                                          {interval.tickets.map(t => (
+                                            <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
+                                              <div className="flex justify-between items-start flex-wrap gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-mono text-neutral-500">#{t.id}</span>
+                                                    <span className="text-sm font-medium text-neutral-200">{t.equipo || 'Sin equipo'}</span>
+                                                    {t.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>}
+                                                  </div>
+                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
+                                                  <div className="flex gap-4 mt-2 text-xs text-neutral-500 flex-wrap">
+                                                    <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    {t.tecnico && <span>Técnico: {t.tecnico}</span>}
+                                                  </div>
+                                                </div>
+                                                <div className="text-right">
+                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
+                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* No data states */}
+                {downtimeData && downtimeData.intervals.length === 0 && (
+                  <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
+                    <p className="text-neutral-500">No hay registros de producción para esta línea y fecha</p>
                   </div>
                 )}
 
