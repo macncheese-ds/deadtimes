@@ -105,6 +105,7 @@ export default function Home() {
   const [showDisplay, setShowDisplay] = useState(false)
   const [showToolsMenu, setShowToolsMenu] = useState(false)
   const [displayLineaSelected, setDisplayLineaSelected] = useState('')
+  const [displayAllLineas, setDisplayAllLineas] = useState(false)
   const [mantenimientoActivo, setMantenimientoActivo] = useState({})
   const [cambioModeloActivo, setCambioModeloActivo] = useState({})
   const [auditoriaActivo, setAuditoriaActivo] = useState({})
@@ -142,6 +143,8 @@ export default function Home() {
   const [closedTotal, setClosedTotal] = useState(0)
   const [closedTotalPages, setClosedTotalPages] = useState(0)
   const closedSearchTimer = useRef(null)
+  const audioRef2x2 = useRef(null) // Audio para modo visualización
+  const audioTimeoutRef = useRef(null) // Timeout para controlar intervalo con gap
   // Form
   const [form, setForm] = useState({
     descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', rate: ''
@@ -246,7 +249,7 @@ export default function Home() {
     if (showOpen) {
       // carga inmediata y luego polling cada 10s
       loadTickets('open')
-      iv = setInterval(() => loadTickets('open'), 10000)
+      iv = setInterval(() => loadTickets('open'), 18000)
     }
     return () => {
       if (iv) clearInterval(iv)
@@ -320,6 +323,61 @@ export default function Home() {
       if (iv) clearInterval(iv)
     }
   }, [lineas])
+
+  // Manage audio for display mode - play with gap ONLY after selecting a display (2x2 or individual)
+  useEffect(() => {
+    // Only manage audio when a display mode is SELECTED (2x2 or individual line)
+    const inSelectedDisplayMode = showDisplay && (displayAllLineas || displayLineaSelected)
+
+    // Check if any line has cambio de modelo active
+    const anyCambioModelo = Object.values(cambioModeloActivo).some(v => v === true)
+
+    // If we're not in the right mode, OR there is no cambio modelo active
+    if (!inSelectedDisplayMode || !anyCambioModelo) {
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current)
+        audioTimeoutRef.current = null
+      }
+      if (audioRef2x2.current) {
+        audioRef2x2.current.pause()
+        audioRef2x2.current.currentTime = 0
+      }
+      return
+    }
+
+    if (!audioRef2x2.current) {
+      audioRef2x2.current = new Audio('/sonido.wav')
+    }
+
+    // Only start the loop if it's not already running!
+    // This prevents the 3-second polling update from constantly restarting the audio
+    if (!audioTimeoutRef.current) {
+      let lastPlayTime = 0;
+      const playAudioSync = () => {
+        const now = Date.now();
+        if (now - lastPlayTime > 5000) {
+          lastPlayTime = now;
+          if (audioRef2x2.current) {
+            audioRef2x2.current.loop = false;
+            audioRef2x2.current.currentTime = 0;
+            audioRef2x2.current.play().catch(err => console.error('Error reproduciendo sonido:', err));
+          }
+        }
+        const delay = 10000 - (Date.now() % 10000);
+        audioTimeoutRef.current = setTimeout(playAudioSync, delay);
+      };
+
+      const initialDelay = 10000 - (Date.now() % 10000);
+      audioTimeoutRef.current = setTimeout(playAudioSync, initialDelay);
+    }
+  }, [showDisplay, displayAllLineas, displayLineaSelected, cambioModeloActivo])
+
+  // Cleanup memory on unmount
+  useEffect(() => {
+    return () => {
+      if (audioTimeoutRef.current) clearTimeout(audioTimeoutRef.current)
+    }
+  }, [])
 
   async function loadInitialData() {
     setInitialLoading(true)
@@ -2050,6 +2108,9 @@ export default function Home() {
         
         <div className="p-2 sm:p-4 border-t border-neutral-800 hidden sm:block">
           <LanguageSwitcher className="w-full justify-center" />
+          <div className="text-[10px] text-center text-neutral-600 mt-2 font-mono" title="App Version">
+            v1.0.6 | <span className="text-neutral-700">audio-sync</span>
+          </div>
         </div>
       </aside>
 
@@ -2965,7 +3026,7 @@ export default function Home() {
                         />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend wrapperStyle={{ fontSize: '12px' }} />
-                        <Bar dataKey="Total Fallas" cursor="pointer">
+                        <Bar dataKey="Total Fallas" cursor="pointer" fill="#94a3b8" label={{ position: 'top', fill: '#000000', fontSize: 12, fontWeight: 'bold' }}>
                           {prepareEquiposFallasData().map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
@@ -3589,7 +3650,7 @@ export default function Home() {
                             else if (mttrPeriod === 'monthly') setCurrentMonthOffset(currentMonthOffset - 1)
                             else if (mttrPeriod === 'annual') setCurrentYearOffset(currentYearOffset - 1)
                           }}
-                          className="bg-neutral-200 text-black hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
+                          className="bg-neutral-200 text-black hover:bg-blue-700 hover:text-white px-4 py-2.5 rounded-lg text-sm font-medium transition"
                         >
                           ← Anterior
                         </button>
@@ -3650,7 +3711,7 @@ export default function Home() {
                           disabled={(mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)}
                           className={`px-4 py-2.5 rounded-lg text-sm font-medium transition ${(mttrPeriod === 'weekly' && currentWeekOffset >= 0) || (mttrPeriod === 'monthly' && currentMonthOffset >= 0) || (mttrPeriod === 'annual' && currentYearOffset >= 0)
                               ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                              : 'bg-neutral-200 text-black hover:bg-blue-700 text-white'
+                              : 'bg-neutral-200 text-black hover:bg-blue-700 hover:text-white'
                             }`}
                         >
                           Siguiente →
@@ -4347,7 +4408,7 @@ export default function Home() {
           <ProduccionSection onClose={() => { setShowProduccion(false); resetFilters() }} />
         )}
 
-        {showDisplay && !displayLineaSelected && (
+        {showDisplay && !displayLineaSelected && !displayAllLineas && (
           <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-3">
@@ -4367,7 +4428,16 @@ export default function Home() {
 
             <div className="space-y-4">
               <p className="text-neutral-300 text-sm">Selecciona una línea para mostrar el modo visualización:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <button
+                  onClick={() => setDisplayAllLineas(true)}
+                  className="bg-blue-900/40 border border-blue-700 hover:bg-blue-800/50 hover:border-blue-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group"
+                >
+                  <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 6H5a2 2 0 00-2 2v10a2 2 0 002 2h4m0-12h10a2 2 0 012 2v10a2 2 0 01-2 2h-10m0-12V5a2 2 0 012-2h6.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V17a2 2 0 01-2 2m-10 0V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H9z" />
+                  </svg>
+                  <span>Todas (2x2)</span>
+                </button>
                 {lineas.map(linea => (
                   <button
                     key={linea.id}
@@ -4387,7 +4457,18 @@ export default function Home() {
 
         {showDisplay && displayLineaSelected && (
           <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
-            <div className="absolute top-4 right-4 z-50">
+            <div className="absolute top-4 right-4 z-50 flex gap-2">
+              <button
+                onClick={() => {
+                  setDisplayLineaSelected('')
+                }}
+                className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+                title="Volver a selección"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
               <button
                 onClick={async () => {
                   try {
@@ -4398,8 +4479,11 @@ export default function Home() {
                   }
                   setShowDisplay(false)
                   setDisplayLineaSelected('')
+                  setCambioModeloActivo({})
+                  setCambioModeloActivo({})
                 }}
                 className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+                title="Cerrar"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -4412,6 +4496,46 @@ export default function Home() {
           </div>
         )}
 
+        {showDisplay && displayAllLineas && (
+          <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
+            <div className="absolute top-4 right-4 z-50 flex gap-2">
+              <button
+                onClick={() => {
+                  setDisplayAllLineas(false)
+                }}
+                className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+                title="Volver a selección"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+              <button
+                onClick={() => {
+                  setShowDisplay(false)
+                  setCambioModeloActivo({})
+                  setDisplayAllLineas(false)
+                  setCambioModeloActivo({})
+                }}
+                className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
+                title="Cerrar"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <div className="w-full h-full grid grid-cols-2 divide-x divide-y divide-neutral-800">
+                {lineas.slice(0, 4).map(linea => (
+                  <div key={linea.id} className="overflow-hidden">
+                    <DisplayVisualization linea={linea.linea} mantenimientoActivo={mantenimientoActivo} cambioModeloActivo={cambioModeloActivo} auditoriaActivo={auditoriaActivo} disableAudio={true} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -4517,7 +4641,7 @@ export default function Home() {
                       <button
                         onClick={handleFinishTicket}
                         disabled={!handleForm.solucion}
-                        className="w-full bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 rounded-lg transition-all duration-300 shadow-lg border border-transparent flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-white text-black hover:bg-neutral-200 font-semibold py-3 rounded-lg transition-all duration-300 shadow-lg border border-transparent flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -4686,7 +4810,7 @@ export default function Home() {
                   {/* Action Button */}
                   <button
                     onClick={openEditModal}
-                    className="w-full bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
+                    className="w-full bg-white text-black hover:bg-neutral-200 font-semibold py-3 px-6 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 mt-6"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -4809,7 +4933,7 @@ export default function Home() {
                   <div className="flex gap-3 pt-4 border-t border-neutral-800">
                     <button
                       onClick={saveEditTicket}
-                      className="flex-1 bg-white text-black hover:bg-neutral-200 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-white text-black hover:bg-neutral-200 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                       disabled={editLoading}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

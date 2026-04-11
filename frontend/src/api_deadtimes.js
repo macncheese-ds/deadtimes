@@ -9,8 +9,18 @@ export const API_BASE_URL = baseURL + '/api';
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
-  // Agregar timestamp para evitar cache en navegador
-  config.headers['Cache-Control'] = 'no-cache';
+  
+  // Prevent aggressive caching globally for all GET requests
+  if (config.method === 'get') {
+    config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+    config.headers['Pragma'] = 'no-cache';
+    config.headers['Expires'] = '0';
+    
+    // Automatically append a timestamp to the URL params for GET requests
+    config.params = config.params || {};
+    config.params._t = new Date().getTime();
+  }
+  
   return config;
 });
 
@@ -172,7 +182,8 @@ export const getDisplayTickets = (linea) => {
 
 // Obtener estado de una línea
 export const getEstado = (linea) => {
-  return api.get(`/estados/${encodeURIComponent(linea)}`).then(r => r.data);
+  const timestamp = new Date().getTime();
+  return api.get(`/estados/${encodeURIComponent(linea)}?_t=${timestamp}`).then(r => r.data);
 };
 
 // Activar/Desactivar mantenimiento

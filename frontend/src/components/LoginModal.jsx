@@ -120,7 +120,7 @@ export default function LoginModal({ visible, defaultEmployee = '', onClose, onC
             </button>
             <button 
               type="submit" 
-              className="flex-1 px-4 py-3 rounded-xl bg-white text-black hover:bg-neutral-200 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-3 rounded-xl bg-white text-black hover:bg-neutral-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2"
               disabled={busy}
             >
               {busy ? (

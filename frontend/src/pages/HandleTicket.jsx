@@ -267,7 +267,7 @@ export default function HandleTicket() {
                 </p>
               </div>
               <button 
-                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2" 
+                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 flex items-center justify-center gap-2" 
                 onClick={handleStart}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +325,7 @@ export default function HandleTicket() {
               </div>
 
               <button 
-                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
+                className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
                 onClick={handleFinish} 
                 disabled={!form.solucion || !ticket.rate}
               >
@@ -368,7 +368,7 @@ export default function HandleTicket() {
                   </button>
                   <button 
                     onClick={confirmLogoutAndReturn}
-                    className="px-4 py-2.5 bg-white text-black hover:bg-neutral-200 text-white rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
+                    className="px-4 py-2.5 bg-white text-black hover:bg-neutral-200 rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
                   >
                     Cerrar Sesión
                   </button>

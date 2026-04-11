@@ -378,9 +378,6 @@ export default function Configuration({ onBack }) {
     }
   }
 
-  
-  module.exports = Configuration
-
   const handleAddDisplayMode = async () => {
     if (!newDisplayMode.linea.trim()) {
       setDisplayModeMessage('Por favor ingresa el nombre de la línea')

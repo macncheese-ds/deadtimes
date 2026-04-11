@@ -1646,9 +1646,9 @@ export default function Analytics() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowTop5Modal(false)}>
           <div className="bg-neutral-900 rounded-lg shadow-2xl border border-neutral-800 max-w-4xl w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-white text-black hover:bg-neutral-200/60 to-slate-900 border-b border-neutral-800 p-4 sm:p-6 flex justify-between items-start">
+            <div className="bg-neutral-800 border-b border-neutral-700 p-4 sm:p-6 flex justify-between items-start">
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold text-slate-100 mb-2 flex items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-semibold text-white mb-2 flex items-center gap-2">
                   <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

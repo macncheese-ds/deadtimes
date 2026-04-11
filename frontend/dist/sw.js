@@ -1,4 +1,4 @@
-const CACHE_NAME = 'downtime-manager-v1';
+const CACHE_NAME = 'downtime-manager';
 
 // Files to cache on install (app shell)
 const PRECACHE_URLS = [
@@ -19,17 +19,16 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean ALL old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('[SW] Found caches:', cacheNames);
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
-            return caches.delete(name);
-          })
+        cacheNames.map((name) => {
+          console.log('[SW] Deleting cache:', name);
+          return caches.delete(name);
+        })
       );
     })
   );
@@ -37,7 +36,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API calls, cache-first for assets
+// Fetch: network-first for API calls and audio, cache-first for assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -47,6 +46,23 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API calls and external requests — always go to network
   if (url.pathname.startsWith('/api') || url.origin !== self.location.origin) {
+    return;
+  }
+
+  // For audio files: network-first (always try fresh copy)
+  if (url.pathname.endsWith('.mp3') || url.pathname.endsWith('.wav') || url.pathname.endsWith('.ogg')) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, networkResponse.clone());
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 

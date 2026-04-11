@@ -11,7 +11,7 @@ function formatMinutes(mins) {
   return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
-export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {}, auditoriaActivo = {} }) {
+export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {}, auditoriaActivo = {}, disableAudio = false }) {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -23,6 +23,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   const [prevTickets, setPrevTickets] = useState([])
   const [newTicketIds, setNewTicketIds] = useState(new Set())
   const audioRef = useRef(null)
+  const audioTimeoutRef = useRef(null)
 
   const mensajes = {
     mantenimiento: ['MANTENIMIENTO', 'MAINTENANCE', '유지보수'],
@@ -40,24 +41,70 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
     return 'bg-white text-black font-bold shadow-md shadow-white/20'
   }
 
-  // Detectar cambio en estado y reproducir/detener sonido
+  // Detectar cambio en estado y reproducir/detener sonido (solo si no estamos en 2x2)
   useEffect(() => {
+    // Skip audio management if disabled (e.g., in 2x2 mode)
+    if (disableAudio) {
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current)
+        audioTimeoutRef.current = null
+      }
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
+      return
+    }
+
     if (!audioRef.current) {
-      audioRef.current = new Audio('/sonido.mp3')
+      audioRef.current = new Audio('/sonido.wav')
     }
 
     if (cambioModeloActualizado) {
-      // Cambio de modelo activado: reproducir sonido en loop
-      audioRef.current.loop = true
-      audioRef.current.play().catch(err => console.error('Error reproduciendo sonido:', err))
+      // Cambio de modelo activado: reproducir sonido con gap (10s total)
+      if (!audioTimeoutRef.current) {
+        let lastPlayTime = 0;
+        const playAudioSync = () => {
+          const now = Date.now();
+          if (now - lastPlayTime > 5000) {
+            lastPlayTime = now;
+            if (audioRef.current) {
+              audioRef.current.loop = false;
+              audioRef.current.currentTime = 0;
+              audioRef.current.play().catch(err => console.error('Error reproduciendo sonido:', err));
+            }
+          }
+          const delay = 10000 - (Date.now() % 10000);
+          audioTimeoutRef.current = setTimeout(playAudioSync, delay);
+        };
+        
+        const initialDelay = 10000 - (Date.now() % 10000);
+        audioTimeoutRef.current = setTimeout(playAudioSync, initialDelay);
+      }
     } else {
       // Cambio de modelo desactivado: detener sonido
-      audioRef.current.pause()
-      audioRef.current.currentTime = 0
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current)
+        audioTimeoutRef.current = null
+      }
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
     }
-  }, [cambioModeloActualizado])
 
-  // Auto-refresh cada 5 segundos para tickets
+    // Limpiar audio al desmontar componente
+    return () => {
+      if (audioTimeoutRef.current) {
+        clearTimeout(audioTimeoutRef.current)
+        audioTimeoutRef.current = null
+      }
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current.currentTime = 0
+      }
+    }
+  }, [cambioModeloActualizado, disableAudio])
   useEffect(() => {
     const interval = setInterval(() => {
       setRefreshCount(c => c + 1)
@@ -89,6 +136,11 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
     const interval = setInterval(checkEstado, 3000)
     return () => clearInterval(interval)
   }, [linea])
+
+  // Determinar si mostrar estado basado en props (para 2x2 mode)
+  const shouldShowMantenimiento = mantenimientoActivo[linea] && mantenimientoActualizado
+  const shouldShowCambioModelo = cambioModeloActivo[linea] && cambioModeloActualizado
+  const shouldShowAuditoria = auditoriaActivo[linea] && auditoriaActualizado
 
   // Rotación de idiomas cada 4 segundos
   useEffect(() => {
@@ -158,33 +210,33 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-4 relative">
+    <div className="w-full h-full bg-neutral-950 p-4 relative flex flex-col overflow-hidden\">
       {/* Overlay de Mantenimiento */}
-      {mantenimientoActualizado && (
-        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
+      {shouldShowMantenimiento && (
+        <div className="animate-pulse-white absolute inset-0 bg-blue-900/70 backdrop-blur-sm border border-blue-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
             <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.mantenimiento[idioma]}</p>
-            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-2xl text-blue-100 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
 
       {/* Overlay de Cambio de Modelo */}
-      {cambioModeloActualizado && (
-        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
+      {shouldShowCambioModelo && (
+        <div className="animate-pulse-white absolute inset-0 bg-orange-900/70 backdrop-blur-sm border border-orange-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
             <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.cambio[idioma]}</p>
-            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-2xl text-orange-100 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
 
       {/* Overlay de Auditoría */}
-      {auditoriaActualizado && (
-        <div className="animate-pulse-white fixed inset-0 bg-neutral-900/80 backdrop-blur-sm border border-neutral-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
+      {shouldShowAuditoria && (
+        <div className="animate-pulse-white absolute inset-0 bg-purple-900/70 backdrop-blur-sm border border-purple-700 shadow-2xl flex items-center justify-center z-40 pointer-events-none rounded-lg">
           <div className="text-center">
             <p className="text-5xl font-black text-white drop-shadow-2xl tracking-widest transition-all duration-500">{mensajes.auditoria[idioma]}</p>
-            <p className="text-2xl text-neutral-200 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
+            <p className="text-2xl text-purple-100 mt-4 drop-shadow-lg">{mensajes.linea[idioma]} {linea}</p>
           </div>
         </div>
       )}
