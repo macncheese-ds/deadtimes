@@ -92,6 +92,40 @@ function formatHoras(horas) {
   return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
+// Helper: get shift info for a given date
+// Shifts: Day = 8AM-8PM, Night = 8PM-8AM
+// When operator selects a date (e.g. April 11), the data corresponds to:
+//   Turno Día: 8:00 AM - 8:00 PM of the PREVIOUS day
+//   Turno Noche: 8:00 PM of the PREVIOUS day - 8:00 AM of SELECTED day
+function getShiftInfo(fechaStr) {
+  if (!fechaStr) return null;
+  const selected = new Date(fechaStr + 'T00:00:00');
+  const prevDay = new Date(selected);
+  prevDay.setDate(prevDay.getDate() - 1);
+  const fmt = (d) => d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+  return {
+    dayShift: {
+      label: 'Turno Día',
+      range: `8:00 AM — 8:00 PM  •  ${fmt(prevDay)}`,
+      startHour: 8,
+      endHour: 20
+    },
+    nightShift: {
+      label: 'Turno Noche',
+      range: `8:00 PM ${fmt(prevDay)} — 8:00 AM ${fmt(selected)}`,
+      startHour: 20,
+      endHour: 8
+    },
+    prevDay: fmt(prevDay),
+    selectedDay: fmt(selected)
+  };
+}
+
+// Returns which shift an hour belongs to: 'day' (8-19) or 'night' (20-23, 0-7)
+function getShiftForHour(h) {
+  return (h >= 8 && h < 20) ? 'day' : 'night';
+}
+
 export default function Home() {
   const { t } = useTranslation()
   const [tickets, setTickets] = useState([])
@@ -4188,6 +4222,38 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Shift Info Banner */}
+                {downtimeFecha && (() => {
+                  const shiftInfo = getShiftInfo(downtimeFecha);
+                  if (!shiftInfo) return null;
+                  return (
+                    <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-800/40 rounded-xl p-3 sm:p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-blue-300 text-xs font-semibold uppercase tracking-wider">Turnos para esta fecha</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="flex items-center gap-2 bg-amber-900/20 border border-amber-700/30 rounded-lg px-3 py-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+                          <div>
+                            <span className="text-amber-300 text-xs font-bold">{shiftInfo.dayShift.label}</span>
+                            <span className="text-amber-200/70 text-xs ml-2">{shiftInfo.dayShift.range}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-indigo-900/20 border border-indigo-700/30 rounded-lg px-3 py-2">
+                          <span className="w-2 h-2 rounded-full bg-indigo-400 flex-shrink-0"></span>
+                          <div>
+                            <span className="text-indigo-300 text-xs font-bold">{shiftInfo.nightShift.label}</span>
+                            <span className="text-indigo-200/70 text-xs ml-2">{shiftInfo.nightShift.range}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Summary Cards */}
                 {downtimeData && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -4268,10 +4334,33 @@ export default function Home() {
                             </tr>
                           </thead>
                           <tbody>
-                            {downtimeData.intervals.map((interval, idx) => (
+                            {downtimeData.intervals.map((interval, idx) => {
+                              const h = interval.inicio ? parseInt(interval.inicio.substring(0, 2), 10) : -1;
+                              const shift = getShiftForHour(h);
+                              const isShiftBoundary = h === 8 || h === 20;
+                              const shiftInfo = getShiftInfo(downtimeFecha);
+                              const shiftBorderClass = shift === 'day' ? 'border-l-2 border-l-amber-500/40' : 'border-l-2 border-l-indigo-500/40';
+                              const rowBgShift = shift === 'day' ? 'bg-amber-950/10' : 'bg-indigo-950/10';
+                              return (
                               <React.Fragment key={interval.id || idx}>
+                                {isShiftBoundary && (
+                                  <tr className={shift === 'day' ? 'bg-amber-900/30' : 'bg-indigo-900/30'}>
+                                    <td colSpan={10} className="px-3 py-1.5 text-xs font-bold tracking-wide">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${shift === 'day' ? 'bg-amber-400' : 'bg-indigo-400'}`}></span>
+                                        <span className={shift === 'day' ? 'text-amber-300' : 'text-indigo-300'}>
+                                          {shift === 'day' ? '☀️ TURNO DÍA' : '🌙 TURNO NOCHE'}
+                                        </span>
+                                        <span className={`text-xs font-normal ${shift === 'day' ? 'text-amber-400/70' : 'text-indigo-400/70'}`}>
+                                          {shift === 'day' && shiftInfo ? shiftInfo.dayShift.range : ''}
+                                          {shift === 'night' && shiftInfo ? shiftInfo.nightShift.range : ''}
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
                                 <tr
-                                  className={`border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === idx ? 'bg-neutral-800/30' : ''}`}
+                                  className={`${shiftBorderClass} ${rowBgShift} border-b border-neutral-800/50 transition-colors ${interval.ticketCount > 0 ? 'cursor-pointer hover:bg-neutral-800/50' : ''} ${downtimeExpandedRow === idx ? 'bg-neutral-800/30' : ''}`}
                                   onClick={() => {
                                     if (interval.ticketCount > 0) {
                                       setDowntimeExpandedRow(downtimeExpandedRow === idx ? null : idx)
@@ -4362,7 +4451,8 @@ export default function Home() {
                                   </tr>
                                 )}
                               </React.Fragment>
-                            ))}
+                              );
+                            })}
                           </tbody>
                           {/* Totals row */}
                           <tfoot>
