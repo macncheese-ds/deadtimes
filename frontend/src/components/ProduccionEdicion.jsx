@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getRegistros, guardarRegistro, eliminarRegistro, getModelosProduccion } from '../api_produccion';
 import { getLineas, login } from '../api_deadtimes';
 import LoginModal from './LoginModal';
@@ -94,6 +95,7 @@ function recalcularShift(rows) {
 }
 
 export default function ProduccionEdicion({ onClose }) {
+  const { t } = useTranslation();
   const [lineas, setLineas] = useState([]);
   const [modelos, setModelos] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -258,7 +260,7 @@ export default function ProduccionEdicion({ onClose }) {
     const sourceArr = isNextDay ? filasNext : filas;
     const fila = sourceArr[idx];
     if (!fila.modelo && fila.produccion === 0 && fila.capacidad === 0) {
-      setError('Completa al menos el modelo o la produccion');
+      setError(t('produccion.validation'));
       setTimeout(function() { setError(''); }, 3000);
       return;
     }
@@ -296,11 +298,11 @@ export default function ProduccionEdicion({ onClose }) {
         } else {
           await cargarRegistros();
         }
-        setSuccessMsg('Guardado: ' + fila.label);
+        setSuccessMsg(t('produccion.saved') + ': ' + fila.label);
         setTimeout(function() { setSuccessMsg(''); }, 2000);
       }
     } catch (err) {
-      setError('Error guardando: ' + err.message);
+      setError(t('produccion.errorSaving') + ': ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -330,11 +332,11 @@ export default function ProduccionEdicion({ onClose }) {
         } else {
           await cargarRegistros();
         }
-        setSuccessMsg('Registro eliminado');
+        setSuccessMsg(t('produccion.recordDeleted'));
         setTimeout(function() { setSuccessMsg(''); }, 2000);
       }
     } catch (err) {
-      setError('Error eliminando: ' + err.message);
+      setError(t('produccion.errorSaving') + ': ' + err.message);
     }
   };
 
@@ -400,10 +402,10 @@ export default function ProduccionEdicion({ onClose }) {
         }
       }
       await cargarRegistros();
-      setSuccessMsg('Todos los registros guardados');
+      setSuccessMsg(t('produccion.allSaved'));
       setTimeout(function() { setSuccessMsg(''); }, 3000);
     } catch (err) {
-      setError('Error guardando: ' + err.message);
+      setError(t('produccion.errorSaving') + ': ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -418,7 +420,7 @@ export default function ProduccionEdicion({ onClose }) {
       const userRole = (data.user.rolOriginal || '').toLowerCase();
       const rolesPermitidos = ['lider', 'líder', 'ingeniero', 'tecnico', 'técnico'];
       if (!rolesPermitidos.includes(userRole)) {
-        throw new Error('Solo Líderes, Ingenieros y Técnicos pueden modificar datos de producción.');
+        throw new Error(t('produccion.authError'));
       }
       
       // Auth successful, close modal and execute pending action
@@ -494,18 +496,18 @@ export default function ProduccionEdicion({ onClose }) {
   const renderTableHeader = (isDay) => (
     <thead>
       <tr className={isDay ? 'bg-amber-900/20 border-b-2 border-amber-700/50' : 'bg-indigo-900/20 border-b-2 border-indigo-700/50'}>
-        <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">Hora</th>
-        <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">Modelo</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Cap</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Acum</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Prod</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">ProdAcum</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">%Prod</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">%Cump</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Delta</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">DT min</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">Scrap</th>
-        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm w-24">Acc</th>
+        <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">{t('produccion.time')}</th>
+        <th className="px-2 py-3 text-left text-slate-200 font-bold text-sm">{t('common.model')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.cap')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.acum')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.prod')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.prodAcum')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.pctProd')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.pctCump')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.delta')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.dtMin')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm">{t('produccion.scrap')}</th>
+        <th className="px-2 py-3 text-center text-slate-200 font-bold text-sm w-24">{t('common.actions')}</th>
       </tr>
     </thead>
   );
@@ -580,7 +582,7 @@ export default function ProduccionEdicion({ onClose }) {
               onClick={function() { handleGuardarFila(isNextDay, idx); }}
               disabled={saving}
               className="bg-blue-600 hover:bg-blue-500 active:bg-blue-800 disabled:opacity-50 text-white w-11 h-11 rounded font-bold text-sm transition flex items-center justify-center"
-              title="Guardar fila"
+              title={t('produccion.saveRow')}
             >
               OK
             </button>
@@ -588,7 +590,7 @@ export default function ProduccionEdicion({ onClose }) {
               <button
                 onClick={function() { handleEliminarFila(isNextDay, idx); }}
                 className="bg-red-600 hover:bg-red-500 active:bg-red-800 text-white w-11 h-11 rounded font-bold text-sm transition flex items-center justify-center"
-                title="Eliminar fila"
+                title={t('produccion.deleteRow')}
               >
                 X
               </button>
@@ -602,7 +604,7 @@ export default function ProduccionEdicion({ onClose }) {
   const renderTotalsRow = (isDay, totCap, totProd, totScrap, totDelta, totDt, totalPctVal) => (
     <tfoot>
       <tr className={isDay ? 'bg-amber-900/20 border-t-2 border-amber-700/50' : 'bg-indigo-900/20 border-t-2 border-indigo-700/50'}>
-        <td className="px-2 py-3 text-white font-bold text-sm">TOTAL</td>
+        <td className="px-2 py-3 text-white font-bold text-sm">{t('common.total')}</td>
         <td className="px-2 py-3"></td>
         <td className="px-2 py-3 text-center text-white font-bold text-base">{totCap}</td>
         <td className="px-2 py-3 text-center text-blue-300 font-bold text-base">{totCap}</td>
@@ -631,7 +633,7 @@ export default function ProduccionEdicion({ onClose }) {
       {/* Header */}
       <div className="flex justify-between items-center mb-4 sm:mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
-          Produccion
+          {t('produccion.title')}
         </h2>
         {onClose && (
           <button
@@ -646,13 +648,13 @@ export default function ProduccionEdicion({ onClose }) {
       {/* Selectores */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <label className="block text-slate-200 text-sm font-semibold mb-1">Linea</label>
+          <label className="block text-slate-200 text-sm font-semibold mb-1">{t('produccion.line')}</label>
           <select
             value={selectedLinea}
             onChange={function(e) { setSelectedLinea(e.target.value); }}
             className="w-full bg-slate-800 border-2 border-slate-600 rounded-lg px-3 py-3 text-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option value="">-- Selecciona --</option>
+            <option value="">{t('produccion.selectPlaceholder')}</option>
             {lineas.map(function(l) {
               return (
                 <option key={l.id || l.linea} value={l.linea || l.nombre}>
@@ -663,7 +665,7 @@ export default function ProduccionEdicion({ onClose }) {
           </select>
         </div>
         <div>
-          <label className="block text-slate-200 text-sm font-semibold mb-1">Fecha</label>
+          <label className="block text-slate-200 text-sm font-semibold mb-1">{t('produccion.date')}</label>
           <input
             type="date"
             value={selectedFecha}
@@ -677,7 +679,7 @@ export default function ProduccionEdicion({ onClose }) {
             disabled={saving || !selectedLinea}
             className="w-full bg-green-600 hover:bg-green-700 active:bg-green-800 disabled:opacity-50 text-white px-4 py-3 rounded-lg font-bold transition text-base shadow-lg"
           >
-            {saving ? 'Guardando...' : 'GUARDAR TODO'}
+            {saving ? t('produccion.saving') : t('produccion.saveAll')}
           </button>
         </div>
       </div>
@@ -708,7 +710,7 @@ export default function ProduccionEdicion({ onClose }) {
           <div className="flex items-center gap-3 bg-amber-900/30 border border-amber-700/40 rounded-xl px-4 py-3 mb-3">
             <span className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0"></span>
             <div>
-              <span className="text-amber-200 text-sm font-bold">TURNO DÍA</span>
+              <span className="text-amber-200 text-sm font-bold">{t('produccion.dayShift')}</span>
               {shiftInfo && (
                 <span className="text-amber-300/70 text-xs ml-3">{shiftInfo.dayShift.range}</span>
               )}
@@ -736,7 +738,7 @@ export default function ProduccionEdicion({ onClose }) {
           <div className="flex items-center gap-3 bg-indigo-900/30 border border-indigo-700/40 rounded-xl px-4 py-3 mb-3">
             <span className="w-3 h-3 rounded-full bg-indigo-400 flex-shrink-0"></span>
             <div>
-              <span className="text-indigo-200 text-sm font-bold">TURNO NOCHE</span>
+              <span className="text-indigo-200 text-sm font-bold">{t('produccion.nightShift')}</span>
               {shiftInfo && (
                 <span className="text-indigo-300/70 text-xs ml-3">{shiftInfo.nightShift.range}</span>
               )}
@@ -763,7 +765,7 @@ export default function ProduccionEdicion({ onClose }) {
       {/* Sin linea seleccionada */}
       {!selectedLinea && !loading && (
         <div className="text-center text-slate-400 py-8 text-base">
-          Selecciona una linea para comenzar
+          {t('produccion.selectLineToStart')}
         </div>
       )}
       </div>

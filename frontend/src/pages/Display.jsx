@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getDisplayTickets } from '../api_deadtimes'
 import DisplayVisualization from '../components/DisplayVisualization'
 
 export default function Display() {
+  const { t } = useTranslation()
   const [displayActive, setDisplayActive] = useState(false)
   const [linea, setLinea] = useState('')
   const [loading, setLoading] = useState(true)
@@ -22,7 +24,7 @@ export default function Display() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-white text-xl">Cargando...</div>
+        <div className="text-white text-xl">{t('display.loading')}</div>
       </div>
     )
   }
@@ -36,23 +38,23 @@ export default function Display() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex items-center justify-center p-4">
       <div className="bg-gray-800 border-2 border-gray-700 rounded-lg p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-white mb-6 text-center">Modo Visualización</h1>
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">{t('display.title')}</h1>
         
         <div className="bg-yellow-900 border border-yellow-600 rounded p-4 mb-6">
           <p className="text-yellow-200 text-center">
-            El modo de visualización no está activado.
+            {t('display.notActivated')}
           </p>
           <p className="text-yellow-300 text-sm text-center mt-2">
-            Ve a Configuration → Modos Visualización para activarlo
+            {t('display.goToConfig')}
           </p>
         </div>
 
         <div className="bg-gray-700 rounded p-4">
           <p className="text-gray-300 text-sm">
-            El modo de visualización mostrará automáticamente los tickets activos de una línea de producción, con actualización cada 5 segundos.
+            {t('display.description')}
           </p>
           <p className="text-gray-400 text-xs mt-3">
-            Solo disponible después de activarlo desde la configuración.
+            {t('display.note')}
           </p>
         </div>
       </div>

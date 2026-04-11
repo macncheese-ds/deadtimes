@@ -2075,7 +2075,7 @@ export default function Home() {
       <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-neutral-400 mb-4"></div>
-          <p className="text-neutral-300 text-lg font-medium">Cargando sistema...</p>
+          <p className="text-neutral-300 text-lg font-medium">{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -2095,7 +2095,7 @@ export default function Home() {
         </div>
         
         <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2 sm:px-3">
-          <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block mb-1 mt-2">Principal</p>
+          <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block mb-1 mt-2">{t('nav.newTicket').split(' ')[0] || 'Main'}</p>
           <button onClick={toggleNew} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showNew ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
             <span className="text-sm hidden sm:block">{t('nav.newTicket')}</span>
@@ -2114,7 +2114,7 @@ export default function Home() {
           </button>
 
           <div className="mt-4 mb-1">
-             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">Herramientas</p>
+             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">{t('nav.tools')}</p>
              <div className="h-px bg-neutral-800 mx-3 my-2 sm:hidden"></div>
           </div>
           
@@ -2134,7 +2134,7 @@ export default function Home() {
           </button>
 
           <div className="mt-4 mb-1">
-             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">Estados</p>
+             <p className="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider hidden sm:block">{t('tickets.statusLabel')}</p>
              <div className="h-px bg-neutral-800 mx-3 my-2 sm:hidden"></div>
           </div>
           
@@ -2297,7 +2297,7 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <select className={inputClass(form.linea)} value={form.linea} onChange={handleLineaChange} required>
                     <option value="">{t('tickets.selectLine')}</option>
-                    {lineas.map(lin => <option key={lin.id} value={lin.linea}>Línea {lin.linea}</option>)}
+                    {lineas.map(lin => <option key={lin.id} value={lin.linea}>{t('tickets.lineLabel')} {lin.linea}</option>)}
                   </select>
 
                   <select className={inputClass(form.modelo)} value={form.modelo} onChange={handleModeloChange} required disabled={!form.linea || modelosLoading}>
@@ -2444,7 +2444,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-white">Tickets Abiertos</h2>
+                <h2 className="text-xl font-bold text-white">{t('tickets.openTickets')}</h2>
               </div>
               <button onClick={toggleOpen} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2455,7 +2455,7 @@ export default function Home() {
 
             {/* Filtro por Línea */}
             <div className="mb-5 p-4 bg-neutral-900/50 rounded-xl border border-neutral-800/50">
-              <label className="block text-neutral-300 text-xs font-medium mb-2">Filtrar por Línea</label>
+              <label className="block text-neutral-300 text-xs font-medium mb-2">{t('tickets.filterByLine')}</label>
               <select
                 className="w-full sm:w-48 bg-neutral-800/50 border border-neutral-700/50 text-neutral-200 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 value={filterOpenLinea}
@@ -2463,7 +2463,7 @@ export default function Home() {
               >
                 <option value="">Todas las líneas</option>
                 {lineas.map(linea => (
-                  <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                  <option key={linea.id} value={linea.linea}>{t('tickets.lineLabel')} {linea.linea}</option>
                 ))}
               </select>
             </div>
@@ -2471,7 +2471,7 @@ export default function Home() {
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-amber-400"></div>
-                <p className="text-neutral-400 mt-4">Cargando tickets...</p>
+                <p className="text-neutral-400 mt-4">{t('common.loading')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -2484,7 +2484,7 @@ export default function Home() {
                           <span className="w-2 h-2 rounded-full bg-neutral-500 animate-pulse"></span>
                         </div>
                         <h3 className="text-white font-semibold text-sm sm:text-base mb-1">{t.descr}</h3>
-                        <p className="text-neutral-400 text-xs sm:text-sm">Línea {t.linea} • {t.modelo} • {t.equipo}</p>
+                        <p className="text-neutral-400 text-xs sm:text-sm">{t('tickets.lineLabel')} {t.linea} • {t.modelo} • {t.equipo}</p>
                         <p className="text-neutral-500 text-xs mt-2 flex items-center gap-2">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -2526,7 +2526,7 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-white">Tickets Cerrados</h2>
+                <h2 className="text-xl font-bold text-white">{t('tickets.closedTickets')}</h2>
               </div>
               <button onClick={toggleClosed} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2573,7 +2573,7 @@ export default function Home() {
 
                 {/* Filtro por Línea */}
                 <div>
-                  <label className="block text-neutral-400 text-xs mb-1">Línea</label>
+                  <label className="block text-neutral-400 text-xs mb-1">{t('tickets.lineLabel')}</label>
                   <select
                     className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                     value={filterClosedLinea}
@@ -2581,14 +2581,14 @@ export default function Home() {
                   >
                     <option value="">Todas</option>
                     {lineas.map(linea => (
-                      <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                      <option key={linea.id} value={linea.linea}>{t('tickets.lineLabel')} {linea.linea}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Filtro por Equipo */}
                 <div>
-                  <label className="block text-neutral-400 text-xs mb-1">Equipo</label>
+                  <label className="block text-neutral-400 text-xs mb-1">{t('tickets.equipmentLabel')}</label>
                   <input
                     type="text"
                     className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
@@ -2600,7 +2600,7 @@ export default function Home() {
 
                 {/* Filtro por Descripción */}
                 <div>
-                  <label className="block text-neutral-400 text-xs mb-1">Descripción</label>
+                  <label className="block text-neutral-400 text-xs mb-1">{t('tickets.descriptionLabel')}</label>
                   <input
                     type="text"
                     className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
@@ -2669,7 +2669,7 @@ export default function Home() {
             {loading ? (
               <div className="text-center py-8 sm:py-12">
                 <div className="inline-block animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-neutral-800 border-t-neutral-400"></div>
-                <p className="text-neutral-400 mt-4 text-sm sm:text-base">Cargando tickets...</p>
+                <p className="text-neutral-400 mt-4 text-sm sm:text-base">{t('common.loading')}</p>
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
@@ -2845,7 +2845,7 @@ export default function Home() {
                       >
                         <option value="all">Todas las líneas</option>
                         {lineas.map(linea => (
-                          <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                          <option key={linea.id} value={linea.linea}>{t('tickets.lineLabel')} {linea.linea}</option>
                         ))}
                       </select>
                     </div>
@@ -3057,7 +3057,7 @@ export default function Home() {
                   </div>
 
                   <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
-                    <h2 className="text-base font-semibold text-slate-100 mb-2">Equipos con Mas Fallas (General)</h2>
+                    <h2 className="text-base font-semibold text-slate-100 mb-2">{t('stats.equipmentWithMostFailures')}</h2>
                     <p className="text-neutral-400 text-xs mb-4">Top 10 ultimos 30 dias</p>
                     <ResponsiveContainer width="100%" height={400}>
                       <BarChart data={prepareEquiposFallasData()} layout="vertical" margin={{ left: 20, right: 20 }}>
@@ -3111,7 +3111,7 @@ export default function Home() {
                 {/* Grafica de distribucion por hora */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-4 sm:p-6">
-                    <h2 className="text-base font-semibold text-slate-100 mb-2">Tickets por Hora del Dia</h2>
+                    <h2 className="text-base font-semibold text-slate-100 mb-2">{t('stats.hourlyAnalysis')}</h2>
                     <p className="text-neutral-400 text-xs mb-4">Distribucion de incidencias (0-23 hrs)</p>
                     <ResponsiveContainer width="100%" height={350}>
                       <BarChart data={prepareHourlyAnalysis()}>
@@ -3268,13 +3268,13 @@ export default function Home() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <div>
-                      <label className="block text-neutral-300 text-xs font-medium mb-2">Equipo/Máquina</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">{t('tickets.equipmentLabel')}</label>
                       <select
                         className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={machineEquipo}
                         onChange={e => setMachineEquipo(e.target.value)}
                       >
-                        <option value="">Seleccionar equipo...</option>
+                        <option value="">{t('stats.selectMachine')}</option>
                         <option value="all">Todos los equipos</option>
                         <option value="sin_otros">Todos (sin "Otros")</option>
                         {equipos.map(eq => (
@@ -3284,7 +3284,7 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-neutral-300 text-xs font-medium mb-2">Línea (opcional)</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">{t('machineAnalysis.lineOptional')}</label>
                       <select
                         className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={machineLinea}
@@ -3292,7 +3292,7 @@ export default function Home() {
                       >
                         <option value="">Todas las líneas</option>
                         {lineas.map(linea => (
-                          <option key={linea.id} value={linea.linea}>Línea {linea.linea}</option>
+                          <option key={linea.id} value={linea.linea}>{t('tickets.lineLabel')} {linea.linea}</option>
                         ))}
                       </select>
                     </div>
@@ -3462,7 +3462,7 @@ export default function Home() {
                         ))}
                         {machineTickets.length === 0 && (
                           <div className="text-center py-8">
-                            <p className="text-neutral-400">Selecciona un equipo para ver sus tickets</p>
+                            <p className="text-neutral-400">{t('stats.selectMachine')}</p>
                           </div>
                         )}
                         {machineTickets.length > 20 && (
@@ -3517,17 +3517,17 @@ export default function Home() {
                         {/* Información del ticket */}
                         <div className="space-y-3">
                           <div className="bg-neutral-800/50 rounded-lg p-3">
-                            <p className="text-neutral-400 text-xs mb-1">Equipo / Máquina</p>
+                            <p className="text-neutral-400 text-xs mb-1">{t('tickets.equipmentLabel')}</p>
                             <p className="text-white font-semibold">{machineDetailTicket.equipo}</p>
                           </div>
 
                           <div className="bg-neutral-800/50 rounded-lg p-3">
-                            <p className="text-neutral-400 text-xs mb-1">Descripción del Problema</p>
+                            <p className="text-neutral-400 text-xs mb-1">{t('tickets.descriptionLabel')}</p>
                             <p className="text-white">{machineDetailTicket.descr}</p>
                           </div>
 
                           <div className="bg-neutral-800/50 rounded-lg p-3">
-                            <p className="text-neutral-400 text-xs mb-1">Clasificación</p>
+                            <p className="text-neutral-400 text-xs mb-1">{t('tickets.classificationLabel')}</p>
                             <p className="text-white">{machineDetailTicket.clasificacion || 'N/A'}</p>
                           </div>
 
@@ -3544,11 +3544,11 @@ export default function Home() {
 
                           <div className="grid grid-cols-2 gap-3">
                             <div className="bg-neutral-800/50 rounded-lg p-3">
-                              <p className="text-neutral-400 text-xs mb-1">Línea</p>
-                              <p className="text-white font-semibold">Línea {machineDetailTicket.linea}</p>
+                              <p className="text-neutral-400 text-xs mb-1">{t('tickets.lineLabel')}</p>
+                              <p className="text-white font-semibold">{machineDetailTicket.linea}</p>
                             </div>
                             <div className="bg-neutral-800/50 rounded-lg p-3">
-                              <p className="text-neutral-400 text-xs mb-1">Modelo</p>
+                              <p className="text-neutral-400 text-xs mb-1">{t('tickets.modelLabel')}</p>
                               <p className="text-white font-semibold">{machineDetailTicket.modelo}</p>
                             </div>
                           </div>
@@ -3569,7 +3569,7 @@ export default function Home() {
                           )}
 
                           <div className="bg-neutral-800/50 rounded-lg p-3">
-                            <p className="text-neutral-400 text-xs mb-1">Solución Aplicada</p>
+                            <p className="text-neutral-400 text-xs mb-1">{t('viewTicket.appliedSolution')}</p>
                             <p className="text-white">{machineDetailTicket.solucion || 'Sin solución registrada'}</p>
                           </div>
 
@@ -3606,7 +3606,7 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <p className="text-neutral-300 font-medium">Selecciona un equipo para analizar</p>
+                    <p className="text-neutral-300 font-medium">{t('stats.selectMachine')}</p>
                     <p className="text-neutral-500 text-sm mt-1">Usa los filtros de arriba para ver el análisis por máquina</p>
                   </div>
                 )}
@@ -3785,7 +3785,7 @@ export default function Home() {
                   <div className="flex items-center justify-center h-80">
                     <div className="text-center">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-neutral-800 border-t-neutral-400 mb-3"></div>
-                      <p className="text-neutral-400">Cargando datos MTTR/MTBF...</p>
+                      <p className="text-neutral-400">{t('common.loading')}</p>
                     </div>
                   </div>
                 ) : mttrMtbfData && mttrMtbfData.length > 0 ? (
@@ -4201,15 +4201,15 @@ export default function Home() {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-neutral-300 text-xs font-medium mb-2">Línea</label>
+                      <label className="block text-neutral-300 text-xs font-medium mb-2">{t('tickets.lineLabel')}</label>
                       <select
                         className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-lg p-2 text-sm"
                         value={downtimeLinea}
                         onChange={e => setDowntimeLinea(e.target.value)}
                       >
-                        <option value="">Seleccionar línea</option>
+                        <option value="">{t('stats.selectLine')}</option>
                         {lineas.map(l => (
-                          <option key={l.id} value={l.linea}>Línea {l.linea}</option>
+                          <option key={l.id} value={l.linea}>{t('tickets.lineLabel')} {l.linea}</option>
                         ))}
                       </select>
                     </div>
@@ -4244,7 +4244,7 @@ export default function Home() {
                         <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-blue-300 text-xs font-semibold uppercase tracking-wider">Turnos para esta fecha</span>
+                        <span className="text-blue-300 text-xs font-semibold uppercase tracking-wider">{t('downtime.shiftsForDate')}</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="flex items-center gap-2 bg-amber-900/20 border border-amber-700/30 rounded-lg px-3 py-2">
@@ -4270,25 +4270,25 @@ export default function Home() {
                 {downtimeData && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
-                      <p className="text-neutral-400 text-xs font-medium">DT Total (Producción)</p>
+                      <p className="text-neutral-400 text-xs font-medium">{t('downtime.dtTotalProd')}</p>
                       <p className="text-2xl font-bold text-white mt-1">
-                        {downtimeData.summary.totalDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
+                        {downtimeData.summary.totalDt.toFixed(2)} <span className="text-sm text-neutral-400">{t('common.min')}</span>
                       </p>
                     </div>
                     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
-                      <p className="text-neutral-400 text-xs font-medium">DT Justificado (Tickets)</p>
+                      <p className="text-neutral-400 text-xs font-medium">{t('downtime.dtJustified')}</p>
                       <p className="text-2xl font-bold text-neutral-200 mt-1">
-                        {downtimeData.summary.totalTicketDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
+                        {downtimeData.summary.totalTicketDt.toFixed(2)} <span className="text-sm text-neutral-400">{t('common.min')}</span>
                       </p>
                     </div>
                     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
-                      <p className="text-neutral-400 text-xs font-medium">DT Sin Justificar</p>
+                      <p className="text-neutral-400 text-xs font-medium">{t('downtime.dtUnjustified')}</p>
                       <p className="text-2xl font-bold text-red-400 mt-1">
-                        {downtimeData.summary.totalAdjustedDt.toFixed(2)} <span className="text-sm text-neutral-400">min</span>
+                        {downtimeData.summary.totalAdjustedDt.toFixed(2)} <span className="text-sm text-neutral-400">{t('common.min')}</span>
                       </p>
                     </div>
                     <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4">
-                      <p className="text-neutral-400 text-xs font-medium">Tickets Totales</p>
+                      <p className="text-neutral-400 text-xs font-medium">{t('downtime.totalTickets')}</p>
                       <p className="text-2xl font-bold text-neutral-200 mt-1">
                         {downtimeData.summary.totalTickets}
                       </p>
@@ -4310,7 +4310,7 @@ export default function Home() {
                       <div className="flex items-center gap-3 bg-amber-900/30 border border-amber-700/40 rounded-xl px-4 py-3 mb-4">
                         <span className="w-3 h-3 rounded-full bg-amber-400 flex-shrink-0"></span>
                         <div>
-                          <span className="text-amber-200 text-sm font-bold">TURNO DÍA</span>
+                          <span className="text-amber-200 text-sm font-bold">{t('downtime.dayShift')}</span>
                           {shiftInfo && <span className="text-amber-300/70 text-xs ml-3">{shiftInfo.dayShift.range}</span>}
                         </div>
                       </div>
@@ -4318,15 +4318,15 @@ export default function Home() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-amber-800/30">
-                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Hora</th>
-                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Modelo</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Cap</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Prod</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Delta</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">DT (min)</th>
-                              <th className="text-right text-neutral-200 font-medium py-2 px-3">Tickets (min)</th>
-                              <th className="text-right text-red-400 font-medium py-2 px-3">DT Ajustado</th>
-                              <th className="text-center text-neutral-400 font-medium py-2 px-3">Tickets</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">{t('downtime.hour')}</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">{t('downtime.model')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.cap')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.prod')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.delta')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.dtMin')}</th>
+                              <th className="text-right text-neutral-200 font-medium py-2 px-3">{t('downtime.ticketsMin')}</th>
+                              <th className="text-right text-red-400 font-medium py-2 px-3">{t('downtime.dtAdjusted')}</th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3">{t('downtime.tickets')}</th>
                               <th className="text-center text-neutral-400 font-medium py-2 px-3"></th>
                             </tr>
                           </thead>
@@ -4362,7 +4362,7 @@ export default function Home() {
                                   <tr>
                                     <td colSpan={10} className="p-0">
                                       <div className="bg-neutral-950/60 border-l-4 border-amber-700 mx-2 my-1 rounded-lg p-4">
-                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">Tickets en {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
+                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">{t('tickets.ticketsInInterval')} {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
                                         <div className="space-y-2">
                                           {interval.tickets.map(t => (
                                             <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
@@ -4383,9 +4383,9 @@ export default function Home() {
                                                 <div className="text-right">
                                                   <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
                                                   {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
-                                                    <p className="text-xs text-neutral-500">Total ticket: {parseFloat(t.fullDeadtime || 0).toFixed(2)} min</p>
+                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(t.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
                                                   )}
-                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
+                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} {t('tickets.lostPieces')}</p>}
                                                 </div>
                                               </div>
                                             </div>
@@ -4423,7 +4423,7 @@ export default function Home() {
                       <div className="flex items-center gap-3 bg-indigo-900/30 border border-indigo-700/40 rounded-xl px-4 py-3 mb-4">
                         <span className="w-3 h-3 rounded-full bg-indigo-400 flex-shrink-0"></span>
                         <div>
-                          <span className="text-indigo-200 text-sm font-bold">TURNO NOCHE</span>
+                          <span className="text-indigo-200 text-sm font-bold">{t('downtime.nightShift')}</span>
                           {shiftInfo && <span className="text-indigo-300/70 text-xs ml-3">{shiftInfo.nightShift.range}</span>}
                         </div>
                       </div>
@@ -4431,15 +4431,15 @@ export default function Home() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b border-indigo-800/30">
-                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Hora</th>
-                              <th className="text-left text-neutral-400 font-medium py-2 px-3">Modelo</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Cap</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Prod</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">Delta</th>
-                              <th className="text-right text-neutral-400 font-medium py-2 px-3">DT (min)</th>
-                              <th className="text-right text-neutral-200 font-medium py-2 px-3">Tickets (min)</th>
-                              <th className="text-right text-red-400 font-medium py-2 px-3">DT Ajustado</th>
-                              <th className="text-center text-neutral-400 font-medium py-2 px-3">Tickets</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">{t('downtime.hour')}</th>
+                              <th className="text-left text-neutral-400 font-medium py-2 px-3">{t('downtime.model')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.cap')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.prod')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.delta')}</th>
+                              <th className="text-right text-neutral-400 font-medium py-2 px-3">{t('downtime.dtMin')}</th>
+                              <th className="text-right text-neutral-200 font-medium py-2 px-3">{t('downtime.ticketsMin')}</th>
+                              <th className="text-right text-red-400 font-medium py-2 px-3">{t('downtime.dtAdjusted')}</th>
+                              <th className="text-center text-neutral-400 font-medium py-2 px-3">{t('downtime.tickets')}</th>
                               <th className="text-center text-neutral-400 font-medium py-2 px-3"></th>
                             </tr>
                           </thead>
@@ -4475,7 +4475,7 @@ export default function Home() {
                                   <tr>
                                     <td colSpan={10} className="p-0">
                                       <div className="bg-neutral-950/60 border-l-4 border-indigo-700 mx-2 my-1 rounded-lg p-4">
-                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">Tickets en {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
+                                        <h4 className="text-neutral-200 text-xs font-semibold mb-3">{t('tickets.ticketsInInterval')} {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
                                         <div className="space-y-2">
                                           {interval.tickets.map(t => (
                                             <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
@@ -4496,9 +4496,9 @@ export default function Home() {
                                                 <div className="text-right">
                                                   <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
                                                   {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
-                                                    <p className="text-xs text-neutral-500">Total ticket: {parseFloat(t.fullDeadtime || 0).toFixed(2)} min</p>
+                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(t.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
                                                   )}
-                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} pzas perdidas</p>}
+                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} {t('tickets.lostPieces')}</p>}
                                                 </div>
                                               </div>
                                             </div>
@@ -4520,7 +4520,7 @@ export default function Home() {
                 {/* No data states */}
                 {downtimeData && downtimeData.summary.totalDt === 0 && downtimeData.summary.totalTickets === 0 && (
                   <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
-                    <p className="text-neutral-500">No hay registros de producción ni tickets para esta línea y fecha</p>
+                    <p className="text-neutral-500">{t('downtime.noProductionOrTickets')}</p>
                   </div>
                 )}
 
@@ -4530,8 +4530,8 @@ export default function Home() {
                     <svg className="w-16 h-16 text-slate-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-neutral-400">Selecciona una línea y fecha para ver el análisis de downtime</p>
-                    <p className="text-neutral-500 text-sm mt-1">Compara el DT de producción contra los tickets registrados</p>
+                    <p className="text-neutral-400">{t('downtime.selectLineAndDate')}</p>
+                    <p className="text-neutral-500 text-sm mt-1">{t('downtime.compareDt')}</p>
                   </div>
                 )}
 
@@ -4539,7 +4539,7 @@ export default function Home() {
                 {downtimeLoading && (
                   <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-8 text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-neutral-700 border-t-red-400 mx-auto mb-4"></div>
-                    <p className="text-neutral-400">Cargando análisis de downtime...</p>
+                    <p className="text-neutral-400">{t('downtime.loadingDowntime')}</p>
                   </div>
                 )}
               </div>
@@ -4570,7 +4570,7 @@ export default function Home() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-neutral-300 text-sm">Selecciona una línea para mostrar el modo visualización:</p>
+              <p className="text-neutral-300 text-sm">{t('display.selectLine')}:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 <button
                   onClick={() => setDisplayAllLineas(true)}
@@ -4590,7 +4590,7 @@ export default function Home() {
                     <svg className="w-5 h-5 text-neutral-400 group-hover:text-neutral-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span>Línea {linea.linea}</span>
+                    <span>{t('tickets.lineLabel')} {linea.linea}</span>
                   </button>
                 ))}
               </div>
@@ -4711,22 +4711,22 @@ export default function Home() {
               {ticketLoading ? (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-neutral-800 border-t-neutral-400"></div>
-                  <p className="text-neutral-400 mt-4">Cargando ticket...</p>
+                  <p className="text-neutral-400 mt-4">{t('common.loading')}</p>
                 </div>
               ) : selectedTicket ? (
                 <div className="space-y-5">
                   {/* Info del ticket */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-neutral-800/50 rounded-lg p-3">
-                      <p className="text-neutral-400 text-xs">Línea</p>
-                      <p className="text-white font-semibold">Línea {selectedTicket.linea}</p>
+                      <p className="text-neutral-400 text-xs">{t('tickets.lineLabel')}</p>
+                      <p className="text-white font-semibold">{selectedTicket.linea}</p>
                     </div>
                     <div className="bg-neutral-800/50 rounded-lg p-3">
-                      <p className="text-neutral-400 text-xs">Modelo</p>
+                      <p className="text-neutral-400 text-xs">{t('tickets.modelLabel')}</p>
                       <p className="text-white font-semibold">{selectedTicket.modelo}</p>
                     </div>
                     <div className="bg-neutral-800/50 rounded-lg p-3">
-                      <p className="text-neutral-400 text-xs">Equipo</p>
+                      <p className="text-neutral-400 text-xs">{t('tickets.equipmentLabel')}</p>
                       <p className="text-white font-semibold">{selectedTicket.equipo}</p>
                     </div>
                     <div className="bg-neutral-800/50 rounded-lg p-3">
@@ -4736,12 +4736,12 @@ export default function Home() {
                   </div>
 
                   <div className="bg-neutral-800/50 rounded-lg p-3">
-                    <p className="text-neutral-400 text-xs">Descripción del problema</p>
+                    <p className="text-neutral-400 text-xs">{t('tickets.descriptionLabel')}</p>
                     <p className="text-white font-medium mt-1">{selectedTicket.descr}</p>
                   </div>
 
                   <div className="bg-neutral-800/50 rounded-lg p-3">
-                    <p className="text-neutral-400 text-xs">Reportado por</p>
+                    <p className="text-neutral-400 text-xs">{t('tickets.createdBy')}</p>
                     <p className="text-white">{selectedTicket.nombre} - {selectedTicket.hr ? new Date(selectedTicket.hr).toLocaleString('es-MX') : ''}</p>
                   </div>
 
@@ -4752,9 +4752,9 @@ export default function Home() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="font-semibold">En atención</span>
+                        <span className="font-semibold">{t('handleTicket.inAttention')}</span>
                       </div>
-                      <p className="text-neutral-300 text-sm">Técnico: {selectedTicket.tecnico}</p>
+                      <p className="text-neutral-300 text-sm">{t('tickets.technician')}: {selectedTicket.tecnico}</p>
                     </div>
                   ) : (
                     <button
@@ -4764,7 +4764,7 @@ export default function Home() {
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
-                      Tomar Ticket
+                      {t('tickets.handleTicket')}
                     </button>
                   )}
 
@@ -4772,7 +4772,7 @@ export default function Home() {
                   {selectedTicket.tecnico && (
                     <div className="space-y-4 pt-2">
                       <div>
-                        <label className="block text-neutral-300 text-sm font-medium mb-2">Solución aplicada *</label>
+                        <label className="block text-neutral-300 text-sm font-medium mb-2">{t('tickets.solutionLabel')} *</label>
                         <textarea
                           className="w-full bg-neutral-800/50 border border-neutral-700 text-neutral-200 rounded-lg p-3 text-sm min-h-[120px] focus:ring-2 focus:ring-slate-500 focus:border-transparent"
                           placeholder="Describe la solución aplicada al problema..."
@@ -4789,14 +4789,14 @@ export default function Home() {
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Cerrar Ticket
+                        {t('common.close')} Ticket
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-neutral-400">No se pudo cargar el ticket</p>
+                  <p className="text-neutral-400">{t('common.error')}</p>
                 </div>
               )}
             </div>
@@ -5139,7 +5139,7 @@ export default function Home() {
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
                   </svg>
-                  <span>Línea {linea.linea}</span>
+                  <span>{t('tickets.lineLabel')} {linea.linea}</span>
                   {mantenimientoActivo[linea.linea] && (
                     <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}
@@ -5184,7 +5184,7 @@ export default function Home() {
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  <span>Línea {linea.linea}</span>
+                  <span>{t('tickets.lineLabel')} {linea.linea}</span>
                   {cambioModeloActivo[linea.linea] && (
                     <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}
@@ -5229,7 +5229,7 @@ export default function Home() {
                     }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
-                  <span>Línea {linea.linea}</span>
+                  <span>{t('tickets.lineLabel')} {linea.linea}</span>
                   {auditoriaActivo[linea.linea] && (
                     <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
                   )}

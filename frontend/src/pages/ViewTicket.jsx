@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import { getTicket } from '../api_deadtimes'
 
@@ -33,6 +34,7 @@ function formatMinutes(mins) {
 }
 
 export default function ViewTicket(){
+  const { t } = useTranslation()
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -51,7 +53,7 @@ export default function ViewTicket(){
     <div className="min-h-screen bg-gradient-to-br from-slate-925 via-slate-900 to-slate-925 flex items-center justify-center">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-blue-400 mb-4"></div>
-        <p className="text-neutral-300 font-medium">Cargando ticket...</p>
+        <p className="text-neutral-300 font-medium">{t('viewTicket.loading')}</p>
       </div>
     </div>
   )
@@ -74,7 +76,7 @@ export default function ViewTicket(){
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white">Resumen del Ticket</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">{t('viewTicket.summary')}</h1>
                 <span className="badge badge-blue">#{ticket.id}</span>
               </div>
             </div>
@@ -87,7 +89,7 @@ export default function ViewTicket(){
                 <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                {loading ? 'Actualizando...' : 'Recargar'}
+                {loading ? t('viewTicket.updating') : t('viewTicket.reload')}
               </button>
             </div>
           </div>
@@ -98,12 +100,12 @@ export default function ViewTicket(){
               <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Tiempos del Proceso
+              {t('viewTicket.processTimes')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Fecha/Hora de Creación */}
               <div className="bg-emerald-500/10 rounded-xl p-4 border border-neutral-700">
-                <p className="text-xs text-neutral-200 mb-1 font-medium">Creación del Ticket</p>
+                <p className="text-xs text-neutral-200 mb-1 font-medium">{t('viewTicket.createdAt')}</p>
                 <p className="text-sm font-semibold text-neutral-200">{formatDateTime(ticket.hr)}</p>
                 <p className="text-xs text-neutral-400 mt-2 flex items-center gap-1">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,23 +117,23 @@ export default function ViewTicket(){
               
               {/* Fecha/Hora de Inicio de Atención */}
               <div className={`rounded-xl p-4 border ${ticket.ha ? 'bg-amber-500/10 border-neutral-700' : 'bg-neutral-800/30 border-neutral-700/50'}`}>
-                <p className={`text-xs mb-1 font-medium ${ticket.ha ? 'text-neutral-200' : 'text-neutral-400'}`}>Inicio de Atención</p>
+                <p className={`text-xs mb-1 font-medium ${ticket.ha ? 'text-neutral-200' : 'text-neutral-400'}`}>{t('viewTicket.startAttention')}</p>
                 <p className={`text-sm font-semibold ${ticket.ha ? 'text-neutral-200' : 'text-neutral-500'}`}>
                   {formatDateTime(ticket.ha)}
                 </p>
                 {tiempoRespuesta !== null && (
-                  <p className="text-xs text-neutral-400 mt-2">Respuesta: {formatMinutes(tiempoRespuesta)}</p>
+                  <p className="text-xs text-neutral-400 mt-2">{t('viewTicket.response')} {formatMinutes(tiempoRespuesta)}</p>
                 )}
               </div>
               
               {/* Fecha/Hora de Cierre */}
               <div className={`rounded-xl p-4 border ${ticket.hc ? 'bg-blue-500/10 border-neutral-700' : 'bg-neutral-800/30 border-neutral-700/50'}`}>
-                <p className={`text-xs mb-1 font-medium ${ticket.hc ? 'text-neutral-200' : 'text-neutral-400'}`}>Cierre del Ticket</p>
+                <p className={`text-xs mb-1 font-medium ${ticket.hc ? 'text-neutral-200' : 'text-neutral-400'}`}>{t('viewTicket.closedAt')}</p>
                 <p className={`text-sm font-semibold ${ticket.hc ? 'text-neutral-200' : 'text-neutral-500'}`}>
                   {formatDateTime(ticket.hc)}
                 </p>
                 {tiempoTotal !== null && (
-                  <p className="text-xs text-neutral-400 mt-2">Total: {formatMinutes(tiempoTotal)}</p>
+                  <p className="text-xs text-neutral-400 mt-2">{t('viewTicket.total')} {formatMinutes(tiempoTotal)}</p>
                 )}
               </div>
             </div>
@@ -140,15 +142,15 @@ export default function ViewTicket(){
             {ticket.done && tiempoTotal !== null && (
               <div className="mt-4 pt-4 border-t border-neutral-700/50 grid grid-cols-3 gap-4 text-center">
                 <div className="bg-neutral-900/50 rounded-xl p-3">
-                  <p className="text-xs text-neutral-400 mb-1">Tiempo de Respuesta</p>
+                  <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.responseTime')}</p>
                   <p className="text-xl font-bold text-neutral-200">{formatMinutes(tiempoRespuesta)}</p>
                 </div>
                 <div className="bg-neutral-900/50 rounded-xl p-3">
-                  <p className="text-xs text-neutral-400 mb-1">Tiempo de Atención</p>
+                  <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.attentionTime')}</p>
                   <p className="text-xl font-bold text-neutral-200">{formatMinutes(tiempoAtencion)}</p>
                 </div>
                 <div className="bg-neutral-900/50 rounded-xl p-3">
-                  <p className="text-xs text-neutral-400 mb-1">Tiempo Total</p>
+                  <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.totalTime')}</p>
                   <p className="text-xl font-bold text-neutral-200">{formatMinutes(tiempoTotal)}</p>
                 </div>
               </div>
@@ -158,36 +160,36 @@ export default function ViewTicket(){
           {/* Información del ticket */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Descripción</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.description')}</p>
               <p className="text-white font-medium">{ticket.descr}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Línea</p>
-              <p className="text-white font-medium">Línea {ticket.linea}</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.line')}</p>
+              <p className="text-white font-medium">{ticket.linea}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Equipo</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.equipment')}</p>
               <p className="text-white font-medium">{ticket.equipo}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Modelo</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.model')}</p>
               <p className="text-white font-medium">{ticket.modelo}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Turno</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.shift')}</p>
               <p className="text-white font-medium">{ticket.turno}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Técnico</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.technician')}</p>
               <p className="text-white font-medium">{ticket.tecnico || 'N/A'}</p>
               {ticket.num_empleado1 && <p className="text-xs text-neutral-500 mt-1">#{ticket.num_empleado1}</p>}
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Sección Afectada</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.affectedSection')}</p>
               <p className="text-white font-medium">{ticket.pa || 'N/A'}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-xs text-neutral-400 mb-1">Condición de Paro</p>
+              <p className="text-xs text-neutral-400 mb-1">{t('viewTicket.stopCondition')}</p>
               <p className="text-white font-medium">{ticket.pf || 'N/A'}</p>
             </div>
           </div>
@@ -199,7 +201,7 @@ export default function ViewTicket(){
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7-12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Montadoras Afectadas
+                {t('viewTicket.affectedMountings')}
               </p>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
@@ -220,7 +222,7 @@ export default function ViewTicket(){
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Solución Aplicada
+                {t('viewTicket.appliedSolution')}
               </p>
               <p className="text-white">{ticket.solucion}</p>
             </div>
@@ -234,15 +236,15 @@ export default function ViewTicket(){
               <p className="text-xs text-neutral-500">piezas/hr</p>
             </div>
             <div className="bg-amber-500/10 rounded-xl p-4 border border-neutral-700 text-center">
-              <p className="text-xs text-neutral-200 mb-1">Tiempo de Paro</p>
+              <p className="text-xs text-neutral-200 mb-1">{t('viewTicket.stopMinutes')}</p>
               <p className="text-lg font-bold text-neutral-200">{ticket.minutos != null ? formatMinutes(ticket.minutos) : 'N/A'}</p>
             </div>
             <div className="bg-rose-500/10 rounded-xl p-4 border border-rose-500/30 text-center">
-              <p className="text-xs text-rose-300 mb-1">Piezas Perdidas</p>
+              <p className="text-xs text-rose-300 mb-1">{t('viewTicket.lostPieces')}</p>
               <p className="text-lg font-bold text-rose-400">{ticket.piezas || 'N/A'}</p>
             </div>
             <div className="bg-purple-500/10 rounded-xl p-4 border border-neutral-700 text-center">
-              <p className="text-xs text-neutral-200 mb-1">Tiempo Perdido</p>
+              <p className="text-xs text-neutral-200 mb-1">{t('viewTicket.lostTime')}</p>
               <p className="text-lg font-bold text-neutral-200">{ticket.deadtime != null ? formatMinutes(ticket.deadtime) : 'N/A'}</p>
             </div>
           </div>
@@ -256,7 +258,7 @@ export default function ViewTicket(){
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
-              Imprimir
+              {t('viewTicket.print')}
             </button>
             <button 
               onClick={() => window.history.back()} 
@@ -265,7 +267,7 @@ export default function ViewTicket(){
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Volver
+              {t('viewTicket.back')}
             </button>
           </div>
         </div>

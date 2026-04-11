@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function ProduccionReview({ linea, fecha, turno, onClose }) {
+  const { t } = useTranslation();
   const [intervalos, setIntervalos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,7 +30,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
       const response = await fetch(
         `${apiUrl}/produccion/unjustified?linea=${encodeURIComponent(linea)}&fecha=${fecha}&turno=${turno}`
       );
-      if (!response.ok) throw new Error('Error cargando datos');
+      if (!response.ok) throw new Error(t('common.error'));
 
       const result = await response.json();
       setIntervalos(result.data || []);
@@ -48,7 +50,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
       const response = await fetch(
         `${apiUrl}/produccion/related-tickets/${intervalo.id}`
       );
-      if (!response.ok) throw new Error('Error cargando tickets');
+      if (!response.ok) throw new Error(t('common.error'));
 
       const result = await response.json();
       setRelatedTickets(result.data || []);
@@ -66,13 +68,13 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
     );
   }
 
-  const turnoLabel = turno == 1 ? 'Turno 1 (08:00 - 20:00)' : 'Turno 2 (20:00 - 08:00)';
+  const turnoLabel = turno == 1 ? t('review.shift1') : t('review.shift2');
 
   return (
     <div className="bg-slate-900 rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-slate-100">
-          Review - {turnoLabel} - {linea} ({fecha})
+          {t('review.title')} - {turnoLabel} - {linea} ({fecha})
         </h2>
         {onClose && (
           <button
@@ -92,9 +94,9 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
 
       <div className="text-slate-300 text-sm mb-4 p-3 bg-slate-800 rounded">
         <p>
-          <span className="font-semibold">Deadtime no justificado</span> = Deadtime total - Minutos justificados por tickets
+          <span className="font-semibold">{t('review.unjustifiedDt')}</span> = {t('review.unjustifiedFormula')}
         </p>
-        <p className="mt-2">Haz click en un intervalo para ver tickets relacionados</p>
+        <p className="mt-2">{t('review.clickInterval')}</p>
       </div>
 
       {/* Tabla de Intervalos con Deadtime No Justificado */}
@@ -102,12 +104,12 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-slate-800 border-b border-slate-700">
-              <th className="px-3 py-2 text-left text-slate-300 font-semibold">Hora</th>
-              <th className="px-3 py-2 text-left text-slate-300 font-semibold">Modelo</th>
-              <th className="px-3 py-2 text-right text-slate-300 font-semibold">Deadtime Total (min)</th>
-              <th className="px-3 py-2 text-right text-slate-300 font-semibold">Justificado (min)</th>
-              <th className="px-3 py-2 text-right text-slate-300 font-semibold">No Justificado (min)</th>
-              <th className="px-3 py-2 text-center text-slate-300 font-semibold">Acción</th>
+              <th className="px-3 py-2 text-left text-slate-300 font-semibold">{t('review.hour')}</th>
+              <th className="px-3 py-2 text-left text-slate-300 font-semibold">{t('review.model')}</th>
+              <th className="px-3 py-2 text-right text-slate-300 font-semibold">{t('review.totalDtMin')}</th>
+              <th className="px-3 py-2 text-right text-slate-300 font-semibold">{t('review.justifiedMin')}</th>
+              <th className="px-3 py-2 text-right text-slate-300 font-semibold">{t('review.unjustifiedMin')}</th>
+              <th className="px-3 py-2 text-center text-slate-300 font-semibold">{t('review.action')}</th>
             </tr>
           </thead>
           <tbody>
@@ -123,7 +125,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
                   } transition`}
                 >
                   <td className="px-3 py-2 text-slate-300 font-medium">{int.hora_inicio}:00</td>
-                  <td className="px-3 py-2 text-slate-300">{int.modelo || 'N/A'}</td>
+                  <td className="px-3 py-2 text-slate-300">{int.modelo || t('common.na')}</td>
                   <td className="px-3 py-2 text-right text-amber-400 font-semibold">
                     {Number(int.deadtime_minutos || 0).toFixed(2)}
                   </td>
@@ -140,7 +142,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
                       onClick={() => handleClickIntervalo(int)}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium"
                     >
-                      Ver Tickets
+                      {t('review.viewTickets')}
                     </button>
                   </td>
                 </tr>
@@ -156,7 +158,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
           <div className="bg-slate-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-100">
-                Tickets - {selectedIntervalo.hora_inicio}:00 ({linea})
+                {t('review.ticketsAt')} - {selectedIntervalo.hora_inicio}:00 ({linea})
               </h3>
               <button
                 onClick={() => setShowTicketsModal(false)}
@@ -168,7 +170,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
 
             {relatedTickets.length === 0 ? (
               <div className="text-slate-400 p-4 text-center">
-                No hay tickets relacionados en este intervalo
+                {t('review.noRelatedTickets')}
               </div>
             ) : (
               <div className="space-y-3">
@@ -183,28 +185,28 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
                         <p className="text-sm text-slate-400">{ticket.descr}</p>
                       </div>
                       <span className="bg-blue-900 text-blue-300 px-2 py-1 rounded text-xs font-medium">
-                        {Number(ticket.minutos_justificados || 0).toFixed(2)} min
+                        {Number(ticket.minutos_justificados || 0).toFixed(2)} {t('common.min')}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm text-slate-300">
                       <div>
-                        <span className="text-slate-500">Modelo:</span> {ticket.modelo}
+                        <span className="text-slate-500">{t('review.model')}:</span> {ticket.modelo}
                       </div>
                       <div>
-                        <span className="text-slate-500">Duración:</span> {ticket.duracion_minutos} min
+                        <span className="text-slate-500">{t('review.duration')}:</span> {ticket.duracion_minutos} {t('common.min')}
                       </div>
                       <div>
-                        <span className="text-slate-500">Apertura:</span>{' '}
-                        {new Date(ticket.hr).toLocaleTimeString('es-MX')}
+                        <span className="text-slate-500">{t('review.opening')}:</span>{' '}
+                        {new Date(ticket.hr).toLocaleTimeString()}
                       </div>
                       <div>
-                        <span className="text-slate-500">Cierre:</span>{' '}
-                        {new Date(ticket.hc).toLocaleTimeString('es-MX')}
+                        <span className="text-slate-500">{t('review.closing')}:</span>{' '}
+                        {new Date(ticket.hc).toLocaleTimeString()}
                       </div>
                     </div>
                     {ticket.solucion && (
                       <div className="mt-2 pt-2 border-t border-slate-600">
-                        <p className="text-xs text-slate-500">Solución:</p>
+                        <p className="text-xs text-slate-500">{t('review.solution')}:</p>
                         <p className="text-sm text-slate-300">{ticket.solucion}</p>
                       </div>
                     )}
@@ -217,7 +219,7 @@ export default function ProduccionReview({ linea, fecha, turno, onClose }) {
               onClick={() => setShowTicketsModal(false)}
               className="mt-4 w-full bg-slate-700 hover:bg-slate-600 text-slate-100 py-2 rounded font-medium"
             >
-              Cerrar
+              {t('common.close')}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import { getTicket, startTicket, updateTicket, finishTicket, login } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
@@ -16,6 +17,7 @@ function formatDateTime(dateStr) {
 }
 
 export default function HandleTicket() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [ticket, setTicket] = useState(null)
   const [editMode, setEditMode] = useState(false)
@@ -136,7 +138,7 @@ export default function HandleTicket() {
     <div className="min-h-screen bg-gradient-to-br from-slate-925 via-slate-900 to-slate-925 flex items-center justify-center">
       <div className="text-center">
         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-blue-400 mb-4"></div>
-        <p className="text-neutral-300 font-medium">Cargando ticket...</p>
+        <p className="text-neutral-300 font-medium">{t('handleTicket.loading')}</p>
       </div>
     </div>
   )
@@ -154,7 +156,7 @@ export default function HandleTicket() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-white">Manejar Ticket</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">{t('handleTicket.title')}</h1>
                 <span className="badge badge-amber">#{id}</span>
               </div>
             </div>
@@ -165,7 +167,7 @@ export default function HandleTicket() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Volver
+              {t('handleTicket.back')}
             </button>
           </div>
           
@@ -176,7 +178,7 @@ export default function HandleTicket() {
                 <svg className="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span className="text-neutral-400">Creado:</span>
+                <span className="text-neutral-400">{t('handleTicket.created')}</span>
                 <span className="text-white font-medium">{formatDateTime(ticket.hr) || 'N/A'}</span>
               </div>
               {ticket.ha && (
@@ -184,7 +186,7 @@ export default function HandleTicket() {
                   <svg className="w-4 h-4 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-neutral-400">En atención:</span>
+                  <span className="text-neutral-400">{t('handleTicket.inAttention')}</span>
                   <span className="text-neutral-200 font-medium">{formatDateTime(ticket.ha)}</span>
                 </div>
               )}
@@ -194,31 +196,31 @@ export default function HandleTicket() {
           {/* Información del ticket */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Descripción</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.description')}</p>
               <p className="text-white font-medium">{ticket.descr}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Línea</p>
-              <p className="text-white font-medium">Línea {ticket.linea}</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.line')}</p>
+              <p className="text-white font-medium">{ticket.linea}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Equipo</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.equipment')}</p>
               <p className="text-white font-medium">{ticket.equipo}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Modelo</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.model')}</p>
               <p className="text-white font-medium">{ticket.modelo}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Turno</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.shift')}</p>
               <p className="text-white font-medium">{ticket.turno}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Sección Afectada</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.affectedSection')}</p>
               <p className="text-white font-medium">{ticket.pa || 'N/A'}</p>
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-4 border border-neutral-800/50">
-              <p className="text-neutral-400 text-xs mb-1">Condición de Paro</p>
+              <p className="text-neutral-400 text-xs mb-1">{t('handleTicket.stopCondition')}</p>
               <p className="text-white font-medium">{ticket.pf || 'N/A'}</p>
             </div>
             {ticket.rate && (
@@ -241,7 +243,7 @@ export default function HandleTicket() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m7-12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Montadoras Afectadas
+                {t('handleTicket.affectedMountings')}
               </p>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => (
@@ -263,7 +265,7 @@ export default function HandleTicket() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Roles autorizados: <span className="font-semibold">Ingeniero, Técnico, AOI, Supervisor, Soporte, Mantenimiento</span>
+                  {t('handleTicket.authRoles')}
                 </p>
               </div>
               <button 
@@ -273,7 +275,7 @@ export default function HandleTicket() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                Asignar Técnico
+                {t('handleTicket.assignTechnician')}
               </button>
             </div>
           )}
@@ -285,7 +287,7 @@ export default function HandleTicket() {
                 <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Información del Técnico
+                {t('handleTicket.technicianInfo')}
               </h2>
               
               <div className="bg-amber-500/10 rounded-xl p-4 border border-neutral-700 mb-4">
@@ -293,7 +295,7 @@ export default function HandleTicket() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
-                  Debes completar la solución antes de salir de esta página
+                  {t('handleTicket.completeSolution')}
                 </p>
               </div>
               
@@ -313,7 +315,7 @@ export default function HandleTicket() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm text-neutral-300 mb-2 font-medium">Solución Aplicada *</label>
+                <label className="block text-sm text-neutral-300 mb-2 font-medium">{t('viewTicket.appliedSolution')} *</label>
                 <textarea 
                   className={`w-full bg-neutral-900/50 border text-white p-4 rounded-xl transition-all focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${form.solucion ? 'border-neutral-700 bg-emerald-500/5' : 'border-neutral-700/50'}`} 
                   rows="4" 
@@ -354,7 +356,7 @@ export default function HandleTicket() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-white">Advertencia</h3>
+                  <h3 className="text-xl font-bold text-white">{t('common.warning')}</h3>
                 </div>
                 <p className="text-neutral-300 mb-6">
                   Has atendido este ticket pero no lo has finalizado. Por seguridad, debes iniciar sesión nuevamente para continuar.
@@ -364,13 +366,13 @@ export default function HandleTicket() {
                     onClick={() => setShowLogoutWarning(false)}
                     className="px-4 py-2.5 bg-neutral-800/50 hover:bg-neutral-700/50 text-neutral-200 rounded-xl font-medium transition-all border border-neutral-700/50"
                   >
-                    Cancelar
+                    {t('common.cancel')}
                   </button>
                   <button 
                     onClick={confirmLogoutAndReturn}
                     className="px-4 py-2.5 bg-white text-black hover:bg-neutral-200 rounded-xl font-medium transition-all shadow-lg shadow-rose-500/25"
                   >
-                    Cerrar Sesión
+                    {t('nav.logout')}
                   </button>
                 </div>
               </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useInactivityTimeout } from '../hooks/useInactivityTimeout'
 import LoginModal from '../components/LoginModal'
 import {
@@ -18,6 +19,7 @@ import {
 } from '../api_deadtimes'
 
 export default function Configuration({ onBack }) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('equipos')
   const [currentCredentials, setCurrentCredentials] = useState(null)
   const [showCredentialsModal, setShowCredentialsModal] = useState(false)
@@ -533,7 +535,7 @@ export default function Configuration({ onBack }) {
           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M12 3a9 9 0 100 18 9 9 0 000-18z" />
           </svg>
-          <span>Sesión cerrada por inactividad (2 minutos sin movimiento)</span>
+          <span>{t('configurationPage.inactivityWarning')}</span>
         </div>
       )}
 
@@ -547,12 +549,12 @@ export default function Configuration({ onBack }) {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-white">Configuración</h1>
+          <h1 className="text-4xl font-bold text-white">{t('configurationPage.title')}</h1>
           <button
             onClick={handleBack}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition"
           >
-            Volver
+            {t('configurationPage.back')}
           </button>
         </div>
 
@@ -562,7 +564,7 @@ export default function Configuration({ onBack }) {
             <p className="text-sm text-gray-300">
               {currentCredentials ? (
                 <>
-                  Conectado como: <span className="font-bold text-neutral-200">{currentCredentials.nombre}</span>
+                  {t('configurationPage.connectedAs')} <span className="font-bold text-neutral-200">{currentCredentials.nombre}</span>
                   {currentCredentials.rol && (
                     <span className="ml-3 px-2 py-1 bg-neutral-800 text-neutral-200 rounded text-xs font-medium">
                       {currentCredentials.rol}
@@ -570,7 +572,7 @@ export default function Configuration({ onBack }) {
                   )}
                 </>
               ) : (
-                'No autorizado - Se requiere login de ingeniero'
+                t('configurationPage.unauthorized')
               )}
             </p>
             <button
@@ -588,7 +590,7 @@ export default function Configuration({ onBack }) {
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
-              {currentCredentials ? 'Cerrar Sesión' : 'Iniciar Sesión'}
+              {currentCredentials ? t('configurationPage.logout') : t('configurationPage.login')}
             </button>
           </div>
         </div>
@@ -596,7 +598,7 @@ export default function Configuration({ onBack }) {
         {!currentCredentials && (
           <div className="mb-8 p-6 bg-yellow-900/20 border border-yellow-600/50 rounded-lg">
             <p className="text-yellow-200 text-center">
-              Por favor inicia sesión para acceder a la configuración. Se requiere ser ingeniero.
+              {t('configurationPage.requiresEngineer')}
             </p>
           </div>
         )}
@@ -604,9 +606,9 @@ export default function Configuration({ onBack }) {
         {/* Tabs */}
         <div className="flex gap-2 mb-6 border-b border-neutral-800">
           {[
-            { key: 'equipos', label: 'Equipos' },
-            { key: 'lineas', label: 'Líneas' },
-            { key: 'modelos', label: 'Modelos' }
+            { key: 'equipos', label: t('configurationPage.equipment') },
+            { key: 'lineas', label: t('configurationPage.lines') },
+            { key: 'modelos', label: t('configurationPage.models') }
           ].map(tab => (
             <button
               key={tab.key}
@@ -626,7 +628,7 @@ export default function Configuration({ onBack }) {
         {/* EQUIPOS TAB */}
         {activeTab === 'equipos' && currentCredentials && (
           <div className="bg-neutral-900 rounded-lg shadow-lg p-6 border border-neutral-800">
-            <h2 className="text-2xl font-bold mb-6 text-white">Gestionar Equipos</h2>
+            <h2 className="text-2xl font-bold mb-6 text-white">{t('configurationPage.manageEquipment')}</h2>
 
             {equipoMessage && (
               <div className={`mb-4 p-4 rounded ${
@@ -640,7 +642,7 @@ export default function Configuration({ onBack }) {
 
             {/* Agregar Nuevo */}
             <div className="mb-8 p-4 bg-neutral-800/50 rounded border border-neutral-700">
-              <h3 className="text-lg font-semibold mb-4 text-white">Agregar Nuevo Equipo</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">{t('configurationPage.addNewEquipment')}</h3>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -654,24 +656,24 @@ export default function Configuration({ onBack }) {
                   onClick={handleAddEquipo}
                   className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
-                  Agregar
+                  {t('configurationPage.add')}
                 </button>
               </div>
             </div>
 
             {/* Lista */}
             {equiposLoading ? (
-              <div className="text-center py-8 text-gray-400">Cargando...</div>
+              <div className="text-center py-8 text-gray-400">{t('configurationPage.loading')}</div>
             ) : equipos.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">No hay equipos registrados</div>
+              <div className="text-center py-8 text-gray-400">{t('configurationPage.noEquipment')}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-neutral-800 border-b border-neutral-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">ID</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">Nombre</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">Acciones</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">{t('configurationPage.id')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">{t('configurationPage.name')}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-white">{t('configurationPage.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -697,13 +699,13 @@ export default function Configuration({ onBack }) {
                                 onClick={handleSaveEquipo}
                                 className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs"
                               >
-                                Guardar
+                                {t('common.save')}
                               </button>
                               <button
                                 onClick={() => setEditingEquipo(null)}
                                 className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-xs"
                               >
-                                Cancelar
+                                {t('common.cancel')}
                               </button>
                             </div>
                           ) : (
@@ -712,13 +714,13 @@ export default function Configuration({ onBack }) {
                                 onClick={() => handleEditEquipo(equipo)}
                                 className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs"
                               >
-                                Editar
+                                {t('common.edit')}
                               </button>
                               <button
                                 onClick={() => handleDeleteEquipo(equipo.id)}
                                 className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs"
                               >
-                                Eliminar
+                                {t('common.delete')}
                               </button>
                             </div>
                           )}
@@ -735,7 +737,7 @@ export default function Configuration({ onBack }) {
         {/* LÍNEAS TAB */}
         {activeTab === 'lineas' && currentCredentials && (
           <div className="bg-neutral-900 rounded-lg shadow-lg p-6 border border-neutral-800">
-            <h2 className="text-2xl font-bold mb-6 text-white">Gestionar Líneas</h2>
+            <h2 className="text-2xl font-bold mb-6 text-white">{t('configurationPage.manageLines')}</h2>
 
             {lineaMessage && (
               <div className={`mb-4 p-4 rounded ${
@@ -749,7 +751,7 @@ export default function Configuration({ onBack }) {
 
             {/* Agregar Nuevo */}
             <div className="mb-8 p-4 bg-neutral-800/50 rounded border border-neutral-700">
-              <h3 className="text-lg font-semibold mb-4 text-white">Agregar Nueva Línea</h3>
+              <h3 className="text-lg font-semibold mb-4 text-white">{t('configuration.addLine')}</h3>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -763,7 +765,7 @@ export default function Configuration({ onBack }) {
                   onClick={handleAddLinea}
                   className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
                 >
-                  Agregar
+                  {t('configurationPage.add')}
                 </button>
               </div>
             </div>

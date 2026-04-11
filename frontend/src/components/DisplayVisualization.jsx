@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getDisplayTickets, getEstado } from '../api_deadtimes'
 
 // Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
@@ -12,6 +13,7 @@ function formatMinutes(mins) {
 }
 
 export default function DisplayVisualization({ linea, mantenimientoActivo = {}, cambioModeloActivo = {}, auditoriaActivo = {}, disableAudio = false }) {
+  const { t } = useTranslation()
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -26,10 +28,10 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   const audioTimeoutRef = useRef(null)
 
   const mensajes = {
-    mantenimiento: ['MANTENIMIENTO', 'MAINTENANCE', '유지보수'],
-    cambio: ['CAMBIO DE MODELO', 'MODEL CHANGE', '모델 변경'],
-    auditoria: ['AUDITORÍA', 'AUDIT', '감사'],
-    linea: ['Línea', 'Line', '라인']
+    mantenimiento: [t('displayViz.maintenance'), 'MAINTENANCE', '유지보수'],
+    cambio: [t('displayViz.modelChange'), 'MODEL CHANGE', '모델 변경'],
+    auditoria: [t('displayViz.audit'), 'AUDIT', '감사'],
+    linea: [t('displayViz.line'), 'Line', '라인']
   }
 
   // Función para determinar el color según la duración
@@ -71,7 +73,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
             if (audioRef.current) {
               audioRef.current.loop = false;
               audioRef.current.currentTime = 0;
-              audioRef.current.play().catch(err => console.error('Error reproduciendo sonido:', err));
+              audioRef.current.play().catch(err => console.error('Error playing audio:', err));
             }
           }
           const delay = 10000 - (Date.now() % 10000);
@@ -125,7 +127,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
           setAuditoriaActualizado(Boolean(data.estado.auditoria))
         }
       } catch (err) {
-        console.error('Error verificando estado:', err)
+        console.error('Error checking state:', err)
       }
     }
 
@@ -193,7 +195,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-neutral-950">
-        <div className="text-white text-2xl">Cargando...</div>
+        <div className="text-white text-2xl">{t('displayViz.loading')}</div>
       </div>
     )
   }
@@ -202,7 +204,7 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
     return (
       <div className="flex items-center justify-center h-screen bg-red-900">
         <div className="text-white text-2xl text-center">
-          <p className="mb-4">Error</p>
+          <p className="mb-4">{t('displayViz.error')}</p>
           <p className="text-lg">{error}</p>
         </div>
       </div>
@@ -243,17 +245,17 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
 
       {/* Encabezado */}
       <div className="mb-3 sm:mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Línea: {linea}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">{t('displayViz.line')}: {linea}</h1>
         <div className="flex justify-between items-center text-xs sm:text-sm">
-          <p className="text-neutral-300">Activos: {tickets.length}</p>
-          <p className="text-neutral-400">{new Date().toLocaleTimeString('es-MX')}</p>
+          <p className="text-neutral-300">{t('displayViz.active')}: {tickets.length}</p>
+          <p className="text-neutral-400">{new Date().toLocaleTimeString()}</p>
         </div>
       </div>
 
       {/* Grid de Tickets */}
       {tickets.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-neutral-300 text-2xl">Sin tickets activos</p>
+          <p className="text-neutral-300 text-2xl">{t('displayViz.noActiveTickets')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3">
@@ -266,34 +268,34 @@ export default function DisplayVisualization({ linea, mantenimientoActivo = {}, 
             >
               {/* Equipo */}
               <div className="mb-2">
-                <p className="text-neutral-400 text-xs font-semibold">EQUIPO</p>
+                <p className="text-neutral-400 text-xs font-semibold">{t('displayViz.equipment')}</p>
                 <p className="text-white text-sm font-bold truncate">{ticket.equipo}</p>
               </div>
 
               {/* Descripción */}
               <div className="mb-2">
-                <p className="text-neutral-400 text-xs font-semibold">PROBLEMA</p>
-                <p className="text-white text-xs line-clamp-2">{ticket.descr || 'N/A'}</p>
+                <p className="text-neutral-400 text-xs font-semibold">{t('displayViz.problem')}</p>
+                <p className="text-white text-xs line-clamp-2">{ticket.descr || t('common.na')}</p>
               </div>
 
               {/* Modelo */}
               <div className="mb-2">
-                <p className="text-neutral-400 text-xs font-semibold">MODELO</p>
-                <p className="text-white text-xs truncate">{ticket.modelo || 'N/A'}</p>
+                <p className="text-neutral-400 text-xs font-semibold">{t('displayViz.model')}</p>
+                <p className="text-white text-xs truncate">{ticket.modelo || t('common.na')}</p>
               </div>
 
               {/* Duración */}
               <div className={`mb-2 ${getTimeColor(ticket.duracion_minutos)} rounded p-1.5`}>
-                <p className="text-neutral-300 text-xs">TIEMPO</p>
+                <p className="text-neutral-300 text-xs">{t('displayViz.time')}</p>
                 <p className="text-lg font-bold">
-                  {ticket.duracion_minutos ? formatMinutes(Math.round(ticket.duracion_minutos)) : 'Reciente'}
+                  {ticket.duracion_minutos ? formatMinutes(Math.round(ticket.duracion_minutos)) : t('displayViz.recent')}
                 </p>
               </div>
 
               {/* Clasificación */}
               {ticket.clasificacion && (
                 <div className="mb-2">
-                  <p className="text-neutral-400 text-xs font-semibold">CLASIF.</p>
+                  <p className="text-neutral-400 text-xs font-semibold">{t('displayViz.classification')}</p>
                   <p className="text-white text-xs font-semibold truncate">{ticket.clasificacion}</p>
                 </div>
               )}
