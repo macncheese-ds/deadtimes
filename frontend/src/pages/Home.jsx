@@ -913,13 +913,13 @@ export default function Home() {
           const hasNew = enhanced.some(e => e._isNew)
           if (hasNew) {
             setTimeout(() => {
-              setTickets(cur => (cur || []).map(t => {
-                if (t._isNew) {
-                  const copy = { ...t }
+              setTickets(cur => (cur || []).map(ticket => {
+                if (ticket._isNew) {
+                  const copy = { ...ticket }
                   delete copy._isNew
                   return copy
                 }
-                return t
+                return ticket
               }))
             }, 1500)
           }
@@ -1295,11 +1295,11 @@ export default function Home() {
   const renderLineChartPNG = (lineLabel, tickets, color = '#3b82f6') => {
     // Sort descending by duration
     const sorted = [...tickets].sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
-    const bars   = sorted.map(t => ({
-      label: `#${t.id}`,
-      value: parseFloat(((t.duracion_minutos || 0) / 60).toFixed(2)),
-      piezas: t.piezas || 0,
-      equipo: t.equipo || '',
+    const bars   = sorted.map(ticket => ({
+      label: `#${ticket.id}`,
+      value: parseFloat(((ticket.duracion_minutos || 0) / 60).toFixed(2)),
+      piezas: ticket.piezas || 0,
+      equipo: ticket.equipo || '',
     }))
 
     const H_PER_BAR = 36
@@ -1399,13 +1399,13 @@ export default function Home() {
 
       // Group: day (08:00->08:00) -> linea -> tickets[] sorted desc by duration
       const byDay = {}
-      allTickets.forEach(t => {
-        const ref    = t.hc || t.hr
+      allTickets.forEach(ticket => {
+        const ref    = ticket.hc || ticket.hr
         const day    = getShiftDay(ref)
-        const linKey = `Linea ${t.linea}`
+        const linKey = `Linea ${ticket.linea}`
         if (!byDay[day]) byDay[day] = {}
         if (!byDay[day][linKey]) byDay[day][linKey] = []
-        byDay[day][linKey].push(t)
+        byDay[day][linKey].push(ticket)
       })
       // Sort tickets within each line by duration desc
       Object.values(byDay).forEach(lineMap =>
@@ -2475,24 +2475,24 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-3">
-                {getFilteredOpenTickets().map((t, idx) => (
-                  <div key={t.id} className={`bg-neutral-900/80 rounded-xl p-4 hover:bg-neutral-800/80 transition-all duration-300 border-l-4 border-neutral-600 card-hover ${t._isNew ? 'animate-slide-up' : ''}`} style={t._isNew ? { animationDelay: `${idx * 50}ms` } : {}}>
+                {getFilteredOpenTickets().map((ticket, idx) => (
+                  <div key={ticket.id} className={`bg-neutral-900/80 rounded-xl p-4 hover:bg-neutral-800/80 transition-all duration-300 border-l-4 border-neutral-600 card-hover ${ticket._isNew ? 'animate-slide-up' : ''}`} style={ticket._isNew ? { animationDelay: `${idx * 50}ms` } : {}}>
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="badge badge-amber">#{t.id}</span>
+                          <span className="badge badge-amber">#{ticket.id}</span>
                           <span className="w-2 h-2 rounded-full bg-neutral-500 animate-pulse"></span>
                         </div>
-                        <h3 className="text-white font-semibold text-sm sm:text-base mb-1">{t.descr}</h3>
-                        <p className="text-neutral-400 text-xs sm:text-sm">{t('tickets.lineLabel')} {t.linea} • {t.modelo} • {t.equipo}</p>
+                        <h3 className="text-white font-semibold text-sm sm:text-base mb-1">{ticket.descr}</h3>
+                        <p className="text-neutral-400 text-xs sm:text-sm">{t('tickets.lineLabel')} {ticket.linea} • {ticket.modelo} • {ticket.equipo}</p>
                         <p className="text-neutral-500 text-xs mt-2 flex items-center gap-2">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          {t.nombre} • {new Date(t.hr).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {ticket.nombre} • {new Date(ticket.hr).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
-                      <button onClick={() => openHandleModal(t.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-300 text-sm w-full sm:w-auto flex items-center justify-center gap-2">
+                      <button onClick={() => openHandleModal(ticket.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-2.5 px-5 rounded-lg transition-all duration-300 text-sm w-full sm:w-auto flex items-center justify-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
@@ -2673,16 +2673,16 @@ export default function Home() {
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3">
-                {tickets.map(t => {
-                  const duracionHrs = calcularHoras(t.hr, t.hc)
+                {tickets.map(ticket => {
+                  const duracionHrs = calcularHoras(ticket.hr, ticket.hc)
                   return (
-                    <div key={t.id} className="bg-neutral-800 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-neutral-600">
+                    <div key={ticket.id} className="bg-neutral-800 rounded-lg p-3 sm:p-4 hover:bg-slate-650 transition-all border-l-4 border-neutral-600">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-slate-100 font-semibold text-sm sm:text-base">#{t.id} - {t.descr}</h3>
-                          <p className="text-neutral-300 text-xs sm:text-sm mt-1">Linea {t.linea} - {t.modelo} - {t.equipo}</p>
+                          <h3 className="text-slate-100 font-semibold text-sm sm:text-base">#{ticket.id} - {ticket.descr}</h3>
+                          <p className="text-neutral-300 text-xs sm:text-sm mt-1">Linea {ticket.linea} - {ticket.modelo} - {ticket.equipo}</p>
                           <p className="text-neutral-400 text-xs mt-1">
-                            Cerrado: {new Date(t.hc).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} - {t.tecnico}
+                            Cerrado: {new Date(ticket.hc).toLocaleString('es', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })} - {ticket.tecnico}
                           </p>
                           {duracionHrs !== null && (
                             <p className="text-neutral-300 text-xs mt-1 font-medium">
@@ -2690,7 +2690,7 @@ export default function Home() {
                             </p>
                           )}
                         </div>
-                        <button onClick={() => openViewModal(t.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-neutral-600 text-sm w-full sm:w-auto">
+                        <button onClick={() => openViewModal(ticket.id)} className="bg-neutral-700 hover:bg-neutral-600 text-white font-medium py-2 px-4 rounded-lg whitespace-nowrap transition-colors border border-neutral-600 text-sm w-full sm:w-auto">
                           Ver
                         </button>
                       </div>
@@ -4364,28 +4364,28 @@ export default function Home() {
                                       <div className="bg-neutral-950/60 border-l-4 border-amber-700 mx-2 my-1 rounded-lg p-4">
                                         <h4 className="text-neutral-200 text-xs font-semibold mb-3">{t('tickets.ticketsInInterval')} {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
                                         <div className="space-y-2">
-                                          {interval.tickets.map(t => (
-                                            <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
+                                          {interval.tickets.map(ticket => (
+                                            <div key={ticket.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(ticket.id); }}>
                                               <div className="flex justify-between items-start flex-wrap gap-2">
                                                 <div className="flex-1 min-w-0">
                                                   <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-xs font-mono text-neutral-500">#{t.id}</span>
-                                                    <span className="text-sm font-medium text-neutral-200">{t.equipo || 'Sin equipo'}</span>
-                                                    {t.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>}
+                                                    <span className="text-xs font-mono text-neutral-500">#{ticket.id}</span>
+                                                    <span className="text-sm font-medium text-neutral-200">{ticket.equipo || 'Sin equipo'}</span>
+                                                    {ticket.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{ticket.clasificacion}</span>}
                                                   </div>
-                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
+                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{ticket.descr || 'Sin descripción'}</p>
                                                   <div className="flex gap-4 mt-2 text-xs text-neutral-500 flex-wrap">
-                                                    <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                                                    <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                                                    {t.tecnico && <span>Técnico: {t.tecnico}</span>}
+                                                    <span>Abierto: {ticket.hr ? new Date(ticket.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    <span>Cerrado: {ticket.hc ? new Date(ticket.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    {ticket.tecnico && <span>Técnico: {ticket.tecnico}</span>}
                                                   </div>
                                                 </div>
                                                 <div className="text-right">
-                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
-                                                  {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
-                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(t.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
+                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(ticket.deadtime || 0).toFixed(2)} min</p>
+                                                  {ticket.fullDeadtime && parseFloat(ticket.fullDeadtime) !== parseFloat(ticket.deadtime) && (
+                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(ticket.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
                                                   )}
-                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} {t('tickets.lostPieces')}</p>}
+                                                  {ticket.piezas > 0 && <p className="text-xs text-neutral-500">{ticket.piezas} {t('tickets.lostPieces')}</p>}
                                                 </div>
                                               </div>
                                             </div>
@@ -4477,28 +4477,28 @@ export default function Home() {
                                       <div className="bg-neutral-950/60 border-l-4 border-indigo-700 mx-2 my-1 rounded-lg p-4">
                                         <h4 className="text-neutral-200 text-xs font-semibold mb-3">{t('tickets.ticketsInInterval')} {interval.inicio?.substring(0, 5)} - {interval.final?.substring(0, 5)}</h4>
                                         <div className="space-y-2">
-                                          {interval.tickets.map(t => (
-                                            <div key={t.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(t.id); }}>
+                                          {interval.tickets.map(ticket => (
+                                            <div key={ticket.id} className="bg-neutral-900/80 rounded-lg p-3 border border-neutral-800/50 cursor-pointer hover:border-neutral-700 hover:bg-neutral-800/60 transition-colors" onClick={(e) => { e.stopPropagation(); openViewModal(ticket.id); }}>
                                               <div className="flex justify-between items-start flex-wrap gap-2">
                                                 <div className="flex-1 min-w-0">
                                                   <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-xs font-mono text-neutral-500">#{t.id}</span>
-                                                    <span className="text-sm font-medium text-neutral-200">{t.equipo || 'Sin equipo'}</span>
-                                                    {t.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{t.clasificacion}</span>}
+                                                    <span className="text-xs font-mono text-neutral-500">#{ticket.id}</span>
+                                                    <span className="text-sm font-medium text-neutral-200">{ticket.equipo || 'Sin equipo'}</span>
+                                                    {ticket.clasificacion && <span className="px-2 py-0.5 rounded text-xs bg-neutral-800 text-neutral-200">{ticket.clasificacion}</span>}
                                                   </div>
-                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{t.descr || 'Sin descripción'}</p>
+                                                  <p className="text-xs text-neutral-400 mt-1 truncate">{ticket.descr || 'Sin descripción'}</p>
                                                   <div className="flex gap-4 mt-2 text-xs text-neutral-500 flex-wrap">
-                                                    <span>Abierto: {t.hr ? new Date(t.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                                                    <span>Cerrado: {t.hc ? new Date(t.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                                                    {t.tecnico && <span>Técnico: {t.tecnico}</span>}
+                                                    <span>Abierto: {ticket.hr ? new Date(ticket.hr).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    <span>Cerrado: {ticket.hc ? new Date(ticket.hc).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                                                    {ticket.tecnico && <span>Técnico: {ticket.tecnico}</span>}
                                                   </div>
                                                 </div>
                                                 <div className="text-right">
-                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(t.deadtime || 0).toFixed(2)} min</p>
-                                                  {t.fullDeadtime && parseFloat(t.fullDeadtime) !== parseFloat(t.deadtime) && (
-                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(t.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
+                                                  <p className="text-sm font-bold text-neutral-200">{parseFloat(ticket.deadtime || 0).toFixed(2)} min</p>
+                                                  {ticket.fullDeadtime && parseFloat(ticket.fullDeadtime) !== parseFloat(ticket.deadtime) && (
+                                                    <p className="text-xs text-neutral-500">{t('downtime.totalTicket')}: {parseFloat(ticket.fullDeadtime || 0).toFixed(2)} {t('common.min')}</p>
                                                   )}
-                                                  {t.piezas > 0 && <p className="text-xs text-neutral-500">{t.piezas} {t('tickets.lostPieces')}</p>}
+                                                  {ticket.piezas > 0 && <p className="text-xs text-neutral-500">{ticket.piezas} {t('tickets.lostPieces')}</p>}
                                                 </div>
                                               </div>
                                             </div>
