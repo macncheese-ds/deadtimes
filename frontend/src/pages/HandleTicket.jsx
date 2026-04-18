@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
-import { getTicket, startTicket, updateTicket, finishTicket, login } from '../api_deadtimes'
+import { getTicket, startTicket, updateTicket, finishTicket, login, setCambioModelo, getEstado } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
 
 // Helper para formatear fecha/hora
@@ -124,8 +124,24 @@ export default function HandleTicket() {
     try {
       setIsSaving(true) // Desactivar advertencia de salida
       await finishTicket(id, { solucion: form.solucion, rate: rateNum })
-      // Pequeña pausa para asegurar que el backend procesó el cierre
-      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Siempre desactivar cambio de modelo al cerrar un ticket
+      // (Sin importar si fue activado automáticamente o manualmente)
+      try {
+        const response = await setCambioModelo(ticket.linea, false)
+        if (response?.success) {
+          // Esperar a que la BD y el polling sincronicen
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Verificar que se desactivó correctamente
+          const estado = await getEstado(ticket.linea)
+          console.log('Cambio de modelo deactivation verified:', estado)
+        }
+      } catch (error) {
+        console.error('Error deactivating cambio de modelo:', error)
+      }
+      
+      // Pausa antes de redirigir para dar tiempo al polling de Home de sincronizarse
+      await new Promise(resolve => setTimeout(resolve, 500))
       window.location.href = '/'
     } catch (error) {
       console.error('Error al finalizar ticket:', error)

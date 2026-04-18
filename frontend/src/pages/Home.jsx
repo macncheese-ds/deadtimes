@@ -326,35 +326,47 @@ export default function Home() {
   // Poll mantenimiento and cambio_modelo state every 3 seconds
   useEffect(() => {
     let iv
+    let isFirstPoll = true
     const pollMaintenance = async () => {
       try {
         if (lineas.length === 0) return
+
+        // Fetch all estados in parallel instead of sequentially
+        const estados = await Promise.allSettled(
+          lineas.map(linea => getEstado(linea.linea))
+        )
 
         const mantenimientoMap = {}
         const cambioModeloMap = {}
         const auditoriaMap = {}
 
-        // Check each line's mantenimiento, cambio_modelo and auditoria status
-        for (const linea of lineas) {
-          const estado = await getEstado(linea.linea)
-          if (estado && estado.estado) {
-            mantenimientoMap[linea.linea] = estado.estado.mantenimiento === 1
-            cambioModeloMap[linea.linea] = estado.estado.cambio_modelo === 1
-            auditoriaMap[linea.linea] = estado.estado.auditoria === 1
+        // Process results, skip failed requests silently
+        estados.forEach((result, index) => {
+          if (result.status === 'fulfilled' && result.value && result.value.estado) {
+            const linea = lineas[index].linea
+            mantenimientoMap[linea] = result.value.estado.mantenimiento === 1
+            cambioModeloMap[linea] = result.value.estado.cambio_modelo === 1
+            auditoriaMap[linea] = result.value.estado.auditoria === 1
           }
-        }
+        })
 
-        // Update states
-        setMantenimientoActivo(mantenimientoMap)
-        setCambioModeloActivo(cambioModeloMap)
-        setAuditoriaActivo(auditoriaMap)
+        // Update states (only if we got some data)
+        if (Object.keys(mantenimientoMap).length > 0) {
+          setMantenimientoActivo(mantenimientoMap)
+          setCambioModeloActivo(cambioModeloMap)
+          setAuditoriaActivo(auditoriaMap)
+        }
+        
+        isFirstPoll = false
       } catch (error) {
-        console.error('Error polling maintenance state:', error)
+        // Silent fail - don't spam console if backend is temporarily unavailable
       }
     }
 
-    // Initial check and then every 3 seconds
+    // Immediate poll on mount (critical for syncing after returning from ticket close)
     pollMaintenance()
+    
+    // Then poll every 3 seconds
     iv = setInterval(pollMaintenance, 3000)
     return () => {
       if (iv) clearInterval(iv)
@@ -992,11 +1004,49 @@ export default function Home() {
         num_empleado: data.user.num_empleado
       })
 
+      // Verificar si se debe activar cambio de modelo automáticamente
+      const triggerDescripciones = ['Cambio de modelo', 'Liberacion de Primera Pieza']
+      if (form.equipo === 'Otros' && triggerDescripciones.includes(descripcionFinal)) {
+        try {
+          // Activar en BD
+          const response = await setCambioModelo(form.linea, true)
+          if (response?.success) {
+            // Actualizar estado local inmediatamente
+            setCambioModeloActivo(prev => ({
+              ...prev,
+              [form.linea]: true
+            }))
+            // Esperar un poco y forzar re-pooling
+            await new Promise(resolve => setTimeout(resolve, 500))
+            // Forzar refresh del estado
+            const estado = await getEstado(form.linea)
+            if (estado?.estado) {
+              setCambioModeloActivo(prev => ({
+                ...prev,
+                [form.linea]: estado.estado.cambio_modelo === 1
+              }))
+            }
+            // Abrir pantalla de cambio de modelo automáticamente
+            setShowNew(false)
+            setShowOpen(false)
+            setShowClosed(false)
+            setShowAnalytics(false)
+            setShowProduccion(false)
+            setShowConfiguration(false)
+            setShowDisplay(false)
+            setShowMantenimiento(false)
+            setShowCambioModelo(true)
+            setShowAuditoria(false)
+          }
+        } catch (error) {
+          console.error('Error activating cambio de modelo:', error)
+        }
+      }
+
       // Resetear form incluyendo producto y rate; limpiar modelos cargados
       setForm({ descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: '' })
       setSelectedModelo(null)
       setModelos([])
-      setShowNew(false)
       setShowCredentialsModal(false)
 
       // Mostrar mensaje de éxito
@@ -2155,7 +2205,7 @@ export default function Home() {
         <div className="p-2 sm:p-4 border-t border-neutral-800 hidden sm:block">
           <LanguageSwitcher className="w-full justify-center" />
           <div className="text-[10px] text-center text-neutral-600 mt-2 font-mono" title="App Version">
-            v1.0.6 | <span className="text-neutral-700">audio-sync</span>
+            v1.0.7 | <span className="text-neutral-700">auto-cambio-modelo</span>
           </div>
         </div>
       </aside>
@@ -2348,7 +2398,9 @@ export default function Home() {
                       <>
                         <option value="">Seleccionar Descripción *</option>
                         {descripciones.map(desc => <option key={desc.id} value={desc.descripcion}>{desc.descripcion}</option>)}
-                        <option value="__OTROS__">{t('tickets.specifyOther')}</option>
+                        {form.equipo !== 'Otros' && (
+                          <option value="__OTROS__">{t('tickets.specifyOther')}</option>
+                        )}
                       </>
                     )}
                   </select>
