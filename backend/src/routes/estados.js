@@ -101,6 +101,8 @@ router.put('/:linea/cambio-modelo', async (req, res) => {
       });
     }
 
+    console.log(`[SONIDO] ${activo ? 'ACTIVANDO' : 'DESACTIVANDO'} - Línea: ${linea}`);
+
     res.json({
       success: true,
       message: `Cambio de modelo ${activo ? 'activado' : 'desactivado'} para línea ${linea}`

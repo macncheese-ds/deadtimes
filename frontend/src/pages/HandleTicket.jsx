@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
-import { getTicket, startTicket, updateTicket, finishTicket, login, setCambioModelo, getEstado } from '../api_deadtimes'
+import { getTicket, startTicket, updateTicket, finishTicket, login } from '../api_deadtimes'
 import LoginModal from '../components/LoginModal'
 
 // Helper para formatear fecha/hora
@@ -25,8 +25,8 @@ export default function HandleTicket() {
   const [credentialsBusy, setCredentialsBusy] = useState(false)
   const [showLogoutWarning, setShowLogoutWarning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  // Rate ahora viene guardado en el ticket (tomado de tabla modelos al crear)
   const [form, setForm] = useState({ solucion: '' })
+  const [manualRate, setManualRate] = useState('')
 
   useEffect(() => { load() }, [id])
 
@@ -113,39 +113,25 @@ export default function HandleTicket() {
       return
     }
 
-    // Validar que el ticket tenga rate guardado (viene de tabla modelos al crear)
-    if (!ticket.rate) {
-      alert('No se encontró el rate del modelo en el ticket. El ticket puede haber sido creado antes de la actualización.')
+    // El rate SIEMPRE es obligatorio
+    const finalRate = ticket.rate != null ? ticket.rate : (manualRate ? Number(manualRate) : null)
+    if (finalRate == null) {
+      alert('El rate es obligatorio para cerrar un ticket. Por favor ingresa el rate (piezas/hora).')
       return
     }
 
-    // Rate viene del ticket (fue guardado al crearlo desde la tabla modelos)
-    const rateNum = Number(ticket.rate) || 0
+    const rateNum = Number(finalRate)
     try {
-      setIsSaving(true) // Desactivar advertencia de salida
+      setIsSaving(true)
       await finishTicket(id, { solucion: form.solucion, rate: rateNum })
       
-      // Siempre desactivar cambio de modelo al cerrar un ticket
-      // (Sin importar si fue activado automáticamente o manualmente)
-      try {
-        const response = await setCambioModelo(ticket.linea, false)
-        if (response?.success) {
-          // Esperar a que la BD y el polling sincronicen
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          // Verificar que se desactivó correctamente
-          const estado = await getEstado(ticket.linea)
-          console.log('Cambio de modelo deactivation verified:', estado)
-        }
-      } catch (error) {
-        console.error('Error deactivating cambio de modelo:', error)
-      }
-      
-      // Pausa antes de redirigir para dar tiempo al polling de Home de sincronizarse
+      // El backend automáticamente desactiva cambio_modelo al cerrar
+      // Esperar un poco y redirigir
       await new Promise(resolve => setTimeout(resolve, 500))
       window.location.href = '/'
     } catch (error) {
       console.error('Error al finalizar ticket:', error)
-      setIsSaving(false) // Reactivar advertencia si hay error
+      setIsSaving(false)
       alert('Error al finalizar el ticket. Intenta de nuevo.')
     }
   }
@@ -326,7 +312,17 @@ export default function HandleTicket() {
                     <span className="text-neutral-200 font-semibold">{ticket.rate} piezas/hr</span>
                   </div>
                 ) : (
-                  <p className="text-rose-400 text-sm">No se encontró rate. El ticket puede haber sido creado antes de la actualización.</p>
+                  <div className="space-y-3">
+                    <p className="text-rose-400 text-sm">No se encontró rate. El ticket puede haber sido creado antes de la actualización.</p>
+                    <input 
+                      type="number" 
+                      placeholder="Ingresa el rate (piezas/hora)" 
+                      min="0"
+                      className="w-full bg-neutral-900/50 border border-rose-500/50 text-white p-3 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                      value={manualRate}
+                      onChange={e => setManualRate(e.target.value)}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -342,10 +338,20 @@ export default function HandleTicket() {
                 />
               </div>
 
+              {(!form.solucion || (ticket.rate == null && !manualRate)) && (
+                <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg">
+                  <p className="text-rose-300 text-sm">
+                    {!form.solucion && '• Falta ingresar la solución'}
+                    {!form.solucion && (ticket.rate == null && !manualRate) && <br />}
+                    {(ticket.rate == null && !manualRate) && '• Falta ingresar el rate (piezas/hora)'}
+                  </p>
+                </div>
+              )}
+
               <button 
                 className="w-full sm:w-auto bg-white text-black hover:bg-neutral-200 font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2" 
-                onClick={handleFinish} 
-                disabled={!form.solucion || !ticket.rate}
+                onClick={() => handleFinish()}
+                disabled={!form.solucion || (ticket.rate == null && !manualRate)}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

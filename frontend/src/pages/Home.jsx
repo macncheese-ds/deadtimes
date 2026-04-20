@@ -146,7 +146,6 @@ export default function Home() {
   const [cambioModeloActivo, setCambioModeloActivo] = useState({})
   const [auditoriaActivo, setAuditoriaActivo] = useState({})
   const [showMantenimiento, setShowMantenimiento] = useState(false)
-  const [showCambioModelo, setShowCambioModelo] = useState(false)
   const [showAuditoria, setShowAuditoria] = useState(false)
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
@@ -273,6 +272,16 @@ export default function Home() {
 
   useEffect(() => {
     loadInitialData()
+    
+    // Force pause audio on mount to ensure it stops after returning from ticket close
+    if (audioRef2x2.current) {
+      audioRef2x2.current.pause()
+      audioRef2x2.current.currentTime = 0
+    }
+    if (audioTimeoutRef.current) {
+      clearTimeout(audioTimeoutRef.current)
+      audioTimeoutRef.current = null
+    }
   }, [])
 
   useEffect(() => {
@@ -1035,7 +1044,6 @@ export default function Home() {
             setShowConfiguration(false)
             setShowDisplay(false)
             setShowMantenimiento(false)
-            setShowCambioModelo(true)
             setShowAuditoria(false)
           }
         } catch (error) {
@@ -2003,7 +2011,6 @@ export default function Home() {
       setShowDisplay(false)
       setShowToolsMenu(false)
       setShowMantenimiento(false)
-      setShowCambioModelo(false)
       setShowAuditoria(false)
     }
     resetFilters()
@@ -2021,29 +2028,12 @@ export default function Home() {
       setShowConfiguration(false)
       setShowDisplay(false)
       setShowMantenimiento(true)
-      setShowCambioModelo(false)
       setShowAuditoria(false)
     }
     resetFilters()
   }
 
-  function toggleCambioModelo() {
-    if (showCambioModelo) {
-      setShowCambioModelo(false)
-    } else {
-      setShowNew(false)
-      setShowOpen(false)
-      setShowClosed(false)
-      setShowAnalytics(false)
-      setShowProduccion(false)
-      setShowConfiguration(false)
-      setShowDisplay(false)
-      setShowMantenimiento(false)
-      setShowCambioModelo(true)
-      setShowAuditoria(false)
-    }
-    resetFilters()
-  }
+
 
   function toggleAuditoria() {
     if (showAuditoria) {
@@ -2057,7 +2047,6 @@ export default function Home() {
       setShowConfiguration(false)
       setShowDisplay(false)
       setShowMantenimiento(false)
-      setShowCambioModelo(false)
       setShowAuditoria(true)
     }
     resetFilters()
@@ -2082,23 +2071,7 @@ export default function Home() {
     }
   }
 
-  async function handleCambioModeloToggle(linea, currentState) {
-    try {
-      const newState = !currentState;
-      const response = await setCambioModelo(linea, newState);
-      if (response.success) {
-        // Actualizar estado local
-        setCambioModeloActivo(prev => ({
-          ...prev,
-          [linea]: newState
-        }));
-      } else {
-        console.error('Error actualizando cambio de modelo:', response.error);
-      }
-    } catch (error) {
-      console.error('Error en handleCambioModeloToggle:', error);
-    }
-  }
+
 
   async function handleAuditoriaToggle(linea, currentState) {
     try {
@@ -2168,17 +2141,17 @@ export default function Home() {
              <div className="h-px bg-neutral-800 mx-3 my-2 sm:hidden"></div>
           </div>
           
-          <button onClick={() => { setShowAnalytics(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowConfiguration(false); setShowDisplay(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showAnalytics ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+          <button onClick={() => { setShowAnalytics(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowConfiguration(false); setShowDisplay(false); setShowMantenimiento(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showAnalytics ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             <span className="text-sm hidden sm:block">{t('nav.analytics')}</span>
           </button>
           
-          <button onClick={() => { setShowConfiguration(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowDisplay(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showConfiguration ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+          <button onClick={() => { setShowConfiguration(true); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowDisplay(false); setShowMantenimiento(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showConfiguration ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
             <span className="text-sm hidden sm:block">{t('nav.configuration')}</span>
           </button>
           
-          <button onClick={() => { setShowDisplay(true); setShowConfiguration(false); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowMantenimiento(false); setShowCambioModelo(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showDisplay ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
+          <button onClick={() => { setShowDisplay(true); setShowConfiguration(false); setShowNew(false); setShowOpen(false); setShowClosed(false); setShowProduccion(false); setShowAnalytics(false); setShowMantenimiento(false); setShowAuditoria(false); resetFilters(); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${showDisplay ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
              <span className="text-sm hidden sm:block">{t('nav.display')}</span>
           </button>
@@ -2192,10 +2165,7 @@ export default function Home() {
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
             <span className="text-sm hidden sm:block">{t('nav.maintenance')}</span>
           </button>
-          <button onClick={() => toggleCambioModelo()} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${Object.values(cambioModeloActivo).includes(true) ? 'bg-neutral-200 text-black font-semibold shadow-md' : showCambioModelo ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
-            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            <span className="text-sm hidden sm:block">{t('nav.modelChange')}</span>
-          </button>
+
           <button onClick={() => toggleAuditoria()} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${Object.values(auditoriaActivo).includes(true) ? 'bg-neutral-200 text-black font-semibold shadow-md' : showAuditoria ? 'bg-white text-black font-semibold shadow-md' : 'text-neutral-400 hover:bg-neutral-800 hover:text-white'}`}>
             <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
             <span className="text-sm hidden sm:block">{t('nav.audit')}</span>
@@ -2205,16 +2175,17 @@ export default function Home() {
         <div className="p-2 sm:p-4 border-t border-neutral-800 hidden sm:block">
           <LanguageSwitcher className="w-full justify-center" />
           <div className="text-[10px] text-center text-neutral-600 mt-2 font-mono" title="App Version">
-            v1.0.7 | <span className="text-neutral-700">auto-cambio-modelo</span>
+            v1.0.10 | <span className="text-neutral-700">auto-cambio-modelo</span>
           </div>
         </div>
+        
       </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative bg-neutral-950 p-4 sm:p-6 lg:p-8">
         <div className="max-w-[1920px] mx-auto pb-12">
         
-        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showCambioModelo && !showAuditoria && (
+        {!showNew && !showOpen && !showClosed && !showAnalytics && !showProduccion && !showConfiguration && !showDisplay && !showMantenimiento && !showAuditoria && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
             {/* Tiempos de Atención Card */}
             <div className="glass-card rounded-2xl shadow-xl p-5 sm:p-6 card-hover">
@@ -4666,15 +4637,8 @@ export default function Home() {
               </button>
               <button
                 onClick={async () => {
-                  try {
-                    // Deactivate display in database (all other devices will detect via polling)
-                    await setDisplayMode(displayLineaSelected, false)
-                  } catch (error) {
-                    console.error('Error deactivating display:', error)
-                  }
                   setShowDisplay(false)
                   setDisplayLineaSelected('')
-                  setCambioModeloActivo({})
                   setCambioModeloActivo({})
                 }}
                 className="w-10 h-10 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-300 hover:text-white transition-colors"
@@ -5202,50 +5166,7 @@ export default function Home() {
         </div>
       )}
 
-      {showCambioModelo && (
-        <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-neutral-800 flex items-center justify-center">
-                <svg className="w-5 h-5 text-neutral-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white">Cambio de Modelo</h2>
-            </div>
-            <button onClick={() => setShowCambioModelo(false)} className="w-8 h-8 rounded-lg bg-neutral-800/50 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
 
-          <div className="space-y-4">
-            <p className="text-neutral-300 text-sm">Selecciona las líneas en cambio de modelo:</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {lineas.map(linea => (
-                <button
-                  key={`cambio-${linea.id}`}
-                  onClick={() => handleCambioModeloToggle(linea.linea, cambioModeloActivo[linea.linea])}
-                  className={`border-2 font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex flex-col items-center gap-2 group ${cambioModeloActivo[linea.linea]
-                      ? 'bg-neutral-800 border-neutral-700 text-amber-200 shadow-lg shadow-md shadow-black/50 border border-neutral-700'
-                      : 'bg-neutral-900/50 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700 text-white'
-                    }`}
-                >
-                  <svg className={`w-5 h-5 transition-colors ${cambioModeloActivo[linea.linea] ? 'text-neutral-200' : 'text-neutral-400 group-hover:text-neutral-200'
-                    }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span>{t('tickets.lineLabel')} {linea.linea}</span>
-                  {cambioModeloActivo[linea.linea] && (
-                    <span className="text-xs bg-neutral-200 text-black px-2 py-1 rounded-full mt-1">Activo</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {showAuditoria && (
         <div className="glass-card rounded-2xl shadow-2xl p-5 sm:p-8 animate-slide-up">

@@ -1007,7 +1007,23 @@ router.post('/:id/finish', async (req, res) => {
     // deadtime (tiempo perdido) = minutos desde apertura (hr) hasta cierre (hc)
     const deadtimeCalc = minutosCalc;
 
+    // Obtener la línea y descripción del ticket
+    const [ticketRows] = await db.query('SELECT linea, descr FROM deadtimes WHERE id = ?', [id]);
+    const ticketLinea = ticketRows.length > 0 ? ticketRows[0].linea : null;
+    const ticketDescripcion = ticketRows.length > 0 ? ticketRows[0].descr : '';
+
+    // Actualizar ticket con done=1
     await db.query('UPDATE deadtimes SET hc = ?, solucion = ?, rate = ?, piezas = ?, deadtime = ?, done = 1 WHERE id = ?', [hc, solucion, rateNum, piezasCalc, deadtimeCalc, id]);
+    
+    // Desactivar cambio_modelo solo si es un ticket de cambio de modelo o liberación de primera pieza
+    const triggerDescripciones = ['Cambio de modelo', 'Liberacion de Primera Pieza'];
+    const isChangeModelTicket = triggerDescripciones.some(desc => ticketDescripcion.includes(desc));
+    
+    if (isChangeModelTicket && ticketLinea) {
+      console.log(`[SONIDO] DESACTIVANDO - Línea: ${ticketLinea}`);
+      await db.query('UPDATE estados SET cambio_modelo = 0 WHERE linea = ?', [ticketLinea]);
+    }
+    
     const [rows] = await db.query('SELECT * FROM deadtimes WHERE id = ?', [id]);
     res.json(rows[0]);
   } catch (err) {
