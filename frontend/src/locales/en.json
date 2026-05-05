@@ -273,8 +273,8 @@
   },
   "review": {
     "title": "Review",
-    "shift1": "Shift 1 (08:00 - 20:00)",
-    "shift2": "Shift 2 (20:00 - 08:00)",
+    "shift1": "Shift 1 (07:00 - 19:00)",
+    "shift2": "Shift 2 (19:00 - 07:00)",
     "unjustifiedDt": "Unjustified Deadtime",
     "unjustifiedFormula": "Total Deadtime - Minutes justified by tickets",
     "clickInterval": "Click on an interval to view related tickets",

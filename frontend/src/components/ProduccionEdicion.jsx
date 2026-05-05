@@ -18,8 +18,8 @@ const INTERVALOS = Array.from({ length: 24 }, (_, i) => {
 });
 
 // Helper: shift info for display
-// Day shift: 8AM-8PM of SELECTED day
-// Night shift: 8PM of SELECTED day - 8AM of NEXT day
+// Day shift: 7AM-7PM of SELECTED day
+// Night shift: 7PM of SELECTED day - 7AM of NEXT day
 function getShiftInfo(fechaStr) {
   if (!fechaStr) return null;
   const selected = new Date(fechaStr + 'T00:00:00');
@@ -29,11 +29,11 @@ function getShiftInfo(fechaStr) {
   return {
     dayShift: {
       label: 'Turno Día',
-      range: `8:00 AM — 8:00 PM  •  ${fmt(selected)}`
+      range: `7:00 AM — 7:00 PM  •  ${fmt(selected)}`
     },
     nightShift: {
       label: 'Turno Noche',
-      range: `8:00 PM ${fmt(selected)} — 8:00 AM ${fmt(nextDay)}`
+      range: `7:00 PM ${fmt(selected)} — 7:00 AM ${fmt(nextDay)}`
     },
     selectedDay: fmt(selected),
     nextDay: fmt(nextDay)
@@ -350,8 +350,8 @@ export default function ProduccionEdicion({ onClose }) {
     setError('');
     setSuccessMsg('');
     try {
-      // Save day shift: hours 8-19 from selectedFecha
-      for (var i = 8; i < 20; i++) {
+      // Save day shift: hours 7-18 from selectedFecha
+      for (var i = 7; i < 19; i++) {
         var fila = filas[i];
         if (fila.modelo || fila.produccion > 0 || fila.capacidad > 0) {
           await guardarRegistro({
@@ -367,8 +367,8 @@ export default function ProduccionEdicion({ onClose }) {
           });
         }
       }
-      // Save night shift part 1: hours 20-23 from selectedFecha
-      for (var i = 20; i < 24; i++) {
+      // Save night shift part 1: hours 19-23 from selectedFecha
+      for (var i = 19; i < 24; i++) {
         var fila = filas[i];
         if (fila.modelo || fila.produccion > 0 || fila.capacidad > 0) {
           await guardarRegistro({
@@ -384,8 +384,8 @@ export default function ProduccionEdicion({ onClose }) {
           });
         }
       }
-      // Save night shift part 2: hours 0-7 from nextFecha
-      for (var i = 0; i < 8; i++) {
+      // Save night shift part 2: hours 0-6 from nextFecha
+      for (var i = 0; i < 7; i++) {
         var fila = filasNext[i];
         if (fila.modelo || fila.produccion > 0 || fila.capacidad > 0) {
           await guardarRegistro({
@@ -452,12 +452,12 @@ export default function ProduccionEdicion({ onClose }) {
 
   // --- Build display rows with per-shift acumulados ---
 
-  // Day Shift: hours 8-19 from selectedFecha
-  const dayShiftRows = recalcularShift(filas.filter(f => f.h >= 8 && f.h < 20));
-  // Night Shift: hours 20-23 from selectedFecha + hours 0-7 from nextFecha
+  // Day Shift: hours 7-18 from selectedFecha
+  const dayShiftRows = recalcularShift(filas.filter(f => f.h >= 7 && f.h < 19));
+  // Night Shift: hours 19-23 from selectedFecha + hours 0-6 from nextFecha
   const nightShiftRows = recalcularShift([
-    ...filas.filter(f => f.h >= 20),
-    ...filasNext.filter(f => f.h < 8)
+    ...filas.filter(f => f.h >= 19),
+    ...filasNext.filter(f => f.h < 7)
   ]);
 
   // Per-shift totals
@@ -750,9 +750,9 @@ export default function ProduccionEdicion({ onClose }) {
               {renderTableHeader(false)}
               <tbody>
                 {nightShiftRows.map(function(fila) {
-                  // Hours 20-23 come from selectedFecha (isNextDay=false)
-                  // Hours 0-7 come from nextFecha (isNextDay=true)
-                  const isNextDay = fila.h < 8;
+                  // Hours 19-23 come from selectedFecha (isNextDay=false)
+                  // Hours 0-6 come from nextFecha (isNextDay=true)
+                  const isNextDay = fila.h < 7;
                   return renderRow(fila, isNextDay, false);
                 })}
               </tbody>

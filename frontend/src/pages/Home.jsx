@@ -93,8 +93,8 @@ function formatHoras(horas) {
 }
 
 // Helper: shift info for display
-// Day shift: 8AM-8PM of SELECTED day
-// Night shift: 8PM of SELECTED day - 8AM of NEXT day
+// Day shift: 7AM-7PM of SELECTED day
+// Night shift: 7PM of SELECTED day - 7AM of NEXT day
 function getShiftInfo(fechaStr) {
   if (!fechaStr) return null;
   const selected = new Date(fechaStr + 'T00:00:00');
@@ -104,11 +104,11 @@ function getShiftInfo(fechaStr) {
   return {
     dayShift: {
       label: 'Turno Día',
-      range: `8:00 AM — 8:00 PM  •  ${fmt(selected)}`
+      range: `7:00 AM — 7:00 PM  •  ${fmt(selected)}`
     },
     nightShift: {
       label: 'Turno Noche',
-      range: `8:00 PM ${fmt(selected)} — 8:00 AM ${fmt(nextDay)}`
+      range: `7:00 PM ${fmt(selected)} — 7:00 AM ${fmt(nextDay)}`
     },
     selectedDay: fmt(selected),
     nextDay: fmt(nextDay)
@@ -123,9 +123,9 @@ function getNextDate(fechaStr) {
   return d.toISOString().split('T')[0];
 }
 
-// Returns which shift an hour belongs to: 'day' (8-19) or 'night' (20-23, 0-7)
+// Returns which shift an hour belongs to: 'day' (7-18) or 'night' (19-23, 0-6)
 function getShiftForHour(h) {
-  return (h >= 8 && h < 20) ? 'day' : 'night';
+  return (h >= 7 && h < 19) ? 'day' : 'night';
 }
 
 export default function Home() {
@@ -1336,12 +1336,12 @@ export default function Home() {
   }
 
   // ===== REPORTE DIARIO (special export) =====================================
-  // Helper: compute "shift day" key (day runs 08:00 → 08:00 next calendar day)
+  // Helper: compute "shift day" key (day runs 07:00 → 07:00 next calendar day)
   const getShiftDay = (dateStr) => {
     if (!dateStr) return 'Sin-Fecha'
     const d = new Date(dateStr)
-    // Anything before 08:00 local belongs to previous calendar date
-    if (d.getHours() < 8) d.setDate(d.getDate() - 1)
+    // Anything before 07:00 local belongs to previous calendar date
+    if (d.getHours() < 7) d.setDate(d.getDate() - 1)
     const y  = d.getFullYear()
     const m  = String(d.getMonth() + 1).padStart(2, '0')
     const dd = String(d.getDate()).padStart(2, '0')
@@ -1825,12 +1825,12 @@ export default function Home() {
   // Obtener distribución por turno
   const getDistribucionTurnos = () => {
     const data = prepareHourlyAnalysis()
-    const turno1 = data.filter(d => d.hora >= 8 && d.hora < 20) // 8am - 8pm
-    const turno2 = data.filter(d => d.hora < 8 || d.hora >= 20) // 8pm - 8am
+    const turno1 = data.filter(d => d.hora >= 7 && d.hora < 19) // 7am - 7pm
+    const turno2 = data.filter(d => d.hora < 7 || d.hora >= 19) // 7pm - 7am
 
     return [
-      { name: 'Turno 1 (8:00-20:00)', tickets: turno1.reduce((acc, d) => acc + d.totalTickets, 0), horas: Math.round(turno1.reduce((acc, d) => acc + d.totalHoras, 0) * 100) / 100 },
-      { name: 'Turno 2 (20:00-8:00)', tickets: turno2.reduce((acc, d) => acc + d.totalTickets, 0), horas: Math.round(turno2.reduce((acc, d) => acc + d.totalHoras, 0) * 100) / 100 }
+      { name: 'Turno 1 (7:00-19:00)', tickets: turno1.reduce((acc, d) => acc + d.totalTickets, 0), horas: Math.round(turno1.reduce((acc, d) => acc + d.totalHoras, 0) * 100) / 100 },
+      { name: 'Turno 2 (19:00-7:00)', tickets: turno2.reduce((acc, d) => acc + d.totalTickets, 0), horas: Math.round(turno2.reduce((acc, d) => acc + d.totalHoras, 0) * 100) / 100 }
     ]
   }
 
@@ -4322,10 +4322,10 @@ export default function Home() {
                 {/* ====== DAY SHIFT SECTION ====== */}
                 {downtimeData && (() => {
                   const shiftInfo = getShiftInfo(downtimeFecha);
-                  // Day shift: hours 8-19 from selected date
+                  // Day shift: hours 7-18 from selected date
                   const dayIntervals = downtimeData.intervals.filter(i => {
                     const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
-                    return h >= 8 && h < 20;
+                    return h >= 7 && h < 19;
                   });
                   if (dayIntervals.length === 0) return null;
                   return (
@@ -4421,6 +4421,31 @@ export default function Home() {
                               </React.Fragment>
                             ))}
                           </tbody>
+                          <tfoot>
+                            {(() => {
+                              const totCap = dayIntervals.reduce((s, i) => s + (i.capacidad || 0), 0);
+                              const totProd = dayIntervals.reduce((s, i) => s + (i.produccion || 0), 0);
+                              const totDelta = dayIntervals.reduce((s, i) => s + (i.delta || 0), 0);
+                              const totDt = dayIntervals.reduce((s, i) => s + (i.dt || 0), 0);
+                              const totTicketDt = dayIntervals.reduce((s, i) => s + (i.ticketDeadtimeMin || 0), 0);
+                              const totAdjusted = dayIntervals.reduce((s, i) => s + (i.adjustedDt || 0), 0);
+                              const totTickets = dayIntervals.reduce((s, i) => s + (i.ticketCount || 0), 0);
+                              return (
+                                <tr className="border-t-2 border-amber-700/50 bg-amber-900/20">
+                                  <td className="py-2 px-3 text-amber-200 font-bold text-xs">{t('common.total')}</td>
+                                  <td className="py-2 px-3"></td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totCap}</td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totProd}</td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totDelta}</td>
+                                  <td className="py-2 px-3 text-right text-yellow-300 font-bold">{totDt.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-200 font-bold">{totTicketDt.toFixed(2)}</td>
+                                  <td className={`py-2 px-3 text-right font-bold ${totAdjusted > 0 ? 'text-red-400' : 'text-green-400'}`}>{totAdjusted.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-center text-white font-bold">{totTickets}</td>
+                                  <td className="py-2 px-3"></td>
+                                </tr>
+                              );
+                            })()}
+                          </tfoot>
                         </table>
                       </div>
                     </div>
@@ -4430,14 +4455,14 @@ export default function Home() {
                 {/* ====== NIGHT SHIFT SECTION ====== */}
                 {(downtimeData || downtimeDataNext) && (() => {
                   const shiftInfo = getShiftInfo(downtimeFecha);
-                  // Night shift: hours 20-23 from selected date + hours 0-7 from next date
+                  // Night shift: hours 19-23 from selected date + hours 0-6 from next date
                   const nightIntervalsSelected = downtimeData ? downtimeData.intervals.filter(i => {
                     const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
-                    return h >= 20;
+                    return h >= 19;
                   }) : [];
                   const nightIntervalsNext = downtimeDataNext ? downtimeDataNext.intervals.filter(i => {
                     const h = i.inicio ? parseInt(i.inicio.substring(0, 2), 10) : -1;
-                    return h >= 0 && h < 8;
+                    return h >= 0 && h < 7;
                   }) : [];
                   const nightIntervals = [...nightIntervalsSelected, ...nightIntervalsNext];
                   if (nightIntervals.length === 0) return null;
@@ -4534,6 +4559,31 @@ export default function Home() {
                               </React.Fragment>
                             ))}
                           </tbody>
+                          <tfoot>
+                            {(() => {
+                              const totCap = nightIntervals.reduce((s, i) => s + (i.capacidad || 0), 0);
+                              const totProd = nightIntervals.reduce((s, i) => s + (i.produccion || 0), 0);
+                              const totDelta = nightIntervals.reduce((s, i) => s + (i.delta || 0), 0);
+                              const totDt = nightIntervals.reduce((s, i) => s + (i.dt || 0), 0);
+                              const totTicketDt = nightIntervals.reduce((s, i) => s + (i.ticketDeadtimeMin || 0), 0);
+                              const totAdjusted = nightIntervals.reduce((s, i) => s + (i.adjustedDt || 0), 0);
+                              const totTickets = nightIntervals.reduce((s, i) => s + (i.ticketCount || 0), 0);
+                              return (
+                                <tr className="border-t-2 border-indigo-700/50 bg-indigo-900/20">
+                                  <td className="py-2 px-3 text-indigo-200 font-bold text-xs">{t('common.total')}</td>
+                                  <td className="py-2 px-3"></td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totCap}</td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totProd}</td>
+                                  <td className="py-2 px-3 text-right text-white font-bold">{totDelta}</td>
+                                  <td className="py-2 px-3 text-right text-yellow-300 font-bold">{totDt.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-right text-neutral-200 font-bold">{totTicketDt.toFixed(2)}</td>
+                                  <td className={`py-2 px-3 text-right font-bold ${totAdjusted > 0 ? 'text-red-400' : 'text-green-400'}`}>{totAdjusted.toFixed(2)}</td>
+                                  <td className="py-2 px-3 text-center text-white font-bold">{totTickets}</td>
+                                  <td className="py-2 px-3"></td>
+                                </tr>
+                              );
+                            })()}
+                          </tfoot>
                         </table>
                       </div>
                     </div>

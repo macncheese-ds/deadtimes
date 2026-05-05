@@ -273,8 +273,8 @@
   },
   "review": {
     "title": "Review",
-    "shift1": "Turno 1 (08:00 - 20:00)",
-    "shift2": "Turno 2 (20:00 - 08:00)",
+    "shift1": "Turno 1 (07:00 - 19:00)",
+    "shift2": "Turno 2 (19:00 - 07:00)",
     "unjustifiedDt": "Deadtime no justificado",
     "unjustifiedFormula": "Deadtime total - Minutos justificados por tickets",
     "clickInterval": "Haz click en un intervalo para ver tickets relacionados",
