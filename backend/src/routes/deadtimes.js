@@ -449,7 +449,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
     if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
       equipoCondition = 'AND equipo = ?';
     } else if (equipo === 'sin_otros') {
-      equipoCondition = 'AND LOWER(equipo) NOT LIKE ?';
+      equipoCondition = 'AND LOWER(equipo) NOT LIKE ? AND LOWER(equipo) NOT LIKE ? AND LOWER(equipo) NOT LIKE ? AND LOWER(equipo) NOT LIKE ? AND LOWER(equipo) NOT LIKE ?';
     }
 
     if (startDate && endDate) {
@@ -461,7 +461,7 @@ router.get('/stats/tickets-by-equipment', async (req, res) => {
     if (equipo && equipo !== 'all' && equipo !== 'sin_otros') {
       params.push(equipo);
     } else if (equipo === 'sin_otros') {
-      params.push('%otro%');
+      params.push('%otro%', '%producci%n%', '%produccion%', '%planeaci%n%', '%planeacion%');
     }
 
     let lineaCondition = '';
@@ -678,32 +678,46 @@ router.get('/mttr-mtbf', async (req, res) => {
       ? 'DATE_FORMAT(DATE(hr), \'%Y-%m-01\')'
       : 'DATE_SUB(DATE(hr), INTERVAL (DAYOFWEEK(DATE(hr)) + 5) % 7 DAY)';
 
+    // Filter machines if a specific machine is requested
+    let machineList = machines.map(m => m.machine);
+    if (machine && machine !== 'all' && machine !== '') {
+      machineList = machineList.filter(m => m === machine);
+    }
+
+    // First, get ALL unique periods that have ANY data
+    let periodQuery = `
+      SELECT DISTINCT ${groupByClause} as period_key
+      FROM deadtimes
+      WHERE done = 1 AND equipo != 'Otros' AND equipo IS NOT NULL AND equipo != ''
+    `;
+    let periodParams = [];
+    periodParams.push(...queryParams);
+    periodQuery += whereClause + ` ORDER BY period_key ASC`;
+
+    const [periodRows] = await db.query(periodQuery, periodParams);
+    const allPeriods = periodRows.map(row => row.period_key);
+
     const results = [];
 
-    // Calculate data for each machine
-    for (const { machine: mch } of machines) {
-      // Skip if filtering by machine and this isn't it
-      if (machine && machine !== 'all' && machine !== '' && mch !== machine) continue;
+    // For EACH period and EACH machine, calculate MTTR/MTBF (0 if no incidents)
+    for (const periodKey of allPeriods) {
+      for (const mch of machineList) {
+        // Query for incident data for THIS machine in THIS period
+        let dataQuery = `
+          SELECT 
+            COUNT(*) as incident_count,
+            COALESCE(SUM(TIMESTAMPDIFF(MINUTE, hr, COALESCE(hc, NOW()))), 0) as total_downtime_minutes
+          FROM deadtimes
+          WHERE equipo = ? AND done = 1 AND ${groupByClause} = ?
+        `;
 
-      // Get data grouped by period
-      let query = `
-        SELECT 
-          ${groupByClause} as period_key,
-          COUNT(*) as incident_count,
-          COALESCE(SUM(TIMESTAMPDIFF(MINUTE, hr, COALESCE(hc, NOW()))), 0) as total_downtime_minutes
-        FROM deadtimes
-        WHERE equipo = ? AND done = 1
-      `;
+        let dataParams = [mch, periodKey];
+        dataParams.push(...queryParams);
+        dataQuery += whereClause;
 
-      let params = [mch];
-      params.push(...queryParams);
+        const [incidentData] = await db.query(dataQuery, dataParams);
+        const data = incidentData[0] || { incident_count: 0, total_downtime_minutes: 0 };
 
-      query += whereClause + ` GROUP BY period_key ORDER BY period_key ASC`;
-
-      const [periodData] = await db.query(query, params);
-
-      // Calculate MTTR/MTBF for each period
-      for (const data of periodData) {
         const total_downtime = data.total_downtime_minutes / 60; // convert to hours
         const mttr = data.incident_count > 0 ? total_downtime / data.incident_count : 0;
         const mtbf = data.incident_count > 0 ? available_time / data.incident_count : available_time;
@@ -711,11 +725,11 @@ router.get('/mttr-mtbf', async (req, res) => {
         let periodStart, periodEnd;
         if (isMonthlyPeriod) {
           // For monthly: first day to last day of month
-          periodStart = new Date(data.period_key);
+          periodStart = new Date(periodKey);
           periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0);
         } else {
           // For weekly: Monday + 6 days = Sunday
-          periodStart = new Date(data.period_key);
+          periodStart = new Date(periodKey);
           periodEnd = new Date(periodStart);
           periodEnd.setDate(periodEnd.getDate() + 6);
         }
@@ -736,8 +750,12 @@ router.get('/mttr-mtbf', async (req, res) => {
       }
     }
 
-    // Sort by period descending
-    results.sort((a, b) => new Date(b.period_key) - new Date(a.period_key));
+    // Sort by period descending, then by machine ascending
+    results.sort((a, b) => {
+      const dateCompare = new Date(b.period_key) - new Date(a.period_key);
+      if (dateCompare !== 0) return dateCompare;
+      return a.machine.localeCompare(b.machine);
+    });
 
     res.json(results);
   } catch (error) {

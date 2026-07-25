@@ -552,57 +552,77 @@ export default function Analytics() {
   // Prepare MTTR/MTBF chart data
   const prepareMttrMtbfData = () => {
     if (!Array.isArray(mttrMtbfData)) return [];
-    
-    // Group by time period (week or month)
-    const grouped = {}
+
+    const machineConfigs = getMttrMachineConfigs()
+    const periods = {}
     
     mttrMtbfData.forEach(item => {
       const timeKey = mttrPeriod === 'weekly' 
-        ? new Date(item.week_start_date).toLocaleDateString('es', { month: 'short', day: 'numeric' })
-        : item.month || new Date(item.period_start).toLocaleDateString('es', { month: 'short', year: '2-digit' })
+        ? new Date(item.period_key).toLocaleDateString('es', { month: 'short', day: 'numeric' })
+        : new Date(item.period_key).toLocaleDateString('es', { month: 'short', year: '2-digit' })
       
-      if (selectedMttrMachine === 'all') {
-        // Group all machines together
-        if (!grouped[timeKey]) {
-          grouped[timeKey] = {
-            period: timeKey,
-            mttr: 0,
-            mtbf: 0,
-            mttr_target: 0.8,
-            mtbf_target: 12,
-            count: 0
-          }
-        }
-        grouped[timeKey].mttr += parseFloat(item.mttr) || 0
-        grouped[timeKey].mtbf += parseFloat(item.mtbf) || 0
-        grouped[timeKey].count += 1
-      } else {
-        // Show individual machine data
-        const key = `${timeKey}_${item.machine}`
-        grouped[key] = {
+      if (!periods[timeKey]) {
+        periods[timeKey] = {
           period: timeKey,
-          machine: item.machine,
-          mttr: parseFloat(item.mttr) || 0,
-          mtbf: parseFloat(item.mtbf) || 0,
-          mttr_target: parseFloat(item.mttr_target) || 0.8,
-          mtbf_target: parseFloat(item.mtbf_target) || 12,
-          incident_count: parseInt(item.incident_count) || 0
+          originalDate: new Date(item.period_key)
         }
       }
     })
+
+    // Create complete matrix: every machine for every period
+    const result = Object.values(periods).map(period => {
+      const periodObj = { ...period }
+      
+      // Add data for each machine (0 if no data)
+      machineConfigs.forEach(({ machine, key }) => {
+        const matchingItem = mttrMtbfData.find(item => {
+          const timeKey = mttrPeriod === 'weekly' 
+            ? new Date(item.period_key).toLocaleDateString('es', { month: 'short', day: 'numeric' })
+            : new Date(item.period_key).toLocaleDateString('es', { month: 'short', year: '2-digit' })
+          return item.machine === machine && timeKey === period.period
+        })
+        
+        if (matchingItem) {
+          periodObj[`${key}_mttr`] = parseFloat(matchingItem.mttr) || 0
+          periodObj[`${key}_mtbf`] = parseFloat(matchingItem.mtbf) || 0
+        } else {
+          // Ensure every machine has an entry for every period (even if 0)
+          periodObj[`${key}_mttr`] = 0
+          periodObj[`${key}_mtbf`] = 0
+        }
+      })
+      
+      return periodObj
+    })
     
-    let result = Object.values(grouped)
+    const sorted = result
+      .sort((a, b) => a.originalDate - b.originalDate)
+      .map(({ originalDate, ...rest }) => rest)
     
-    if (selectedMttrMachine === 'all') {
-      // Average the values for combined view
-      result = result.map(item => ({
-        ...item,
-        mttr: item.count > 0 ? item.mttr / item.count : 0,
-        mtbf: item.count > 0 ? item.mtbf / item.count : 0
-      }))
-    }
-    
-    return result.sort((a, b) => new Date(a.period) - new Date(b.period))
+    console.log('Final prepared data:', sorted);
+    return sorted
+  }
+
+  const getMttrMachineConfigs = () => {
+    if (!Array.isArray(mttrMtbfData)) return []
+
+    const machines = Array.from(new Set(mttrMtbfData.map(item => item.machine))).sort()
+    return machines.map((machine, index) => ({
+      machine,
+      key: `machine_${index}`,
+      color: getMachineColor(index)
+    }))
+  }
+
+  // Get unique machines from prepared data
+  const getUniqueMachinesFromData = () => {
+    return getMttrMachineConfigs().map(config => config.machine)
+  }
+
+  // Get colors for machines
+  const getMachineColor = (index) => {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
+    return colors[index % colors.length]
   }
 
   const CustomTooltip = ({ active, payload, label }) => {
@@ -1381,7 +1401,7 @@ export default function Analytics() {
                 </h3>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={prepareMttrMtbfData()}>
+                    <BarChart data={prepareMttrMtbfData()} margin={{ top: 20, right: 30, left: 0, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                       <XAxis 
                         dataKey="period" 
@@ -1389,7 +1409,7 @@ export default function Analytics() {
                         tick={{ fill: '#94a3b8', fontSize: 11 }}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={80}
                       />
                       <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
                       <Tooltip 
@@ -1399,24 +1419,16 @@ export default function Analytics() {
                           borderRadius: '8px'
                         }}
                       />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="mttr_target" 
-                        stroke="#94a3b8" 
-                        strokeDasharray="5 5"
-                        name="MTTR Target"
-                        dot={false}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="mttr" 
-                        stroke="#ef4444" 
-                        strokeWidth={3}
-                        name="MTTR Actual"
-                        dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                      />
-                    </LineChart>
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {getMttrMachineConfigs().map((config, idx) => (
+                        <Bar 
+                          key={`${config.key}_mttr`}
+                          dataKey={`${config.key}_mttr`} 
+                          fill={config.color || getMachineColor(idx)}
+                          name={config.machine}
+                        />
+                      ))}
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -1430,7 +1442,7 @@ export default function Analytics() {
                 </h3>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={prepareMttrMtbfData()}>
+                    <BarChart data={prepareMttrMtbfData()} margin={{ top: 20, right: 30, left: 0, bottom: 60 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                       <XAxis 
                         dataKey="period" 
@@ -1438,7 +1450,7 @@ export default function Analytics() {
                         tick={{ fill: '#94a3b8', fontSize: 11 }}
                         angle={-45}
                         textAnchor="end"
-                        height={60}
+                        height={80}
                       />
                       <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
                       <Tooltip 
@@ -1448,24 +1460,16 @@ export default function Analytics() {
                           borderRadius: '8px'
                         }}
                       />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="mtbf_target" 
-                        stroke="#94a3b8" 
-                        strokeDasharray="5 5"
-                        name="MTBF Target"
-                        dot={false}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="mtbf" 
-                        stroke="#10b981" 
-                        strokeWidth={3}
-                        name="MTBF Actual"
-                        dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                      />
-                    </LineChart>
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {getMttrMachineConfigs().map((config, idx) => (
+                        <Bar 
+                          key={`${config.key}_mtbf`}
+                          dataKey={`${config.key}_mtbf`} 
+                          fill={config.color || getMachineColor(idx)}
+                          name={config.machine}
+                        />
+                      ))}
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -1486,23 +1490,58 @@ export default function Analytics() {
               {(() => {
                 const data = prepareMttrMtbfData();
                 const latest = data[data.length - 1] || {};
-                const avgMttr = data.reduce((sum, item) => sum + item.mttr, 0) / data.length;
-                const avgMtbf = data.reduce((sum, item) => sum + item.mtbf, 0) / data.length;
+                const machines = getUniqueMachinesFromData();
+                
+                // Calculate averages across all machines in latest period
+                let latestMttrSum = 0, latestMtbfSum = 0, count = 0;
+                machines.forEach(machine => {
+                  const mttrKey = `${machine}_mttr`;
+                  const mtbfKey = `${machine}_mtbf`;
+                  if (latest[mttrKey] !== undefined) {
+                    latestMttrSum += latest[mttrKey];
+                    count++;
+                  }
+                  if (latest[mtbfKey] !== undefined) {
+                    latestMtbfSum += latest[mtbfKey];
+                  }
+                });
+                
+                const latestMttr = count > 0 ? latestMttrSum / count : 0;
+                const latestMtbf = count > 0 ? latestMtbfSum / count : 0;
+                
+                // Calculate overall averages
+                let allMttrSum = 0, allMtbfSum = 0, totalCount = 0;
+                data.forEach(period => {
+                  machines.forEach(machine => {
+                    const mttrKey = `${machine}_mttr`;
+                    const mtbfKey = `${machine}_mtbf`;
+                    if (period[mttrKey] !== undefined) {
+                      allMttrSum += period[mttrKey];
+                      totalCount++;
+                    }
+                    if (period[mtbfKey] !== undefined) {
+                      allMtbfSum += period[mtbfKey];
+                    }
+                  });
+                });
+                
+                const avgMttr = totalCount > 0 ? allMttrSum / totalCount : 0;
+                const avgMtbf = totalCount > 0 ? allMtbfSum / totalCount : 0;
                 
                 return [
                   {
                     title: 'MTTR Actual',
-                    value: `${(latest.mttr || 0).toFixed(1)}h`,
-                    target: `Target: ${(latest.mttr_target || 0.8).toFixed(1)}h`,
+                    value: `${latestMttr.toFixed(1)}h`,
+                    target: `Target: 0.8h`,
                     color: 'red',
-                    status: (latest.mttr || 0) <= (latest.mttr_target || 0.8) ? 'good' : 'bad'
+                    status: latestMttr <= 0.8 ? 'good' : 'bad'
                   },
                   {
                     title: 'MTBF Actual', 
-                    value: `${(latest.mtbf || 0).toFixed(1)}h`,
-                    target: `Target: ${(latest.mtbf_target || 12).toFixed(1)}h`,
+                    value: `${latestMtbf.toFixed(1)}h`,
+                    target: `Target: 12h`,
                     color: 'emerald',
-                    status: (latest.mtbf || 0) >= (latest.mtbf_target || 12) ? 'good' : 'bad'
+                    status: latestMtbf >= 12 ? 'good' : 'bad'
                   },
                   {
                     title: 'MTTR Promedio',

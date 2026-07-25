@@ -115,6 +115,60 @@ function getShiftInfo(fechaStr) {
   };
 }
 
+// Helper para formatear fecha (YYYY-MM-DD)
+const formatFecha = (fechaStr) => {
+  if (!fechaStr) return ''
+  return new Date(fechaStr).toLocaleDateString('es-MX')
+}
+
+// Caché de traducción para evitar rate-limits y acelerar el renderizado
+const translationCache = new Map();
+
+const fallbackTranslate = async (text) => {
+  if (!text) return text;
+  try {
+    const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=en&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await res.json();
+    return data[0][0][0];
+  } catch (e) {
+    return text;
+  }
+};
+
+const getTranslatedText = async (text, translator) => {
+  if (!text) return text;
+  const trimmed = String(text).trim();
+  if (!trimmed) return text;
+  if (translationCache.has(trimmed)) return translationCache.get(trimmed);
+  
+  let result = trimmed;
+  if (translator) {
+    try { result = await translator.translate(trimmed); } catch(e){}
+  } else {
+    result = await fallbackTranslate(trimmed);
+  }
+  translationCache.set(trimmed, result);
+  return result;
+};
+
+const translateSingleTicket = async (data, i18n) => {
+    data._originalDescr = data.descr;
+    data._originalSolucion = data.solucion;
+    if (i18n.language && !i18n.language.startsWith('es')) {
+        let translator;
+        try {
+            if ('ai' in window && window.ai && window.ai.translator) {
+                translator = await window.ai.translator.create({ sourceLanguage: 'es', targetLanguage: 'en' });
+            } else if ('translation' in window && window.translation && window.translation.createTranslator) {
+                translator = await window.translation.createTranslator({ sourceLanguage: 'es', targetLanguage: 'en' });
+            }
+        } catch(e) {}
+        data.descr = await getTranslatedText(data.descr, translator);
+        data.solucion = await getTranslatedText(data.solucion, translator);
+    }
+    return data;
+};
+
 // Get next calendar date string
 function getNextDate(fechaStr) {
   if (!fechaStr) return '';
@@ -129,7 +183,7 @@ function getShiftForHour(h) {
 }
 
 export default function Home() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [tickets, setTickets] = useState([])
   const [status, setStatus] = useState('open')
   const [showNew, setShowNew] = useState(false)
@@ -182,8 +236,36 @@ export default function Home() {
   const audioTimeoutRef = useRef(null) // Timeout para controlar intervalo con gap
   // Form
   const [form, setForm] = useState({
-    descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', rate: ''
+    descr: '', descr_otros: '', material_type: '', material_info: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', rate: ''
   })
+
+  function normalizeText(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+  }
+
+  function isMaterialIssueText(value) {
+    const normalized = normalizeText(value)
+    return normalized === 'falta de material' || normalized === 'falta el material' || normalized === 'falta material'
+  }
+
+  const isMaterialIssue = isMaterialIssueText(form.descr) || (form.descr === '__OTROS__' && isMaterialIssueText(form.descr_otros))
+
+  function buildDescripcionFinal(currentForm) {
+    const baseDescription = currentForm.descr === '__OTROS__' ? currentForm.descr_otros : currentForm.descr
+
+    if (isMaterialIssueText(currentForm.descr) || (currentForm.descr === '__OTROS__' && isMaterialIssueText(currentForm.descr_otros))) {
+      const materialParts = []
+      if (currentForm.material_type) materialParts.push(`Material: ${currentForm.material_type}`)
+      if (currentForm.material_info) materialParts.push(`Producto: ${currentForm.material_info.trim()}`)
+      return [baseDescription, ...materialParts].join(' | ')
+    }
+
+    return baseDescription
+  }
 
   // Estados para Analytics
   const [selectedLinea, setSelectedLinea] = useState('all')
@@ -223,6 +305,7 @@ export default function Home() {
   const [machineEquipo, setMachineEquipo] = useState('')
   const [machineLinea, setMachineLinea] = useState('')
   const [machineTickets, setMachineTickets] = useState([])
+  const [globalTranslating, setGlobalTranslating] = useState(false)
 
   // Estados para Análisis por Horas
   const [hourlyData, setHourlyData] = useState([])
@@ -300,7 +383,7 @@ export default function Home() {
     return () => {
       if (iv) clearInterval(iv)
     }
-  }, [showOpen])
+  }, [showOpen, i18n.language])
 
   useEffect(() => {
     if (showAnalytics && lineas.length > 0) {
@@ -562,7 +645,7 @@ export default function Home() {
     // Si el equipo no es NXT, resetear todas las montadoras a false
     const isNXT = val === 'NXT'
     const resetMods = isNXT ? {} : { Montadora1: false, Montadora2: false, Montadora3: false, Montadora4: false, Montadora5: false, Montadora6: false, Montadora7: false, Montadora8: false, Montadora9: false, Montadora10: false, Montadora11: false, Montadora12: false }
-    setForm(prev => ({ ...prev, equipo: val, descr: '', mods: isNXT ? prev.mods : resetMods }))
+    setForm(prev => ({ ...prev, equipo: val, descr: '', descr_otros: '', material_type: '', material_info: '', mods: isNXT ? prev.mods : resetMods }))
     try {
       setDescripcionesLoading(true)
       const data = await getDescripciones(val || undefined)
@@ -921,12 +1004,94 @@ export default function Home() {
         params.limit = 50
 
         const result = await listTickets('closed', params)
-        setTickets(result.rows || [])
+        let finalData = result.rows || []
+        
+        if (i18n.language && !i18n.language.startsWith('es')) {
+          setGlobalTranslating(true)
+          try {
+            let translator = null;
+            try {
+              if ('ai' in window && window.ai && window.ai.translator) {
+                 translator = await window.ai.translator.create({ sourceLanguage: 'es', targetLanguage: 'en' });
+              } else if ('translation' in window && window.translation && window.translation.createTranslator) {
+                 translator = await window.translation.createTranslator({ sourceLanguage: 'es', targetLanguage: 'en' });
+              }
+            } catch(initErr) {
+              console.warn("Failed to init native translator:", initErr);
+            }
+            
+            // Helper function for fallback API
+            const fallbackTranslate = async (text) => {
+              if (!text) return text;
+              try {
+                const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=en&dt=t&q=${encodeURIComponent(text)}`);
+                const data = await res.json();
+                return data[0][0][0];
+              } catch (e) {
+                return text;
+              }
+            };
+
+            finalData = await Promise.all(finalData.map(async (t) => {
+              const copy = { ...t }
+              copy.descr = await getTranslatedText(copy.descr, translator, fallbackTranslate);
+              copy.solucion = await getTranslatedText(copy.solucion, translator, fallbackTranslate);
+              copy.equipo = await getTranslatedText(copy.equipo, translator, fallbackTranslate);
+              copy.linea = await getTranslatedText(copy.linea, translator, fallbackTranslate);
+              copy.modelo = await getTranslatedText(copy.modelo, translator, fallbackTranslate);
+              copy.clasificacion = await getTranslatedText(copy.clasificacion, translator, fallbackTranslate);
+              return copy
+            }))
+          } catch(e) { console.error(e) }
+          setGlobalTranslating(false)
+        }
+
+        setTickets(finalData)
         setClosedTotal(result.total || 0)
         setClosedPage(result.page || 1)
         setClosedTotalPages(result.totalPages || 0)
       } else {
-        const data = await listTickets(statusToLoad)
+        let data = await listTickets(statusToLoad)
+
+        if (i18n.language && !i18n.language.startsWith('es')) {
+          setGlobalTranslating(true)
+          try {
+            let translator = null;
+            try {
+              if ('ai' in window && window.ai && window.ai.translator) {
+                 translator = await window.ai.translator.create({ sourceLanguage: 'es', targetLanguage: 'en' });
+              } else if ('translation' in window && window.translation && window.translation.createTranslator) {
+                 translator = await window.translation.createTranslator({ sourceLanguage: 'es', targetLanguage: 'en' });
+              }
+            } catch(initErr) {
+              console.warn("Failed to init native translator:", initErr);
+            }
+
+            // Helper function for fallback API
+            const fallbackTranslate = async (text) => {
+              if (!text) return text;
+              try {
+                const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=en&dt=t&q=${encodeURIComponent(text)}`);
+                const data = await res.json();
+                return data[0][0][0];
+              } catch (e) {
+                return text;
+              }
+            };
+
+            data = await Promise.all(data.map(async (t) => {
+              const copy = { ...t }
+              copy.descr = await getTranslatedText(copy.descr, translator, fallbackTranslate);
+              copy.solucion = await getTranslatedText(copy.solucion, translator, fallbackTranslate);
+              copy.equipo = await getTranslatedText(copy.equipo, translator, fallbackTranslate);
+              copy.linea = await getTranslatedText(copy.linea, translator, fallbackTranslate);
+              copy.modelo = await getTranslatedText(copy.modelo, translator, fallbackTranslate);
+              copy.clasificacion = await getTranslatedText(copy.clasificacion, translator, fallbackTranslate);
+              return copy
+            }))
+          } catch(e) { console.error(e) }
+          setGlobalTranslating(false)
+        }
         // Marcar sólo tickets nuevos para animación suave
         setTickets(prev => {
           const prevMap = new Map((prev || []).map(p => [p.id, p]))
@@ -960,7 +1125,7 @@ export default function Home() {
     closedSearchTimer.current = setTimeout(() => {
       loadTickets('closed', { page: 1 })
     }, 400)
-  }, [filterClosedTicketId, filterClosedLinea, filterClosedEquipo, filterClosedDescr, filterClosedStartDate, filterClosedEndDate, sortClosedBy])
+  }, [filterClosedTicketId, filterClosedLinea, filterClosedEquipo, filterClosedDescr, filterClosedStartDate, filterClosedEndDate, sortClosedBy, i18n.language])
 
   // Re-trigger search when filters or sorting change (only when closed view is active)
   useEffect(() => {
@@ -994,8 +1159,7 @@ export default function Home() {
       })
 
       const turno = getTurno()
-      // Si la descripción es "Otros", usar el valor de descr_otros
-      const descripcionFinal = form.descr === '__OTROS__' ? form.descr_otros : form.descr
+      const descripcionFinal = buildDescripcionFinal(form)
 
       // Si el equipo no es NXT, asegurar que todas las montadoras sean false (0)
       const modsToSend = form.equipo === 'NXT' ? form.mods : {
@@ -1052,7 +1216,7 @@ export default function Home() {
       }
 
       // Resetear form incluyendo producto y rate; limpiar modelos cargados
-      setForm({ descr: '', descr_otros: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: '' })
+      setForm({ descr: '', descr_otros: '', material_type: '', material_info: '', modelo: '', linea: '', equipo: '', mods: {}, pf: '', pa: '', clasificacion: '', clas_others: '', lado: '', producto: '', rate: '' })
       setSelectedModelo(null)
       setModelos([])
       setShowCredentialsModal(false)
@@ -1086,7 +1250,8 @@ export default function Home() {
     setShowHandleModal(true)
     setHandleForm({ solucion: '' })
     try {
-      const data = await getTicket(ticketId)
+      let data = await getTicket(ticketId)
+      data = await translateSingleTicket(data, i18n)
       setSelectedTicket(data)
     } catch (error) {
       console.error('Error cargando ticket:', error)
@@ -1100,7 +1265,8 @@ export default function Home() {
     setTicketLoading(true)
     setShowViewModal(true)
     try {
-      const data = await getTicket(ticketId)
+      let data = await getTicket(ticketId)
+      data = await translateSingleTicket(data, i18n)
       setSelectedTicket(data)
     } catch (error) {
       console.error('Error cargando ticket:', error)
@@ -1115,12 +1281,12 @@ export default function Home() {
     setEditSuccess(false)
     setEditForm({
       id: selectedTicket.id,
-      descr: selectedTicket.descr || '',
+      descr: selectedTicket._originalDescr || selectedTicket.descr || '',
       modelo: selectedTicket.modelo || '',
       equipo: selectedTicket.equipo || '',
       hr: formatToDatetimeLocal(selectedTicket.hr),
       hc: formatToDatetimeLocal(selectedTicket.hc),
-      solucion: selectedTicket.solucion || ''
+      solucion: selectedTicket._originalSolucion || selectedTicket.solucion || ''
     })
 
     // Cargar modelos de la línea del ticket
@@ -1280,11 +1446,71 @@ export default function Home() {
       if (dateRange === 'custom' && customStartDate && customEndDate) {
         params.startDate = normalizeDateTimeInput(customStartDate)
         params.endDate = normalizeDateTimeInput(customEndDate)
+      } else if (['last_day', 'last_week', 'last_month'].includes(dateRange)) {
+        const formatMySQL = (d) => {
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' +
+                 String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':00';
+        };
+        const now = new Date();
+        const today7am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
+        if (now.getHours() < 7) { today7am.setDate(today7am.getDate() - 1); }
+        let startDate = new Date(today7am);
+        let endDate = new Date(today7am);
+        if (dateRange === 'last_day') { startDate.setDate(startDate.getDate() - 1); }
+        else if (dateRange === 'last_week') { startDate.setDate(startDate.getDate() - 7); }
+        else if (dateRange === 'last_month') { startDate.setMonth(startDate.getMonth() - 1); }
+        params.startDate = formatMySQL(startDate);
+        params.endDate = formatMySQL(endDate);
+        params.days = 'custom';
       } else {
         params.days = dateRange
       }
       const data = await getTicketsByEquipment(params)
-      const sortedData = data.sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+      let sortedData = data.sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+      
+      if (i18n.language && !i18n.language.startsWith('es')) {
+         setGlobalTranslating(true)
+         try {
+            let translator = null;
+            try {
+              if ('ai' in window && window.ai && window.ai.translator) {
+                 translator = await window.ai.translator.create({ sourceLanguage: 'es', targetLanguage: 'en' });
+              } else if ('translation' in window && window.translation && window.translation.createTranslator) {
+                 translator = await window.translation.createTranslator({ sourceLanguage: 'es', targetLanguage: 'en' });
+              }
+            } catch(initErr) {
+              console.warn("Failed to init native translator:", initErr);
+            }
+
+            // Helper function for fallback API
+            const fallbackTranslate = async (text) => {
+              if (!text) return text;
+              try {
+                const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=es&tl=en&dt=t&q=${encodeURIComponent(text)}`);
+                const data = await res.json();
+                return data[0][0][0];
+              } catch (e) {
+                return text;
+              }
+            };
+
+            sortedData = await Promise.all(sortedData.map(async (t) => {
+               const newT = { ...t };
+               newT.descr = await getTranslatedText(newT.descr, translator, fallbackTranslate);
+               newT.solucion = await getTranslatedText(newT.solucion, translator, fallbackTranslate);
+               newT.equipo = await getTranslatedText(newT.equipo, translator, fallbackTranslate);
+               newT.linea = await getTranslatedText(newT.linea, translator, fallbackTranslate);
+               newT.modelo = await getTranslatedText(newT.modelo, translator, fallbackTranslate);
+               newT.clasificacion = await getTranslatedText(newT.clasificacion, translator, fallbackTranslate);
+               return newT;
+            }));
+         } catch(err) {
+            console.error('Error auto-translating tickets:', err)
+         } finally {
+            setGlobalTranslating(false)
+         }
+      }
+
       setMachineTickets(sortedData)
     } catch (error) {
       console.error('Error cargando tickets de máquina:', error)
@@ -1298,7 +1524,7 @@ export default function Home() {
     if (showAnalytics && analyticsTab === 'maquinas' && machineEquipo) {
       loadMachineTickets()
     }
-  }, [machineEquipo, machineLinea, dateRange, customStartDate, customEndDate, analyticsTab])
+  }, [machineEquipo, machineLinea, dateRange, customStartDate, customEndDate, analyticsTab, i18n.language])
 
   const prepareMachineChartData = () => {
     return machineTickets.slice(0, 10).map((ticket) => ({
@@ -1311,7 +1537,7 @@ export default function Home() {
 
   const exportMachineToExcel = () => {
     if (!machineTickets || machineTickets.length === 0) return
-    const data = machineTickets.map((ticket, idx) => ({
+    const formatTicket = (ticket, idx) => ({
       '#': idx + 1,
       'ID Ticket': ticket.id,
       'Máquina': ticket.equipo,
@@ -1319,6 +1545,7 @@ export default function Home() {
       'Clasificación': ticket.clasificacion || 'N/A',
       'Modelo': ticket.modelo,
       'Línea': ticket.linea,
+      'Duración (min)': ticket.duracion_minutos || 0,
       'Duración (hrs)': minutosAHoras(ticket.duracion_minutos || 0),
       'Piezas Perdidas': ticket.piezas || 0,
       'Reportado por': ticket.nombre,
@@ -1326,7 +1553,44 @@ export default function Home() {
       'Solución': ticket.solucion || '',
       'Fecha Apertura': ticket.hr ? new Date(ticket.hr).toLocaleString('es-MX') : '',
       'Fecha Cierre': ticket.hc ? new Date(ticket.hc).toLocaleString('es-MX') : ''
-    }))
+    })
+
+    if (machineEquipo === 'all') {
+      const prodTickets = machineTickets.filter(t => t.equipo && t.equipo.toLowerCase().includes('producci'));
+      const planTickets = machineTickets.filter(t => t.equipo && t.equipo.toLowerCase().includes('planeaci'));
+      const otherTickets = machineTickets.filter(t => {
+        const eq = t.equipo ? t.equipo.toLowerCase() : '';
+        return !eq.includes('producci') && !eq.includes('planeaci');
+      });
+
+      const wb = XLSX.utils.book_new();
+      const addSheet = (data, sheetName) => {
+        if (data.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(data);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        } else {
+          const ws = XLSX.utils.json_to_sheet([{ Mensaje: 'Sin datos en esta categoría' }]);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+      };
+
+      addSheet(prodTickets.slice(0, 3).map(formatTicket), 'Top 3 Producción');
+      addSheet(planTickets.slice(0, 3).map(formatTicket), 'Top 3 Planeación');
+      addSheet(otherTickets.slice(0, 3).map(formatTicket), 'Top 3 Otras Máquinas');
+      
+      const restOfTickets = [
+        ...prodTickets.slice(3),
+        ...planTickets.slice(3),
+        ...otherTickets.slice(3)
+      ].sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0));
+
+      addSheet(restOfTickets.map(formatTicket), 'Resto de Tickets');
+
+      XLSX.writeFile(wb, `Analisis_Todas_Maquinas_${new Date().toISOString().split('T')[0]}.xlsx`);
+      return;
+    }
+
+    const data = machineTickets.map(formatTicket)
     const ws = XLSX.utils.json_to_sheet(data)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Análisis de Máquina')
@@ -2175,7 +2439,7 @@ export default function Home() {
         <div className="p-2 sm:p-4 border-t border-neutral-800 hidden sm:block">
           <LanguageSwitcher className="w-full justify-center" />
           <div className="text-[10px] text-center text-neutral-600 mt-2 font-mono" title="App Version">
-            v1.0.10 | <span className="text-neutral-700">auto-cambio-modelo</span>
+            v1.0.13 | <span className="text-neutral-700">auto-cambio-modelo</span>
           </div>
         </div>
         
@@ -2362,7 +2626,7 @@ export default function Home() {
                     {equipos.map(eq => <option key={eq.id} value={eq.equipo}>{eq.equipo}</option>)}
                   </select>
 
-                  <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({ ...form, descr: e.target.value, descr_otros: '' })} required disabled={!form.equipo}>
+                  <select className={inputClass(form.descr)} value={form.descr} onChange={e => setForm({ ...form, descr: e.target.value, descr_otros: '', material_type: '', material_info: '' })} required disabled={!form.equipo}>
                     {descripcionesLoading ? (
                       <option value="">{t('common.loadingDescriptions')}</option>
                     ) : (
@@ -2377,14 +2641,50 @@ export default function Home() {
                   </select>
 
                   {form.descr === '__OTROS__' && (
-                    <input
-                      className={inputClass(form.descr_otros)}
-                      placeholder={t('tickets.specifyFailure')}
-                      value={form.descr_otros}
-                      onChange={e => setForm({ ...form, descr_otros: e.target.value })}
-                      required
-                      disabled={!form.equipo}
-                    />
+                    <>
+                      <input
+                        className={inputClass(form.descr_otros)}
+                        placeholder={t('tickets.specifyFailure')}
+                        value={form.descr_otros}
+                        onChange={e => {
+                          const nextDescrOtros = e.target.value
+                          const nextIsMaterialIssue = /falta\s+el\s+material/i.test(nextDescrOtros.trim())
+                          setForm(prev => ({
+                            ...prev,
+                            descr_otros: nextDescrOtros,
+                            ...(nextIsMaterialIssue ? {} : { material_type: '', material_info: '' })
+                          }))
+                        }}
+                        required
+                        disabled={!form.equipo}
+                      />
+
+                      {isMaterialIssue && (
+                        <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                          <select
+                            className={inputClass(form.material_type)}
+                            value={form.material_type}
+                            onChange={e => setForm({ ...form, material_type: e.target.value })}
+                            required
+                            disabled={!form.descr_otros}
+                          >
+                            <option value="">Tipo de material *</option>
+                            <option value="Pasta">Pasta</option>
+                            <option value="PCB">PCB</option>
+                            <option value="Components">Components</option>
+                          </select>
+
+                          <textarea
+                            className={`${inputClass(form.material_info)} min-h-24 resize-none`}
+                            placeholder="Información del producto a especificar *"
+                            value={form.material_info}
+                            onChange={e => setForm({ ...form, material_info: e.target.value })}
+                            required
+                            disabled={!form.descr_otros || !form.material_type}
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -2447,7 +2747,7 @@ export default function Home() {
               <button
                 type="submit"
                 className="w-full bg-neutral-700 hover:bg-neutral-600 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others) || (form.equipo === 'NXT' && !Object.values(form.mods).some(m => m === true))}
+                disabled={!form.linea || !form.modelo || !form.equipo || !form.descr || (form.descr === '__OTROS__' && !form.descr_otros) || !form.pf || !form.pa || !form.clasificacion || (form.clasificacion === 'Otros' && !form.clas_others) || (form.equipo === 'NXT' && !Object.values(form.mods).some(m => m === true)) || (isMaterialIssue && (!form.material_type || !form.material_info))}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -3282,10 +3582,10 @@ export default function Home() {
                       </svg>
                       Filtros de Análisis por Máquina
                     </h2>
-                    {machineLoading && (
+                    {(machineLoading || globalTranslating) && (
                       <div className="flex items-center gap-2 text-neutral-400 text-xs">
                         <div className="animate-spin rounded-full h-3 w-3 border-2 border-neutral-700 border-t-orange-400"></div>
-                        <span>Cargando...</span>
+                        <span>{globalTranslating ? 'Traduciendo...' : 'Cargando...'}</span>
                       </div>
                     )}
                   </div>
@@ -3327,6 +3627,9 @@ export default function Home() {
                         value={dateRange}
                         onChange={e => setDateRange(e.target.value)}
                       >
+                        <option value="last_day">Día Anterior (7am a 7am)</option>
+                        <option value="last_week">Semana Anterior (7am a 7am)</option>
+                        <option value="last_month">Mes Anterior (7am a 7am)</option>
                         <option value="7">Últimos 7 días</option>
                         <option value="30">Últimos 30 días</option>
                         <option value="60">Últimos 60 días</option>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getEquipos, getTicketsByEquipment, getLineas } from '../api_deadtimes'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
+import { useTranslation } from 'react-i18next'
 
 // Convertir minutos a formato H:MM h (e.g. 90 → "1:30 h")
 function formatMinutes(mins) {
@@ -14,7 +15,71 @@ function formatMinutes(mins) {
   return `${h}:${String(m).padStart(2, '0')} h`;
 }
 
+const TranslationText = ({ text, label }) => {
+  const [translatedText, setTranslatedText] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleTranslate = async () => {
+    if (!text) return;
+    setIsTranslating(true);
+    setError('');
+    try {
+      if ('ai' in window && 'translator' in window.ai) {
+        const capabilities = await window.ai.translator.capabilities();
+        if (capabilities.languagePairAvailable('es', 'en') === 'no') {
+          throw new Error('Language pair es->en not available');
+        }
+        const translator = await window.ai.translator.create({
+          sourceLanguage: 'es',
+          targetLanguage: 'en'
+        });
+        const result = await translator.translate(text);
+        setTranslatedText(result);
+      } else if ('translation' in window && 'createTranslator' in window.translation) {
+        const translator = await window.translation.createTranslator({
+          sourceLanguage: 'es',
+          targetLanguage: 'en'
+        });
+        const result = await translator.translate(text);
+        setTranslatedText(result);
+      } else {
+        throw new Error('API nativa no soportada. Habilita las flags experimentales.');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <div className="flex justify-between items-start mb-1">
+        <span className="text-neutral-500 block">{label}:</span>
+        {!translatedText && !isTranslating && text && (
+          <button onClick={handleTranslate} className="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 px-2 py-1 rounded transition-colors flex items-center gap-1">
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>
+            Traducir
+          </button>
+        )}
+      </div>
+      <span className="text-neutral-200 block">{text}</span>
+      {isTranslating && <span className="text-xs text-indigo-300 italic mt-1 block">Traduciendo...</span>}
+      {error && <span className="text-xs text-rose-400 italic mt-1 block">{error}</span>}
+      {translatedText && (
+        <div className="mt-2 bg-indigo-900/30 border border-indigo-500/30 p-2 rounded text-sm text-indigo-100">
+          <span className="text-indigo-300 text-xs font-semibold block mb-1">Traducción (EN):</span>
+          {translatedText}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 export default function MachineAnalysis() {
+  const { i18n } = useTranslation()
   const navigate = useNavigate()
   const [maquinas, setMaquinas] = useState([])
   const [lineas, setLineas] = useState([])
@@ -23,6 +88,7 @@ export default function MachineAnalysis() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingTickets, setLoadingTickets] = useState(false)
+  const [globalTranslating, setGlobalTranslating] = useState(false)
   const [dateRange, setDateRange] = useState('30')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
@@ -51,7 +117,7 @@ export default function MachineAnalysis() {
     } else {
       setTickets([])
     }
-  }, [selectedMaquina, selectedLinea, dateRange, customStartDate, customEndDate])
+  }, [selectedMaquina, selectedLinea, dateRange, customStartDate, customEndDate, i18n.language])
 
   async function loadMaquinas() {
     try {
@@ -113,13 +179,71 @@ export default function MachineAnalysis() {
           // Si no hay fechas válidas, usar 30 días por defecto
           params.days = '30'
         }
+      } else if (['last_day', 'last_week', 'last_month'].includes(dateRange)) {
+        const formatMySQL = (d) => {
+          return d.getFullYear() + '-' + 
+                 String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+                 String(d.getDate()).padStart(2, '0') + ' ' +
+                 String(d.getHours()).padStart(2, '0') + ':' +
+                 String(d.getMinutes()).padStart(2, '0') + ':' +
+                 String(d.getSeconds()).padStart(2, '0');
+        };
+        const now = new Date();
+        const today7am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
+        if (now.getHours() < 7) {
+          today7am.setDate(today7am.getDate() - 1);
+        }
+        
+        let startDate = new Date(today7am);
+        let endDate = new Date(today7am);
+        
+        if (dateRange === 'last_day') {
+          startDate.setDate(startDate.getDate() - 1);
+        } else if (dateRange === 'last_week') {
+          startDate.setDate(startDate.getDate() - 7);
+        } else if (dateRange === 'last_month') {
+          startDate.setMonth(startDate.getMonth() - 1);
+        }
+        
+        params.startDate = formatMySQL(startDate);
+        params.endDate = formatMySQL(endDate);
+        params.days = 'custom';
       } else {
         params.days = dateRange
       }
       
       const data = await getTicketsByEquipment(params)
       // Ordenar por duración descendente
-      const sortedData = data.sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+      let sortedData = data.sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0))
+      
+      // Auto-translate if not Spanish
+      if (i18n.language && !i18n.language.startsWith('es')) {
+         setGlobalTranslating(true)
+         try {
+            let translator;
+            if ('ai' in window && 'translator' in window.ai) {
+               const cap = await window.ai.translator.capabilities();
+               if (cap.languagePairAvailable('es', 'en') !== 'no') {
+                 translator = await window.ai.translator.create({ sourceLanguage: 'es', targetLanguage: 'en' });
+               }
+            } else if ('translation' in window && 'createTranslator' in window.translation) {
+               translator = await window.translation.createTranslator({ sourceLanguage: 'es', targetLanguage: 'en' });
+            }
+            if (translator) {
+               sortedData = await Promise.all(sortedData.map(async (t) => {
+                  const newT = { ...t };
+                  if (newT.descr) newT.descr = await translator.translate(newT.descr);
+                  if (newT.solucion) newT.solucion = await translator.translate(newT.solucion);
+                  return newT;
+               }));
+            }
+         } catch(err) {
+            console.error('Error auto-translating tickets:', err)
+         } finally {
+            setGlobalTranslating(false)
+         }
+      }
+
       setTickets(sortedData)
     } catch (error) {
       console.error('Error cargando tickets:', error)
@@ -141,6 +265,61 @@ export default function MachineAnalysis() {
   const exportToExcel = () => {
     if (!tickets || tickets.length === 0) return
     
+    if (selectedMaquina === 'all') {
+      const formatTicket = (ticket, idx) => ({
+        '#': idx + 1,
+        'ID Ticket': ticket.id,
+        'Máquina': ticket.equipo,
+        'Descripción': ticket.descr,
+        'Clasificación': ticket.clasificacion || 'N/A',
+        'Modelo': ticket.modelo,
+        'Línea': ticket.linea,
+        'Duración (min)': ticket.duracion_minutos || 0,
+        'Duración (horas)': parseFloat(((ticket.duracion_minutos || 0) / 60).toFixed(2)),
+        'Piezas Perdidas': ticket.piezas || 0,
+        'Reportado por': ticket.nombre,
+        'Técnico': ticket.tecnico,
+        'Solución': ticket.solucion || '',
+        'Fecha Apertura': ticket.hr ? new Date(ticket.hr).toLocaleString('es-MX') : '',
+        'Fecha Cierre': ticket.hc ? new Date(ticket.hc).toLocaleString('es-MX') : ''
+      });
+
+      const prodTickets = tickets.filter(t => t.equipo && t.equipo.toLowerCase().includes('producci'));
+      const planTickets = tickets.filter(t => t.equipo && t.equipo.toLowerCase().includes('planeaci'));
+      const otherTickets = tickets.filter(t => {
+        const eq = t.equipo ? t.equipo.toLowerCase() : '';
+        return !eq.includes('producci') && !eq.includes('planeaci');
+      });
+
+      const wb = XLSX.utils.book_new();
+
+      const addSheet = (data, sheetName) => {
+        if (data.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(data);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        } else {
+          // If no data, just add an empty sheet with a single message row to avoid errors
+          const ws = XLSX.utils.json_to_sheet([{ Mensaje: 'Sin datos en esta categoría' }]);
+          XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        }
+      };
+
+      addSheet(prodTickets.slice(0, 3).map(formatTicket), 'Top 3 Producción');
+      addSheet(planTickets.slice(0, 3).map(formatTicket), 'Top 3 Planeación');
+      addSheet(otherTickets.slice(0, 3).map(formatTicket), 'Top 3 Otras Máquinas');
+      
+      const restOfTickets = [
+        ...prodTickets.slice(3),
+        ...planTickets.slice(3),
+        ...otherTickets.slice(3)
+      ].sort((a, b) => (b.duracion_minutos || 0) - (a.duracion_minutos || 0));
+
+      addSheet(restOfTickets.map(formatTicket), 'Resto de Tickets');
+
+      XLSX.writeFile(wb, `Analisis_Todas_Maquinas_${new Date().toISOString().split('T')[0]}.xlsx`);
+      return;
+    }
+
     const data = tickets.map((ticket, idx) => ({
       '#': idx + 1,
       'ID Ticket': ticket.id,
@@ -182,6 +361,22 @@ export default function MachineAnalysis() {
           params.startDate = norm(customStartDate)
           params.endDate   = norm(customEndDate)
         } else { params.days = '30' }
+      } else if (['last_day', 'last_week', 'last_month'].includes(dateRange)) {
+        const formatMySQL = (d) => {
+          return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' +
+                 String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':00';
+        };
+        const now = new Date();
+        const today7am = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 7, 0, 0);
+        if (now.getHours() < 7) { today7am.setDate(today7am.getDate() - 1); }
+        let startDate = new Date(today7am);
+        let endDate = new Date(today7am);
+        if (dateRange === 'last_day') { startDate.setDate(startDate.getDate() - 1); }
+        else if (dateRange === 'last_week') { startDate.setDate(startDate.getDate() - 7); }
+        else if (dateRange === 'last_month') { startDate.setMonth(startDate.getMonth() - 1); }
+        params.startDate = formatMySQL(startDate);
+        params.endDate = formatMySQL(endDate);
+        params.days = 'custom';
       } else {
         params.days = dateRange
       }
@@ -249,7 +444,7 @@ export default function MachineAnalysis() {
         rows.push([])
 
         // ── Chart-data summary (easy to select & insert chart in Excel)
-        rows.push(['📊  DATOS PARA GRÁFICA POR LÍNEA'])
+        rows.push(['DATOS PARA GRÁFICA POR LÍNEA'])
         rows.push(['Línea', 'Total Tickets', 'Duración Total (min)', 'Duración Total (h)', 'Piezas Perdidas'])
         lineEntries.forEach(([linea, tks]) => {
           const totalMin    = tks.reduce((s, t) => s + (t.duracion_minutos || 0), 0)
@@ -259,7 +454,7 @@ export default function MachineAnalysis() {
         rows.push([])
 
         // ── Ticket detail per line
-        rows.push(['📋  DETALLE DE TICKETS POR LÍNEA'])
+        rows.push(['  DETALLE DE TICKETS POR LÍNEA'])
         lineEntries.forEach(([linea, tks]) => {
           rows.push([])
           rows.push([`== ${linea.toUpperCase()} == (${tks.length} tickets)`])
@@ -421,6 +616,9 @@ export default function MachineAnalysis() {
                 value={dateRange}
                 onChange={e => setDateRange(e.target.value)}
               >
+                <option value="last_day">Día Anterior (7am a 7am)</option>
+                <option value="last_week">Semana Anterior (7am a 7am)</option>
+                <option value="last_month">Mes Anterior (7am a 7am)</option>
                 <option value="7">Últimos 7 días</option>
                 <option value="30">Últimos 30 días</option>
                 <option value="60">Últimos 60 días</option>
@@ -488,10 +686,10 @@ export default function MachineAnalysis() {
             </svg>
             <p className="text-neutral-400 text-lg">Selecciona una máquina o "Todas las máquinas" para ver el análisis</p>
           </div>
-        ) : loadingTickets ? (
+        ) : loadingTickets || globalTranslating ? (
           <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-neutral-800 border-t-orange-400 mb-4"></div>
-            <p className="text-neutral-300 text-lg font-medium">Cargando tickets...</p>
+            <p className="text-neutral-300 text-lg font-medium">{globalTranslating ? 'Traduciendo tickets...' : 'Cargando tickets...'}</p>
           </div>
         ) : tickets.length === 0 ? (
           <div className="bg-neutral-900 rounded-lg shadow-lg border border-neutral-800 p-12 text-center">
@@ -678,8 +876,7 @@ export default function MachineAnalysis() {
                   <h3 className="text-neutral-300 font-medium mb-3">Información del Ticket</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
-                      <span className="text-neutral-500 block">Descripción:</span>
-                      <span className="text-neutral-200">{selectedTicket.descr}</span>
+                      <TranslationText text={selectedTicket.descr} label="Descripción" />
                     </div>
                     <div>
                       <span className="text-neutral-500 block">Clasificación:</span>
@@ -780,8 +977,7 @@ export default function MachineAnalysis() {
                 {/* Solución */}
                 {selectedTicket.solucion && (
                   <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
-                    <h3 className="text-neutral-200 font-medium mb-2">Solución Aplicada</h3>
-                    <p className="text-neutral-200 text-sm">{selectedTicket.solucion}</p>
+                    <TranslationText text={selectedTicket.solucion} label="Solución Aplicada" />
                   </div>
                 )}
               </div>
